@@ -1,0 +1,164 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary-100: #FF8C00;
+  --primary-200: #dc7000;
+  --primary-300: #8e3000;
+  --accent-100: #4A90E2;
+  --accent-200: #003a80;
+  --text-100: #333333;
+  --text-200: #5c5c5c;
+  --bg-100: #FFFFFF;
+  --bg-200: #f5f5f5;
+  --bg-300: #cccccc;
+  
+  /* 阴影变量 */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  
+  /* 过渡变量 */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* 模糊变量 */
+  --blur-sm: blur(4px);
+  --blur-md: blur(8px);
+  --blur-lg: blur(16px);
+}
+
+@layer base {
+  body {
+    @apply bg-bg-200 text-text-100;
+    -webkit-tap-highlight-color: transparent; /* 移除移动设备点击高亮 */
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-medium text-text-100;
+  }
+  
+  /* 增强滚动条样式 */
+  ::-webkit-scrollbar {
+    @apply w-2;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-bg-200;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-bg-300 transition-colors hover:bg-primary-100/50;
+  }
+  
+  /* 移动设备优化 */
+  @media (max-width: 640px) {
+    ::-webkit-scrollbar {
+      @apply w-1;
+    }
+    
+    input, select, textarea, button {
+      @apply text-base; /* 增大移动设备上的输入控件字体 */
+    }
+  }
+}
+
+@layer components {
+  /* 玻璃态卡片效果 */
+  .glass-card {
+    @apply relative overflow-hidden rounded-xl border border-white/20 bg-white/10 backdrop-blur-md;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* 微妙的悬浮效果 */
+  .hover-lift {
+    @apply transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-lg;
+  }
+  
+  /* 渐变边框效果 */
+  .gradient-border {
+    @apply relative rounded-xl p-[1px] before:absolute before:inset-0 before:rounded-xl before:bg-gradient-to-r before:from-primary-100 before:to-accent-100 before:opacity-70 before:blur-sm;
+  }
+  
+  /* 内容卡片增强 */
+  .content-card {
+    @apply rounded-xl border border-border/40 bg-bg-100 p-6 shadow-sm transition-all duration-300 hover:shadow-md;
+  }
+  
+  /* 移动设备优化的卡片 */
+  @media (max-width: 640px) {
+    .content-card {
+      @apply p-4;
+    }
+  }
+}
+
+/* 增强动画效果 */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.5s ease-out forwards;
+}
+
+/* 增强响应式间距 */
+.section-spacing {
+  @apply my-4 md:my-6 lg:my-8;
+}
+
+.content-spacing {
+  @apply space-y-4 md:space-y-6;
+}
+
+/* 增强卡片阴影和过渡 */
+.enhanced-card {
+  @apply rounded-xl border border-border/30 bg-bg-100 p-6 shadow-sm transition-all duration-300;
+}
+
+.enhanced-card:hover {
+  @apply border-primary-100/30 shadow-md;
+  transform: translateY(-2px);
+}
+
+/* 移动设备优化的增强卡片 */
+@media (max-width: 640px) {
+  .enhanced-card {
+    @apply p-4;
+  }
+}
+
+/* 触摸设备优化 */
+@media (hover: none) {
+  .hover-lift:hover {
+    transform: none;
+    box-shadow: none;
+  }
+  
+  .enhanced-card:hover {
+    transform: none;
+    @apply border-border/30 shadow-sm;
+  }
+  
+  /* 增加触摸目标大小 */
+  button, 
+  [role="button"],
+  input[type="checkbox"],
+  input[type="radio"],
+  select {
+    @apply min-h-[44px] min-w-[44px];
+  }
+}
