@@ -46,7 +46,7 @@ export default function QuestionsPage() {
               </div>
               
               {expandedQuestions[`q${question.id}`] && (
-                <div className="mt-2 space-y-4 rounded-lg bg-200/50 p-4 text-text-200">
+                <div className="mt-2 space-y-4 rounded-lg bg-bg-200/50 p-4 text-text-200">
                   <div className="space-y-2">
                     <p className="font-medium">选项：</p>
                     <ul className="list-inside list-disc space-y-1">

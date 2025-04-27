@@ -4,7 +4,11 @@ const KeyPoints = ({ points }) => {
   if (!points || points.length === 0) return null;
 
   return (
+<<<<<<< HEAD
     <div className="mt-6 rounded-xl bg-200/70 p-5 backdrop-blur-sm">
+=======
+    <div className="mt-6 rounded-xl bg-bg-200/70 p-5 backdrop-blur-sm">
+>>>>>>> 5cc269c7d7bb3e0f9bea78d37883bea822dffc4c
       <h3 className="mb-3 font-semibold text-text-100">要点</h3>
       <ul className="space-y-2 text-text-200">
         {points.map((point, index) => (

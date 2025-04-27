@@ -82,7 +82,11 @@ const Sidebar = () => {
                   className={`flex items-center rounded-xl px-4 py-3 text-sm font-medium transition-all duration-300 focus-ring ${
                     pathname === item.path
                       ? 'bg-primary-100/10 text-primary-100 shadow-sm'
+<<<<<<< HEAD
                       : 'hover:bg-200/70 text-text-100 hover:text-primary-100'
+=======
+                      : 'hover:bg-bg-200/70 text-text-100 hover:text-primary-100'
+>>>>>>> 5cc269c7d7bb3e0f9bea78d37883bea822dffc4c
                   }`}
                 >
                   {item.label}

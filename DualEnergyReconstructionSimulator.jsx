@@ -226,7 +226,11 @@ const DualEnergyReconstructionSimulator = () => {
         </div>
       </div>
       
+<<<<<<< HEAD
       <div className="rounded-md bg-200 p-4 text-sm text-text-200">
+=======
+      <div className="rounded-md bg-bg-200 p-4 text-sm text-text-200">
+>>>>>>> 5cc269c7d7bb3e0f9bea78d37883bea822dffc4c
         <h3 className="mb-2 font-medium text-text-100">说明</h3>
         <p>此模拟器展示了双能CT的不同重建类型：</p>
         <ul className="mt-2 list-inside list-disc space-y-1">
