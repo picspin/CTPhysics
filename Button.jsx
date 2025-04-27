@@ -13,13 +13,8 @@ const Button = ({
   
   const variantStyles = {
     primary: "bg-gradient-to-r from-primary-100 to-primary-200 text-white hover:shadow-md hover:-translate-y-0.5 disabled:opacity-70 disabled:hover:transform-none disabled:hover:shadow-none",
-<<<<<<< HEAD
-    secondary: "bg-200 text-text-100 hover:bg-300 hover:shadow-sm hover:-translate-y-0.5 disabled:opacity-70 disabled:hover:transform-none disabled:hover:shadow-none",
-    outline: "border border-border/40 bg-transparent text-text-100 hover:border-primary-100/30 hover:bg-200/70 hover:shadow-sm hover:-translate-y-0.5 disabled:opacity-70 disabled:hover:transform-none disabled:hover:shadow-none"
-=======
     secondary: "bg-bg-200 text-text-100 hover:bg-bg-300 hover:shadow-sm hover:-translate-y-0.5 disabled:opacity-70 disabled:hover:transform-none disabled:hover:shadow-none",
     outline: "border border-border/40 bg-transparent text-text-100 hover:border-primary-100/30 hover:bg-bg-200/70 hover:shadow-sm hover:-translate-y-0.5 disabled:opacity-70 disabled:hover:transform-none disabled:hover:shadow-none"
->>>>>>> 5cc269c7d7bb3e0f9bea78d37883bea822dffc4c
   };
   
   const sizeStyles = {

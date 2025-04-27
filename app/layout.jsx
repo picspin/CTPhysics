@@ -26,11 +26,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={inter.variable}>
       <body className="antialiased">
-<<<<<<< HEAD
-        <div className="flex min-h-screen flex-col bg-200">
-=======
         <div className="flex min-h-screen flex-col bg-bg-200">
->>>>>>> 5cc269c7d7bb3e0f9bea78d37883bea822dffc4c
           <Sidebar />
           <div className="flex w-full flex-col transition-all duration-300 md:pl-64">
             <Header />

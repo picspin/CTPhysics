@@ -161,7 +161,7 @@ const CardiacGatingSimulator = () => {
           />
         </div>
         
-        <div className="rounded-md border border-border bg-bg-100 p-3 sm:p-4">
+        <div className="rounded-md border border-border-100 bg-bg-100 p-3 sm:p-4">
           <div className="mb-2 flex items-center justify-between">
             <span className="text-sm font-medium text-text-100">ECG波形与数据采集</span>
             <Button 
@@ -240,11 +240,7 @@ const CardiacGatingSimulator = () => {
         </div>
       </div>
       
-<<<<<<< HEAD
-      <div className="rounded-md bg-200 p-3 text-sm text-text-200 sm:p-4">
-=======
       <div className="rounded-md bg-bg-200 p-3 text-sm text-text-200 sm:p-4">
->>>>>>> 5cc269c7d7bb3e0f9bea78d37883bea822dffc4c
         <h3 className="mb-2 font-medium text-text-100">说明</h3>
         <p>此模拟器展示了心脏CT中的门控技术：</p>
         <ul className="mt-2 list-inside list-disc space-y-1">

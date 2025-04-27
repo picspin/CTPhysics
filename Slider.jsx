@@ -21,11 +21,7 @@ const Slider = ({
         </label>
       )}
       <div className="relative pt-1">
-<<<<<<< HEAD
-        <div className="relative h-2 w-full rounded-full bg-200">
-=======
         <div className="relative h-2 w-full rounded-full bg-bg-200">
->>>>>>> 5cc269c7d7bb3e0f9bea78d37883bea822dffc4c
           <div 
             className="absolute h-full rounded-full bg-gradient-to-r from-primary-100 to-primary-200 transition-all duration-300"
             style={{ width: `${percentage}%` }}

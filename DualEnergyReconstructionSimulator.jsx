@@ -89,7 +89,7 @@ const DualEnergyReconstructionSimulator = () => {
         />
         
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <div className="rounded-md border border-border bg-bg-100 p-4">
+          <div className="rounded-md border border-border-100 bg-bg-100 p-4">
             <div className="mb-2 text-sm font-medium text-text-100">常规CT图像</div>
             <div className="aspect-square w-full overflow-hidden rounded-md bg-black">
               <div className="relative h-full w-full">
@@ -132,7 +132,7 @@ const DualEnergyReconstructionSimulator = () => {
             </div>
           </div>
           
-          <div className="rounded-md border border-border bg-bg-100 p-4">
+          <div className="rounded-md border border-border-100 bg-bg-100 p-4">
             <div className="mb-2 text-sm font-medium text-text-100">双能CT重建</div>
             <div className="aspect-square w-full overflow-hidden rounded-md bg-black">
               <div className="relative h-full w-full">
@@ -194,7 +194,7 @@ const DualEnergyReconstructionSimulator = () => {
           </div>
         </div>
         
-        <div className="rounded-md border border-border bg-bg-100 p-4">
+        <div className="rounded-md border border-border-100 bg-bg-100 p-4">
           <div className="mb-2 text-sm font-medium text-text-100">材料分解</div>
           <div className="h-64 w-full md:h-72">
             <ResponsiveContainer width="100%" height="100%">
@@ -226,11 +226,7 @@ const DualEnergyReconstructionSimulator = () => {
         </div>
       </div>
       
-<<<<<<< HEAD
-      <div className="rounded-md bg-200 p-4 text-sm text-text-200">
-=======
       <div className="rounded-md bg-bg-200 p-4 text-sm text-text-200">
->>>>>>> 5cc269c7d7bb3e0f9bea78d37883bea822dffc4c
         <h3 className="mb-2 font-medium text-text-100">说明</h3>
         <p>此模拟器展示了双能CT的不同重建类型：</p>
         <ul className="mt-2 list-inside list-disc space-y-1">

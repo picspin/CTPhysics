@@ -115,11 +115,7 @@ const BackprojectionSimulator = () => {
         </div>
       </div>
       
-<<<<<<< HEAD
-      <div className="rounded-md bg-200 p-4 text-sm text-text-200">
-=======
       <div className="rounded-md bg-bg-200 p-4 text-sm text-text-200">
->>>>>>> 5cc269c7d7bb3e0f9bea78d37883bea822dffc4c
         <h3 className="mb-2 font-medium text-text-100">说明</h3>
         <p>此模拟器展示了CT重建中的反投影过程。左侧是原始图像，右侧是使用不同数量的投影角度进行反投影重建的结果。</p>
         <p className="mt-2">注意观察：随着投影数量的增加，重建图像变得更加清晰，但仍然存在模糊。这就是为什么实际CT重建中需要使用滤波反投影技术。</p>

@@ -61,11 +61,7 @@
   }
   
   body {
-<<<<<<< HEAD
-    @apply bg-200 text-text-100 antialiased;
-=======
     @apply bg-bg-200 text-text-100 antialiased;
->>>>>>> 5cc269c7d7bb3e0f9bea78d37883bea822dffc4c
     -webkit-tap-highlight-color: transparent; /* 移除移动设备点击高亮 */
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
@@ -86,7 +82,7 @@
   }
   
   ::-webkit-scrollbar-thumb {
-    @apply rounded-full bg-border-200 transition-colors hover:bg-primary-100/30;
+    @apply rounded-full bg-border-200 transition-colors hover:bg-primary-100 hover:bg-opacity-30;
   }
   
   /* 移动设备优化 */
@@ -168,7 +164,6 @@
   .animate-slideUp {
     animation: slideUp 0.5s ease-out forwards;
   }
-
 }
 
 /* 增强动画效果 */
@@ -205,7 +200,7 @@
 }
 
 .enhanced-card:hover {
-  @apply border-primary-100/30 shadow-md;
+  @apply border-primary-100 border-opacity-30 shadow-md;
   transform: translateY(-2px);
 }
 
@@ -236,8 +231,4 @@
   select {
     @apply min-h-[44px] min-w-[44px];
   }
-<<<<<<< HEAD
 }
-=======
-} 
->>>>>>> 5cc269c7d7bb3e0f9bea78d37883bea822dffc4c

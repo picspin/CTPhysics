@@ -16,18 +16,14 @@ const TabGroup = ({
             className={`whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-300 ${
               activeTab === tab.id
                 ? 'bg-primary-100 text-white shadow-md'
-<<<<<<< HEAD
-                : 'bg-200/70 text-text-200 hover:bg-300/50 hover:text-text-100'
-=======
-                : 'bg-bg-200/70 text-text-200 hover:bg-bg-300/50 hover:text-text-100'
->>>>>>> 5cc269c7d7bb3e0f9bea78d37883bea822dffc4c
+                : 'bg-bg-200 bg-opacity-70 text-text-200 hover:bg-bg-300 hover:bg-opacity-50 hover:text-text-100'
             }`}
           >
             {tab.label}
           </button>
         ))}
       </div>
-      <div className="mt-2 h-0.5 w-full bg-bg-300/50">
+      <div className="mt-2 h-0.5 w-full bg-bg-300 bg-opacity-50">
         {tabs.map((tab) => (
           <div
             key={tab.id}

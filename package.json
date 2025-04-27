@@ -16,12 +16,11 @@
     "recharts": "^2.10.3"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.4",
-    "@tailwindcss/typography": "^0.5.10",
-    "autoprefixer": "^10.4.21",
+    "@tailwindcss/typography": "^0.5.9",
+    "autoprefixer": "^10.4.14",
     "eslint": "^8.56.0",
     "eslint-config-next": "^14.1.0",
-    "postcss": "^8.5.3",
-    "tailwindcss": "^4.1.4"
+    "postcss": "^8.4.23",
+    "tailwindcss": "^3.3.0"
   }
 }
