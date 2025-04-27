@@ -1,0 +1,235 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* 主色调 - 更加鲜明的橙色系 */
+  --primary-100: #FF7A00;
+  --primary-200: #E56C00;
+  --primary-300: #B35300;
+  
+  /* 强调色 - 科技感蓝色 */
+  --accent-100: #3B82F6;
+  --accent-200: #1D4ED8;
+  --accent-300: #1E40AF;
+  
+  /* 文本颜色 */
+  --text-100: #1F2937;
+  --text-200: #4B5563;
+  --text-300: #9CA3AF;
+  
+  /* 背景颜色 */
+  --bg-100: #FFFFFF;
+  --bg-200: #F9FAFB;
+  --bg-300: #F3F4F6;
+  --bg-400: #E5E7EB;
+  
+  /* 边框颜色 */
+  --border-100: #E5E7EB;
+  --border-200: #D1D5DB;
+  
+  /* 阴影变量 - 更加精细的阴影效果 */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  
+  /* 过渡变量 */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* 模糊变量 */
+  --blur-sm: blur(4px);
+  --blur-md: blur(8px);
+  --blur-lg: blur(16px);
+  
+  /* 圆角变量 */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    text-size-adjust: 100%;
+    -webkit-text-size-adjust: 100%;
+    -moz-text-size-adjust: 100%;
+  }
+  
+  body {
+    @apply bg-200 text-text-100 antialiased;
+    -webkit-tap-highlight-color: transparent; /* 移除移动设备点击高亮 */
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-medium text-text-100 tracking-tight;
+  }
+  
+  /* 增强滚动条样式 */
+  ::-webkit-scrollbar {
+    @apply w-2;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-bg-300;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-border-200 transition-colors hover:bg-primary-100/30;
+  }
+  
+  /* 移动设备优化 */
+  @media (max-width: 640px) {
+    ::-webkit-scrollbar {
+      @apply w-1;
+    }
+    
+    input, select, textarea, button {
+      @apply text-base; /* 增大移动设备上的输入控件字体 */
+      font-size: 16px !important; /* 防止iOS缩放 */
+    }
+  }
+  
+  /* Firefox滚动条样式 */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-200) var(--bg-300);
+  }
+  
+  /* 确保图像和媒体元素响应式 */
+  img, video, canvas, svg {
+    @apply max-w-full h-auto;
+  }
+}
+
+@layer components {
+  /* 玻璃态卡片效果 */
+  .glass-card {
+    @apply relative overflow-hidden rounded-xl border border-white/20 bg-white/10 backdrop-blur-md;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* 微妙的悬浮效果 */
+  .hover-lift {
+    @apply transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-lg;
+    will-change: transform, box-shadow;
+  }
+  
+  /* 渐变边框效果 */
+  .gradient-border {
+    @apply relative rounded-xl p-[1px] before:absolute before:inset-0 before:rounded-xl before:bg-gradient-to-r before:from-primary-100 before:to-accent-100 before:opacity-70 before:blur-sm;
+  }
+  
+  /* 内容卡片增强 */
+  .content-card {
+    @apply rounded-xl border border-border-100 bg-bg-100 p-6 shadow-sm transition-all duration-300 hover:shadow-md;
+  }
+  
+  /* 响应式布局辅助类 */
+  .responsive-container {
+    @apply w-full px-4 mx-auto sm:px-6 md:px-8 lg:px-10;
+    max-width: min(100%, 1280px);
+  }
+  
+  /* 响应式网格布局 */
+  .responsive-grid {
+    @apply grid gap-4 sm:gap-6 md:gap-8;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+  }
+  
+  /* 移动设备优化的卡片 */
+  @media (max-width: 640px) {
+    .content-card {
+      @apply p-4;
+    }
+  }
+  
+  /* 无障碍焦点样式 */
+  .focus-ring {
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-100 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-100;
+  }
+  
+  /* 动画类 */
+  .animate-fadeIn {
+    animation: fadeIn 0.5s ease-out forwards;
+  }
+  
+  .animate-slideUp {
+    animation: slideUp 0.5s ease-out forwards;
+  }
+
+}
+
+/* 增强动画效果 */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.5s ease-out forwards;
+}
+
+/* 增强响应式间距 */
+.section-spacing {
+  @apply my-4 md:my-6 lg:my-8;
+}
+
+.content-spacing {
+  @apply space-y-4 md:space-y-6;
+}
+
+/* 增强卡片阴影和过渡 */
+.enhanced-card {
+  @apply rounded-xl border border-border-100 bg-bg-100 p-6 shadow-sm transition-all duration-300;
+}
+
+.enhanced-card:hover {
+  @apply border-primary-100/30 shadow-md;
+  transform: translateY(-2px);
+}
+
+/* 移动设备优化的增强卡片 */
+@media (max-width: 640px) {
+  .enhanced-card {
+    @apply p-4;
+  }
+}
+
+/* 触摸设备优化 */
+@media (hover: none) {
+  .hover-lift:hover {
+    transform: none;
+    box-shadow: none;
+  }
+  
+  .enhanced-card:hover {
+    transform: none;
+    @apply border-border-100 shadow-sm;
+  }
+  
+  /* 增加触摸目标大小 */
+  button, 
+  [role="button"],
+  input[type="checkbox"],
+  input[type="radio"],
+  select {
+    @apply min-h-[44px] min-w-[44px];
+  }
+}
