@@ -153,7 +153,11 @@ const XrayAttenuationSimulator = () => {
         </div>
       </div>
       
+<<<<<<< HEAD
       <div className="rounded-md bg-200 p-3 text-sm text-text-200 sm:p-4">
+=======
+      <div className="rounded-md bg-bg-200 p-3 text-sm text-text-200 sm:p-4">
+>>>>>>> 5cc269c7d7bb3e0f9bea78d37883bea822dffc4c
         <h3 className="mb-2 font-medium text-text-100">说明</h3>
         <p>此模拟器展示了不同组织在不同X射线能量下的衰减特性。注意碘在33 keV处的K边缘效应，这是双能CT的基础。</p>
         <p className="mt-2">图表中的衰减系数是模拟值，用于教育目的。在实际临床应用中，这些值会根据具体的组织成分和密度而变化。</p>

@@ -42,7 +42,11 @@ const Header = () => {
           </a>
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
+<<<<<<< HEAD
             className="flex h-10 w-10 items-center justify-center rounded-xl p-2 text-text-100 transition-colors hover:bg-200/70 hover:text-primary-100 focus:outline-none focus:ring-2 focus:ring-primary-100/50"
+=======
+            className="flex h-10 w-10 items-center justify-center rounded-xl p-2 text-text-100 transition-colors hover:bg-bg-200/70 hover:text-primary-100 focus:outline-none focus:ring-2 focus:ring-primary-100/50"
+>>>>>>> 5cc269c7d7bb3e0f9bea78d37883bea822dffc4c
             aria-label="Toggle menu"
             aria-expanded={isMenuOpen}
           >
@@ -73,7 +77,11 @@ const Header = () => {
                   className={`block rounded-xl px-4 py-3 text-base font-medium transition-all duration-300 ${
                     pathname === item.path
                       ? 'bg-primary-100/10 text-primary-100 shadow-sm'
+<<<<<<< HEAD
                       : 'hover:bg-200/70 text-text-100 hover:text-primary-100'
+=======
+                      : 'hover:bg-bg-200/70 text-text-100 hover:text-primary-100'
+>>>>>>> 5cc269c7d7bb3e0f9bea78d37883bea822dffc4c
                   }`}
                   onClick={handleNavClick}
                 >

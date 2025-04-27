@@ -105,7 +105,11 @@ const HelicalCTSimulator = () => {
             </Button>
           </div>
           
+<<<<<<< HEAD
           <div className="h-8 w-full overflow-hidden rounded-full bg-200">
+=======
+          <div className="h-8 w-full overflow-hidden rounded-full bg-bg-200">
+>>>>>>> 5cc269c7d7bb3e0f9bea78d37883bea822dffc4c
             <motion.div 
               className="h-full bg-primary-100"
               style={{ width: `${scanProgress}%` }}
@@ -166,7 +170,11 @@ const HelicalCTSimulator = () => {
         </div>
       </div>
       
+<<<<<<< HEAD
       <div className="rounded-md bg-200 p-4 text-sm text-text-200">
+=======
+      <div className="rounded-md bg-bg-200 p-4 text-sm text-text-200">
+>>>>>>> 5cc269c7d7bb3e0f9bea78d37883bea822dffc4c
         <h3 className="mb-2 font-medium text-text-100">说明</h3>
         <p>此模拟器展示了螺旋CT的扫描过程。螺距是指床移动距离与准直器宽度的比值：</p>
         <ul className="mt-2 list-inside list-disc space-y-1">

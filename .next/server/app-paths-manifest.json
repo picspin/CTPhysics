@@ -1,0 +1,9 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/dual-energy/page": "app/dual-energy/page.js",
+  "/cardiac/page": "app/cardiac/page.js",
+  "/dose/page": "app/dose/page.js",
+  "/page": "app/page.js",
+  "/questions/page": "app/questions/page.js",
+  "/reconstruction/page": "app/reconstruction/page.js"
+}

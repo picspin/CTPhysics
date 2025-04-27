@@ -61,7 +61,11 @@
   }
   
   body {
+<<<<<<< HEAD
     @apply bg-200 text-text-100 antialiased;
+=======
+    @apply bg-bg-200 text-text-100 antialiased;
+>>>>>>> 5cc269c7d7bb3e0f9bea78d37883bea822dffc4c
     -webkit-tap-highlight-color: transparent; /* 移除移动设备点击高亮 */
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
@@ -232,4 +236,8 @@
   select {
     @apply min-h-[44px] min-w-[44px];
   }
+<<<<<<< HEAD
 }
+=======
+} 
+>>>>>>> 5cc269c7d7bb3e0f9bea78d37883bea822dffc4c
