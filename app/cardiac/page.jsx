@@ -1,11 +1,17 @@
 'use client';
 
 import React from 'react';
-import PageHeader from '../../PageHeader';
-import SectionCard from '../../SectionCard';
-import KeyPoints from '../../KeyPoints';
-import SimulatorContainer from '../../SimulatorContainer';
-import CardiacGatingSimulator from '../../CardiacGatingSimulator';
+import PageHeader from '../../ui/PageHeader';
+import SectionCard from '../../ui/SectionCard';
+import KeyPoints from '../../ui/KeyPoints';
+import SimulatorContainer from '../../ui/SimulatorContainer';
+import dynamic from 'next/dynamic';
+
+// 使用dynamic导入组件，禁用SSR以避免导入错误
+const CardiacGatingSimulator = dynamic(
+  () => import('../../CardiacGatingSimulator'),
+  { ssr: false }
+);
 
 // 从JSON文件导入数据
 import cardiacData from '../../cardiac.json';

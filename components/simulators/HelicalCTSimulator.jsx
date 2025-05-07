@@ -1,37 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import SimulatorContainer from './ui/SimulatorContainer';
-import Select from './ui/Select';
-import Slider from './ui/Slider';
-import Button from './ui/Button';
+import SimulatorContainer from '../../ui/SimulatorContainer';
+import Select from '../../ui/Select';
+import Slider from '../../ui/Slider';
+import Button from '../../ui/Button';
 
 const HelicalCTSimulator = ({ options }) => {
   const [selectedImage, setSelectedImage] = useState(options?.images?.[0]?.id || 'body');
-  const [pitch, setPitch] = useState(1);
+  const [pitch, setPitch] = useState(1.0);
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
   const [slices, setSlices] = useState([]);
   
   const images = options?.images || [
-    { id: 'body', name: '人体' },
-    { id: 'ctsim_a30', name: 'CT模拟30°' },
-    { id: 'ctsim_a60', name: 'CT模拟60°' },
-    { id: 'ctsim_a90', name: 'CT模拟90°' }
+    { id: 'body', name: '人体模型' },
+    { id: 'helical_30', name: '螺旋CT 30°' },
+    { id: 'helical_60', name: '螺旋CT 60°' },
+    { id: 'helical_90', name: '螺旋CT 90°' }
   ];
   
-  const pitchValues = [
-    { value: 0.5, name: '0.5 (重叠扫描)' },
-    { value: 1, name: '1.0 (无间隙扫描)' },
-    { value: 1.5, name: '1.5 (小间隙扫描)' },
-    { value: 2, name: '2.0 (大间隙扫描)' }
+  const pitchValues = options?.pitchValues || [
+    { value: 0.5, name: '0.5 (重叠扫描)', description: '相邻螺旋之间有50%的重叠，图像质量高但辐射剂量大' },
+    { value: 1.0, name: '1.0 (无间隙扫描)', description: '相邻螺旋之间刚好无间隙，平衡了图像质量和辐射剂量' },
+    { value: 1.5, name: '1.5 (小间隙扫描)', description: '相邻螺旋之间有小间隙，扫描速度较快，可能有轻微信息丢失' },
+    { value: 2.0, name: '2.0 (大间隙扫描)', description: '相邻螺旋之间有大间隙，扫描速度快但可能丢失信息' }
   ];
   
-  // 不同螺距对应的描述
-  const pitchDescriptions = {
-    0.5: '螺距0.5：相邻螺旋之间有50%的重叠，图像质量高但辐射剂量大',
-    1: '螺距1.0：相邻螺旋之间刚好无间隙，平衡了图像质量和辐射剂量',
-    1.5: '螺距1.5：相邻螺旋之间有小间隙，扫描速度较快，可能有轻微信息丢失',
-    2: '螺距2.0：相邻螺旋之间有大间隙，扫描速度快但可能丢失信息'
+  // 获取当前螺距的描述
+  const getCurrentPitchDescription = () => {
+    const pitchValue = parseFloat(pitch);
+    const pitchOption = pitchValues.find(p => parseFloat(p.value) === pitchValue);
+    return pitchOption?.description || '';
   };
 
   // 开始扫描动画
@@ -92,7 +91,7 @@ const HelicalCTSimulator = ({ options }) => {
 
   return (
     <SimulatorContainer title="螺旋CT模拟器">
-      <div className="mb-4 space-y-4">
+      <div className="space-y-4">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Select 
             label="选择扫描对象" 
@@ -103,13 +102,13 @@ const HelicalCTSimulator = ({ options }) => {
           
           <Select 
             label="螺距 (Pitch)" 
-            options={pitchValues} 
+            options={pitchValues.map(p => ({ id: p.value, name: p.name }))} 
             value={pitch} 
             onChange={(value) => setPitch(parseFloat(value))} 
           />
         </div>
         
-        <div className="rounded-md border border-border bg-bg-100 p-4">
+        <div className="mt-4 rounded-md border border-border bg-bg-100 p-4">
           <div className="mb-2 flex items-center justify-between">
             <span className="text-sm font-medium text-text-100">扫描进度</span>
  
@@ -133,56 +132,40 @@ const HelicalCTSimulator = ({ options }) => {
           </div>
           
           <div className="mt-6 flex flex-col items-center">
-            <div className="relative h-64 w-full max-w-md overflow-hidden rounded-md bg-black">
+            <div className="relative h-72 w-full max-w-md overflow-hidden rounded-md bg-black md:h-80">
               {/* 患者体模 */}
               {selectedImage && (
                 <div className="absolute left-1/2 top-0 h-full w-full -translate-x-1/2 flex justify-center items-center">
                   <img 
-                    src={`/images/${selectedImage}.${selectedImage.includes('ctsim_a') ? 'gif' : 'png'}`} 
+                    src={`/images/${selectedImage}.${selectedImage.includes('helical_') ? 'gif' : 'png'}`} 
                     alt={images.find(img => img.id === selectedImage)?.name || '扫描对象'}
                     className="h-full object-contain"
                     onError={(e) => {
-                      // 尝试多种可能的文件名格式
-                      const possibleFilenames = [
-                        // 原始格式
-                        `${selectedImage}`,
-                        // 从ctsim_a转换为helical_格式
-                        selectedImage.includes('ctsim_a') ? 
-                          `${selectedImage.replace('ctsim_a', 'helical_')}` : selectedImage,
-                        // 从xrayphysics.com网站格式
-                        selectedImage.includes('ctsim_a') ? 
-                          `helical_${selectedImage.replace('ctsim_a', '')}` : selectedImage
-                      ];
+                      // 尝试多种可能的文件名格式和扩展名
+                      const possibleExtensions = ['png', 'gif', 'jpg', 'jpeg'];
+                      const currentExt = e.target.src.split('.').pop();
+                      const basePath = `/images/${selectedImage}`;
                       
                       // 尝试不同的扩展名
-                      const extensions = ['png', 'gif', 'jpg', 'jpeg'];
-                      
-                      // 创建所有可能的文件路径组合
-                      const possiblePaths = [];
-                      possibleFilenames.forEach(filename => {
-                        extensions.forEach(ext => {
-                          possiblePaths.push(`/images/${filename}.${ext}`);
-                        });
-                      });
-                      
-                      // 尝试加载第一个可能的路径
-                      if (possiblePaths.length > 0) {
-                        console.log(`尝试加载图像: ${possiblePaths[0]}`);
-                        e.target.src = possiblePaths[0];
-                        
-                        // 设置错误处理程序以尝试下一个路径
-                        let pathIndex = 1;
-                        e.target.onerror = () => {
-                          if (pathIndex < possiblePaths.length) {
-                            console.log(`尝试加载图像: ${possiblePaths[pathIndex]}`);
-                            e.target.src = possiblePaths[pathIndex];
-                            pathIndex++;
-                          } else {
-                            // 如果所有路径都失败，隐藏图像
-                            console.error(`无法加载图像: ${selectedImage}`);
+                      const nextExtIndex = possibleExtensions.indexOf(currentExt) + 1;
+                      if (nextExtIndex < possibleExtensions.length) {
+                        const nextExt = possibleExtensions[nextExtIndex];
+                        console.log(`尝试加载图像: ${basePath}.${nextExt}`);
+                        e.target.src = `${basePath}.${nextExt}`;
+                      } else {
+                        // 如果所有扩展名都尝试过，尝试备用图像
+                        const fallbackImage = 'body';
+                        if (selectedImage !== fallbackImage) {
+                          console.log(`尝试加载备用图像: ${fallbackImage}`);
+                          e.target.src = `/images/${fallbackImage}.png`;
+                          e.target.onerror = () => {
+                            console.error(`无法加载任何图像`);
                             e.target.style.display = 'none';
-                          }
-                        };
+                          };
+                        } else {
+                          console.error(`无法加载图像`);
+                          e.target.style.display = 'none';
+                        }
                       }
                     }}
                   />
@@ -251,22 +234,21 @@ const HelicalCTSimulator = ({ options }) => {
         </div>
       </div>
       
-      <div className="rounded-md bg-bg-200 p-4 text-sm text-text-200">
+      <div className="mt-4 rounded-md bg-bg-200 p-4 text-sm text-text-200">
         <h3 className="mb-2 font-medium text-text-100">说明</h3>
         <p>此模拟器展示了螺旋CT的扫描过程。在螺旋CT中，X射线管和探测器连续旋转，同时患者床持续移动，形成螺旋扫描路径。</p>
         
         <div className="mt-2 space-y-2">
           <p><strong>螺距</strong>是指床移动距离与准直器宽度的比值：</p>
           <ul className="list-inside list-disc space-y-1">
-            <li>螺距 = 0.5：相邻螺旋之间有50%的重叠，图像质量高但辐射剂量大</li>
-            <li>螺距 = 1.0：相邻螺旋之间刚好无间隙，平衡了图像质量和辐射剂量</li>
-            <li>螺距 = 1.5：相邻螺旋之间有小间隙，扫描速度较快，可能有轻微信息丢失</li>
-            <li>螺距 = 2.0：相邻螺旋之间有大间隙，扫描速度快但可能丢失信息</li>
+            {pitchValues.map((pv) => (
+              <li key={pv.value}>螺距 = {pv.value}：{pv.description}</li>
+            ))}
           </ul>
         </div>
         
         <div className="mt-3">
-          <p><strong>当前螺距：</strong> {pitchDescriptions[pitch]}</p>
+          <p><strong>当前螺距：</strong> {getCurrentPitchDescription()}</p>
           <p className="mt-1"><strong>获取的切片数：</strong> {slices.length} 个</p>
         </div>
       </div>

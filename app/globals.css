@@ -232,3 +232,25 @@
     @apply min-h-[44px] min-w-[44px];
   }
 }
+
+
+/* 确保交互元素可点击 */
+.simulator-container {
+  position: relative;
+  z-index: 1;
+}
+
+.simulator-container canvas,
+.simulator-container svg,
+.simulator-container button,
+.simulator-container input,
+.simulator-container select {
+  position: relative;
+  z-index: 2;
+  pointer-events: auto;
+}
+
+/* 修复阴影问题 */
+.gradient-border::before {
+  z-index: 0;
+}

@@ -1,11 +1,11 @@
 'use client';
 
 import React from 'react';
-import PageHeader from '../../PageHeader';
-import SectionCard from '../../SectionCard';
-import KeyPoints from '../../KeyPoints';
-import SimulatorContainer from '../../SimulatorContainer';
-import RadiationDoseSimulator from '../../RadiationDoseSimulator';
+import PageHeader from '../../ui/PageHeader';
+import SectionCard from '../../ui/SectionCard';
+import KeyPoints from '../../ui/KeyPoints';
+import SimulatorContainer from '../../ui/SimulatorContainer';
+import RadiationDoseSimulator from '../../components/simulators/RadiationDoseSimulator';
 
 // 从JSON文件导入数据
 import doseData from '../../dose.json';

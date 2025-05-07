@@ -1,16 +1,16 @@
 'use client';
 
 import React from 'react';
-import PageHeader from '../../PageHeader';
-import SectionCard from '../../SectionCard';
-import KeyPoints from '../../KeyPoints';
-import SimulatorContainer from '../../SimulatorContainer';
-import TabGroup from '../../TabGroup';
-import BackprojectionSimulator from '../../BackprojectionSimulator';
-import HelicalCTSimulator from '../../HelicalCTSimulator';
+import PageHeader from '../../ui/PageHeader'; // Adjusted path
+import SectionCard from '../../ui/SectionCard'; // Adjusted path
+import KeyPoints from '../../ui/KeyPoints'; // Adjusted path
+import SimulatorContainer from '../../ui/SimulatorContainer'; // Adjusted path
+import TabGroup from '../../ui/TabGroup'; // Adjusted path
+import BackprojectionSimulator from '../../components/simulators/BackprojectionSimulator'; // Adjusted path
+import HelicalCTSimulator from '../../components/simulators/HelicalCTSimulator'; // Adjusted path
 
 // 从JSON文件导入数据
-import reconstructionData from '../../reconstruction.json';
+import reconstructionData from '../../reconstruction.json'; // Adjusted path
 
 export default function ReconstructionPage() {
   return (
@@ -43,13 +43,14 @@ export default function ReconstructionPage() {
             { id: 'backprojection', label: '反投影重建' },
             { id: 'helical', label: '螺旋CT' },
           ]}
+          defaultTab="backprojection"
         >
-          <div id="backprojection" className="p-4">
-            <BackprojectionSimulator />
-          </div>
-          <div id="helical" className="p-4">
-            <HelicalCTSimulator />
-          </div>
+          {(activeTab) => (
+            <div className="p-4">
+              {activeTab === 'backprojection' && <BackprojectionSimulator options={reconstructionData.sections.find(s => s.id === 'backprojection')?.simulator?.options} />}
+              {activeTab === 'helical' && <HelicalCTSimulator options={reconstructionData.sections.find(s => s.id === 'helical-ct')?.simulator?.options} />}
+            </div>
+          )}
         </TabGroup>
       </SimulatorContainer>
     </div>

@@ -1,13 +1,13 @@
 'use client';
 
 import React from 'react';
-import PageHeader from '../../PageHeader';
-import SectionCard from '../../SectionCard';
-import KeyPoints from '../../KeyPoints';
-import SimulatorContainer from '../../SimulatorContainer';
-import DualEnergyReconstructionSimulator from '../../DualEnergyReconstructionSimulator';
-import XrayAttenuationSimulator from '../../XrayAttenuationSimulator';
-import TabGroup from '../../TabGroup';
+import PageHeader from '../../ui/PageHeader';
+import SectionCard from '../../ui/SectionCard';
+import KeyPoints from '../../ui/KeyPoints';
+import SimulatorContainer from '../../ui/SimulatorContainer';
+import DualEnergyReconstructionSimulator from '../../components/simulators/DualEnergyReconstructionSimulator';
+import XrayAttenuationSimulator from '../../components/simulators/XrayAttenuationSimulator';
+import TabGroup from '../../ui/TabGroup';
 
 // 从JSON文件导入数据
 import dualEnergyData from '../../dual-energy.json';

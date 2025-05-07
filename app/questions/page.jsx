@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import PageHeader from '../../PageHeader';
-import SectionCard from '../../SectionCard';
+import PageHeader from '../../ui/PageHeader';
+import SectionCard from '../../ui/SectionCard';
 
 // 从JSON文件导入数据
 import questionsData from '../../questions.json';

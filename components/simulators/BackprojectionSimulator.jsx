@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import Select from './ui/Select';
-import Slider from './ui/Slider';
-import Button from './ui/Button';
+import Select from '../../ui/Select';
+import Slider from '../../ui/Slider';
+import Button from '../../ui/Button';
 
 const BackprojectionSimulator = ({ options }) => {
   // 使用options中的配置，如果没有则使用默认值
@@ -46,6 +46,7 @@ const BackprojectionSimulator = ({ options }) => {
   
   // 开始动画
   const startAnimation = () => {
+    console.log('startAnimation called. Current state:', { isAnimating }); // Add log
     if (isAnimating) {
       // 如果已经在动画中，则停止
       clearTimeout(animationRef.current);
@@ -96,6 +97,11 @@ const BackprojectionSimulator = ({ options }) => {
     return `/images/${selectedImage}_${isFiltered ? 'filtered' : 'unfiltered'}_${projectionCount}.png`;
   };
 
+  // Handler for checkbox
+  const handleFilterChange = (e) => {
+    console.log('Filter checkbox changed:', e.target.checked); // Add log
+    setIsFiltered(e.target.checked);
+  };
   // 动态生成投影线的样式
   const getProjectionLineStyle = (angle, beamAngle) => {
     return {
@@ -119,20 +125,26 @@ const BackprojectionSimulator = ({ options }) => {
 
   return (
     <div className="space-y-6">
-      <div className="mb-4 space-y-4">
+      <div className="space-y-4">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Select 
             label="选择图像" 
             options={images} 
             value={selectedImage} 
-            onChange={setSelectedImage} 
+            onChange={(value) => {
+              console.log('Image selected:', value); // Add log
+              setSelectedImage(value);
+            }} 
           />
           
           <Select 
             label="扇形束角度" 
             options={fanBeamAngles} 
             value={fanBeamAngle} 
-            onChange={(value) => setFanBeamAngle(parseInt(value))} 
+            onChange={(value) => {
+              console.log('Fan beam angle selected:', value); // Add log
+              setFanBeamAngle(parseInt(value));
+            }} 
           />
         </div>
         
@@ -142,8 +154,11 @@ const BackprojectionSimulator = ({ options }) => {
               label={`投影数量: ${projectionCount}`} 
               min={1} 
               max={16} 
-              value={projectionCount} 
-              onChange={setProjectionCount} 
+              value={projectionCount}
+              onChange={(value) => {
+                console.log('Projection count changed:', value); // Add log
+                setProjectionCount(value);
+              }} 
               step={1} 
             />
           </div>
@@ -153,7 +168,7 @@ const BackprojectionSimulator = ({ options }) => {
               <input
                 type="checkbox"
                 checked={isFiltered}
-                onChange={() => setIsFiltered(!isFiltered)}
+                onChange={handleFilterChange} // Use handler
                 className="h-4 w-4 rounded border-gray-300 text-primary-100 focus:ring-primary-100"
               />
               <span className="text-sm font-medium text-text-100">滤波反投影</span>
@@ -170,7 +185,7 @@ const BackprojectionSimulator = ({ options }) => {
         </div>
         
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <div className="rounded-md border border-border-100 bg-bg-100 p-4">
+          <div className="rounded-md border border-border bg-bg-100 p-4">
             <div className="mb-2 text-sm font-medium text-text-100">原始图像</div>
             <div className="aspect-square w-full overflow-hidden rounded-md bg-black">
               <div className="relative h-full w-full">
@@ -201,7 +216,7 @@ const BackprojectionSimulator = ({ options }) => {
             </div>
           </div>
           
-          <div className="rounded-md border border-border-100 bg-bg-100 p-4">
+          <div className="rounded-md border border-border bg-bg-100 p-4">
             <div className="mb-2 text-sm font-medium text-text-100">
               {isFiltered ? '滤波反投影重建' : '反投影重建'}
             </div>
@@ -266,7 +281,7 @@ const BackprojectionSimulator = ({ options }) => {
         </div>
       </div>
       
-      <div className="rounded-md bg-bg-200 p-4 text-sm text-text-200">
+      <div className="mt-4 rounded-md bg-bg-200 p-4 text-sm text-text-200">
         <h3 className="mb-2 font-medium text-text-100">说明</h3>
         <p>此模拟器展示了CT重建中的反投影过程。左侧是原始图像，右侧是使用不同数量的投影角度进行反投影重建的结果。</p>
         <p className="mt-2">注意观察：</p>
@@ -277,7 +292,7 @@ const BackprojectionSimulator = ({ options }) => {
           <li>扇形束角度影响投影的覆盖范围</li>
         </ul>
         <div className="mt-4 flex items-center justify-center">
-          <div className="rounded-md border border-border-100 bg-bg-100 p-2">
+          <div className="rounded-md border border-border bg-bg-100 p-2">
             <img 
               src={`/images/${getKernelImage()}`} 
               alt="滤波内核" 

@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import SimulatorContainer from './ui/SimulatorContainer';
-import Select from './ui/Select';
-import Slider from './ui/Slider';
-import Button from './ui/Button';
+import SimulatorContainer from '../../ui/SimulatorContainer';
+import Select from '../../ui/Select';
+import Slider from '../../ui/Slider';
+import Button from '../../ui/Button';
 
 // 从cardiac.json导入门控类型数据
-import cardiacData from './cardiac.json';
+import cardiacData from '../../cardiac.json';
 
 const CardiacGatingSimulator = () => {
   // 从cardiac.json获取门控类型数据
@@ -151,7 +151,7 @@ const CardiacGatingSimulator = () => {
 
   return (
     <SimulatorContainer title="心脏门控模拟器">
-      <div className="mb-4 space-y-4">
+      <div className="space-y-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Select 
             label="门控类型" 
@@ -170,7 +170,7 @@ const CardiacGatingSimulator = () => {
           />
         </div>
         
-        <div className="rounded-md border border-border-100 bg-bg-100 p-3 sm:p-4">
+        <div className="rounded-md border border-border bg-bg-100 p-4">
           <div className="mb-2 flex items-center justify-between">
             <span className="text-sm font-medium text-text-100">ECG波形与数据采集</span>
             <Button 
@@ -182,7 +182,7 @@ const CardiacGatingSimulator = () => {
             </Button>
           </div>
           
-          <div className="relative h-56 w-full overflow-hidden rounded-md bg-black p-2 sm:h-64">
+          <div className="relative h-64 w-full overflow-hidden rounded-md bg-black p-2 sm:h-72">
             {/* ECG网格背景 */}
             <div className="absolute inset-0 grid grid-cols-10 grid-rows-10">
               {Array.from({ length: 100 }).map((_, i) => (
@@ -249,7 +249,7 @@ const CardiacGatingSimulator = () => {
         </div>
       </div>
       
-      <div className="rounded-md bg-bg-200 p-3 text-sm text-text-200 sm:p-4">
+      <div className="mt-4 rounded-md bg-bg-200 p-4 text-sm text-text-200">
         <h3 className="mb-2 font-medium text-text-100">说明</h3>
         <p>此模拟器展示了心脏CT中的门控技术：</p>
         <ul className="mt-2 list-inside list-disc space-y-1">
