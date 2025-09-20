@@ -99,17 +99,17 @@ const HelicalCTSimulator = ({ options }) => {
     const w = el.clientWidth, h = el.clientHeight; el.width = w; el.height = h;
     ctx.clearRect(0,0,w,h);
     if (!(isScanning || scanProgress > 0)) return;
-    const y = h/2;
-    const x = w - (scanProgress/100) * w;
+    const y = h*0.3;
+    const x = w - (scanProgress/100) * (w*0.9) - w*0.05;
     ctx.save();
     ctx.translate(x, y);
     // ring
-    ctx.strokeStyle = '#2563EB'; ctx.lineWidth = 4; ctx.beginPath(); ctx.ellipse(0,0,96,24,0,0,Math.PI*2); ctx.stroke();
+    ctx.strokeStyle = '#2563EB'; ctx.lineWidth = 4; ctx.beginPath(); ctx.ellipse(0,0,24,96,0,0,Math.PI*2); ctx.stroke();
     // rotating source/detector
     const turns = 6 / Math.max(0.5, pitch);
     const ang = (scanProgress/100) * turns * Math.PI * 2;
-    const rx = 96*Math.cos(ang), ry = 24*Math.sin(ang);
-    const dx = 96*Math.cos(ang+Math.PI), dy = 24*Math.sin(ang+Math.PI);
+    const rx = 24*Math.cos(ang), ry = 96*Math.sin(ang);
+    const dx = 24*Math.cos(ang+Math.PI), dy = 96*Math.sin(ang+Math.PI);
     // beam
     if (isScanning) { ctx.globalAlpha = 0.3; ctx.strokeStyle = '#0EA5E9'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(rx,ry); ctx.lineTo(dx,dy); ctx.stroke(); ctx.globalAlpha = 1; }
     // markers
@@ -229,6 +229,18 @@ const HelicalCTSimulator = ({ options }) => {
         <div className="mt-3">
           <p><strong>当前螺距：</strong> {getCurrentPitchDescription()}</p>
           <p className="mt-1"><strong>获取的切片数：</strong> {slices.length} 个</p>
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-md border border-border bg-bg-100 p-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <Select label="螺距图示 (Pitch)" options={[{id:'0.5',name:'0.5'},{id:'1.0',name:'1.0'},{id:'1.5',name:'1.5'},{id:'2.0',name:'2.0'}]} value={String(pitchIllustration)} onChange={(v)=>setPitchIllustration(parseFloat(v))} />
+          <div className="text-sm text-text-200">
+            <p>螺距越小（小于1），图像重叠更多，剂量较高；螺距越大（大于1），扫描更快但可能丢失信息，剂量较低。</p>
+          </div>
+        </div>
+        <div className="mt-4 flex items-center justify-center">
+          <img src={`https://www.xrayphysics.com/ctsim_l${pitchIllustration}.PNG`} alt={`Pitch ${pitchIllustration}`} className="max-h-64" onError={(e)=>{e.target.style.display='none';}} />
         </div>
       </div>
 
