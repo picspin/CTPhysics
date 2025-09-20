@@ -13,17 +13,10 @@ const BackprojectionSimulator = ({ options }) => {
     { id: 'abdomen', name: '腹部' }
   ];
   
-  const defaultFanBeamAngles = [
-    { value: 30, name: '30度' },
-    { value: 60, name: '60度' },
-    { value: 90, name: '90度' }
-  ];
-  
   const images = options?.images || defaultImages;
-  const fanBeamAngles = options?.fanBeamAngles || defaultFanBeamAngles;
   
   const [selectedImage, setSelectedImage] = useState(images[0]?.id || 'phantom');
-  const [fanBeamAngle, setFanBeamAngle] = useState(fanBeamAngles[0]?.value || 60);
+  const [fanBeamAngle] = useState(90);
   const [projectionCount, setProjectionCount] = useState(4);
   const [isFiltered, setIsFiltered] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -148,15 +141,7 @@ const BackprojectionSimulator = ({ options }) => {
             }} 
           />
           
-          <Select 
-            label="扇形束角度" 
-            options={fanBeamAngles} 
-            value={fanBeamAngle} 
-            onChange={(value) => {
-              console.log('Fan beam angle selected:', value); // Add log
-              setFanBeamAngle(parseInt(value));
-            }} 
-          />
+          {/* 扇形束角度移动到FBP模拟器 */}
         </div>
         
         <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-x-4 sm:space-y-0">

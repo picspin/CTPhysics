@@ -89,6 +89,7 @@ export default function FilteredBackprojectionSimulator() {
   const [N, setN] = useState(64);
   const [projections, setProjections] = useState(60);
   const [detectors, setDetectors] = useState(64);
+  const [fanAngle, setFanAngle] = useState(30);
   const [kernelType, setKernelType] = useState('ramp');
   const [step, setStep] = useState(0); // progressive backprojection
 
@@ -200,6 +201,7 @@ export default function FilteredBackprojectionSimulator() {
           <Slider label={`投影数: ${projections}`} min={30} max={180} step={15} value={projections} onChange={setProjections} />
           <Slider label={`探测器数: ${detectors}`} min={32} max={128} step={16} value={detectors} onChange={setDetectors} />
           <Select label="滤波核" options={[{id:'ramp',name:'Ramp'}]} value={kernelType} onChange={setKernelType} />
+          <Select label="扇束角 (Fan)" options={[{id:30,name:'30°'},{id:60,name:'60°'},{id:90,name:'90°'}]} value={fanAngle} onChange={(v)=>setFanAngle(parseInt(v))} />
           <Slider label={`反投影进度: 使用前 ${Math.min(step, projections)} 个角度`} min={1} max={projections} step={1} value={Math.min(step, projections)} onChange={setStep} />
           <div className="text-xs text-text-200">拖动“反投影进度”观察角度累积如何改善重建。
           </div>

@@ -196,40 +196,12 @@ const HelicalCTSimulator = ({ options }) => {
             <div ref={scanAreaRef} className="relative h-72 w-full max-w-md overflow-hidden rounded-md bg-black md:h-80">
               {/* 患者体模 */}
               {selectedImage && (
-                <div className="absolute left-1/2 top-0 h-full w-full -translate-x-1/2 flex justify-center items-center"
-                     style={{ transform: `translate(-50%, ${-((scanProgress/100) * scanAreaHeight - scanAreaHeight/2)}px)` }}>
+                <div className="absolute left-1/2 top-0 h-full w-full -translate-x-1/2 flex justify-center items-center">
                   <img 
-                    src={`/images/${selectedImage}.${selectedImage.includes('helical_') ? 'gif' : 'png'}`} 
+                    src={`/images/${selectedImage}.png`} 
                     alt={images.find(img => img.id === selectedImage)?.name || '扫描对象'}
                     className="h-full object-contain"
-                    onError={(e) => {
-                      // 尝试多种可能的文件名格式和扩展名
-                      const possibleExtensions = ['png', 'gif', 'jpg', 'jpeg'];
-                      const currentExt = e.target.src.split('.').pop();
-                      const basePath = `/images/${selectedImage}`;
-                      
-                      // 尝试不同的扩展名
-                      const nextExtIndex = possibleExtensions.indexOf(currentExt) + 1;
-                      if (nextExtIndex < possibleExtensions.length) {
-                        const nextExt = possibleExtensions[nextExtIndex];
-                        console.log(`尝试加载图像: ${basePath}.${nextExt}`);
-                        e.target.src = `${basePath}.${nextExt}`;
-                      } else {
-                        // 如果所有扩展名都尝试过，尝试备用图像
-                        const fallbackImage = 'body';
-                        if (selectedImage !== fallbackImage) {
-                          console.log(`尝试加载备用图像: ${fallbackImage}`);
-                          e.target.src = `/images/${fallbackImage}.png`;
-                          e.target.onerror = () => {
-                            console.error(`无法加载任何图像`);
-                            e.target.style.display = 'none';
-                          };
-                        } else {
-                          console.error(`无法加载图像`);
-                          e.target.style.display = 'none';
-                        }
-                      }
-                    }}
+                    onError={(e) => { e.target.style.display = 'none'; }}
                   />
                 </div>
               )}
