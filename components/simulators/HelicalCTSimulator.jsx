@@ -94,16 +94,7 @@ const HelicalCTSimulator = ({ options }) => {
     };
   }, [isScanning, scanProgress, pitch, speed]);
 
-  // measure scan area height
-  useEffect(() => {
-    const el = scanAreaRef.current; if (!el) return;
-    const resize = () => setScanAreaHeight(el.clientHeight);
-    resize();
-    window.addEventListener('resize', resize);
-    return () => window.removeEventListener('resize', resize);
-  }, []);
-
-  // Canvas gantry drawing (fixed at center, body moves through)
+  // Canvas gantry drawing (gantry moves right->left; body remains centered)
   useEffect(() => {
     const el = gantryCanvasRef.current; if (!el) return;
     const ctx = el.getContext('2d');
@@ -111,12 +102,14 @@ const HelicalCTSimulator = ({ options }) => {
     ctx.clearRect(0,0,w,h);
     if (!(isScanning || scanProgress > 0)) return;
     const y = h/2;
+    const x = w - (scanProgress/100) * w;
     ctx.save();
-    ctx.translate(w/2, y);
+    ctx.translate(x, y);
     // ring
     ctx.strokeStyle = '#2563EB'; ctx.lineWidth = 4; ctx.beginPath(); ctx.ellipse(0,0,96,24,0,0,Math.PI*2); ctx.stroke();
     // rotating source/detector
-    const t = Date.now()/1000; const ang = isScanning ? (t % 1) * Math.PI*2 : 0;
+    const turns = 6 / Math.max(0.5, pitch);
+    const ang = (scanProgress/100) * turns * Math.PI * 2;
     const rx = 96*Math.cos(ang), ry = 24*Math.sin(ang);
     const dx = 96*Math.cos(ang+Math.PI), dy = 24*Math.sin(ang+Math.PI);
     // beam
@@ -125,30 +118,7 @@ const HelicalCTSimulator = ({ options }) => {
     ctx.fillStyle = '#0EA5E9'; ctx.beginPath(); ctx.arc(rx,ry,6,0,Math.PI*2); ctx.fill();
     ctx.fillStyle = '#0EA5E9'; ctx.beginPath(); ctx.arc(dx,dy,6,0,Math.PI*2); ctx.fill();
     ctx.restore();
-  }, [isScanning, scanProgress]);
-  
-  // Canvas gantry drawing
-  useEffect(() => {
-    const el = gantryCanvasRef.current; if (!el) return;
-    const ctx = el.getContext('2d');
-    const w = el.clientWidth, h = el.clientHeight; el.width = w; el.height = h;
-    ctx.clearRect(0,0,w,h);
-    if (!(isScanning || scanProgress > 0)) return;
-    const y = (scanProgress/100) * h;
-    ctx.save();
-    ctx.translate(w/2, y);
-    // ring
-    ctx.strokeStyle = '#2563EB'; ctx.lineWidth = 4; ctx.beginPath(); ctx.ellipse(0,0,96,24,0,0,Math.PI*2); ctx.stroke();
-    const t = Date.now()/1000; const ang = isScanning ? (t % 1) * Math.PI*2 : 0;
-    const rx = 96*Math.cos(ang), ry = 24*Math.sin(ang);
-    const dx = 96*Math.cos(ang+Math.PI), dy = 24*Math.sin(ang+Math.PI);
-    // beam
-    if (isScanning) { ctx.globalAlpha = 0.3; ctx.strokeStyle = '#0EA5E9'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(rx,ry); ctx.lineTo(dx,dy); ctx.stroke(); ctx.globalAlpha = 1; }
-    // markers
-    ctx.fillStyle = '#0EA5E9'; ctx.beginPath(); ctx.arc(rx,ry,6,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#0EA5E9'; ctx.beginPath(); ctx.arc(dx,dy,6,0,Math.PI*2); ctx.fill();
-    ctx.restore();
-  }, [isScanning, scanProgress]);
+  }, [isScanning, scanProgress, pitch]);
 
   return (
     <SimulatorContainer title="螺旋CT模拟器">
