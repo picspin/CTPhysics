@@ -16,13 +16,11 @@ const HelicalCTSimulator = ({ options }) => {
   const gantryCanvasRef = useRef(null);
   const scanAreaRef = useRef(null);
   const [scanAreaHeight, setScanAreaHeight] = useState(0);
+  const [pitchIllustration, setPitchIllustration] = useState(1.0);
   
   
-  const images = options?.images || [
-    { id: 'body', name: '人体模型' },
-    { id: 'helical_30', name: '螺旋CT 30°' },
-    { id: 'helical_60', name: '螺旋CT 60°' },
-    { id: 'helical_90', name: '螺旋CT 90°' }
+  const images = [
+    { id: 'body', name: '人体模型' }
   ];
   
   const pitchValues = options?.pitchValues || [
@@ -231,6 +229,18 @@ const HelicalCTSimulator = ({ options }) => {
         <div className="mt-3">
           <p><strong>当前螺距：</strong> {getCurrentPitchDescription()}</p>
           <p className="mt-1"><strong>获取的切片数：</strong> {slices.length} 个</p>
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-md border border-border bg-bg-100 p-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <Select label="螺距图示 (Pitch)" options={[{id:'0.5',name:'0.5'},{id:'1.0',name:'1.0'},{id:'1.5',name:'1.5'},{id:'2.0',name:'2.0'}]} value={String(pitchIllustration)} onChange={(v)=>setPitchIllustration(parseFloat(v))} />
+          <div className="text-sm text-text-200">
+            <p>螺距越小（小于1），图像重叠更多，剂量较高；螺距越大（大于1），扫描更快但可能丢失信息，剂量较低。</p>
+          </div>
+        </div>
+        <div className="mt-4 flex items-center justify-center">
+          <img src={`https://www.xrayphysics.com/ctsim_l${pitchIllustration}.PNG`} alt={`Pitch ${pitchIllustration}`} className="max-h-64" onError={(e)=>{e.target.style.display='none';}} />
         </div>
       </div>
     </SimulatorContainer>

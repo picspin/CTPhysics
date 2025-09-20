@@ -3,7 +3,7 @@
   "/cardiac/page": "app/cardiac/page.js",
   "/dual-energy/page": "app/dual-energy/page.js",
   "/dose/page": "app/dose/page.js",
-  "/page": "app/page.js",
   "/questions/page": "app/questions/page.js",
+  "/page": "app/page.js",
   "/reconstruction/page": "app/reconstruction/page.js"
 }
