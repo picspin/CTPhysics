@@ -175,7 +175,7 @@ const HelicalCTSimulator = ({ options }) => {
               
               {/* CT扫描环 */}
               <motion.div 
-                className="absolute left-1/2 top-0 z-10 h-12 w-48 -translate-x-1/2 rounded-full border-4 border-primary-100"
+                className="absolute left-1/2 top-0 z-0 h-12 w-48 -translate-x-1/2 rounded-full border-4 border-primary-100 pointer-events-none"
                 style={{ 
                   top: `${scanProgress}%`,
                   display: isScanning || scanProgress > 0 ? 'block' : 'none'

@@ -219,7 +219,7 @@ const BackprojectionSimulator = ({ options }) => {
                 {isAnimating ? (
                   <motion.div
                     key="animation-line"
-                    className="absolute inset-0 bg-primary-100"
+                    className="absolute inset-0 bg-primary-100 pointer-events-none"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 0.15 }}
                     style={getProjectionLineStyle(currentAngle, fanBeamAngle)}
@@ -228,7 +228,7 @@ const BackprojectionSimulator = ({ options }) => {
                   projectionAngles.map((angle, index) => (
                     <motion.div
                       key={index}
-                      className="absolute inset-0 bg-primary-100"
+                      className="absolute inset-0 bg-primary-100 pointer-events-none"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 0.15 }}
                       transition={{ duration: 0.3, delay: index * 0.1 }}

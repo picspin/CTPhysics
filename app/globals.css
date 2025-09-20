@@ -125,7 +125,9 @@
   /* 渐变边框效果 */
   .gradient-border {
     @apply relative rounded-xl p-[1px] before:absolute before:inset-0 before:rounded-xl before:bg-gradient-to-r before:from-primary-100 before:to-accent-100 before:opacity-40 before:blur-[2px];
+    z-index: 0;
   }
+  .gradient-border > * { position: relative; z-index: 1; }
   
   /* 内容卡片增强 */
   .content-card {
@@ -235,20 +237,8 @@
 
 
 /* 确保交互元素可点击 */
-.simulator-container {
-  position: relative;
-  z-index: 1;
-}
-
-.simulator-container canvas,
-.simulator-container svg,
-.simulator-container button,
-.simulator-container input,
-.simulator-container select {
-  position: relative;
-  z-index: 2;
-  pointer-events: auto;
-}
+.simulator-container { position: relative; z-index: 10; }
+.simulator-container * { pointer-events: auto; }
 
 /* 修复阴影问题 */
 .gradient-border::before {
