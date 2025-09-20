@@ -1,6 +1,10 @@
 import React from 'react';
 
-const KeyPoints = ({ points }) => {
+interface KeyPointsProps {
+  points: string[];
+}
+
+const KeyPoints: React.FC<KeyPointsProps> = ({ points }) => {
   if (!points || points.length === 0) return null;
 
   return (

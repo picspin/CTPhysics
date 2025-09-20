@@ -1,6 +1,11 @@
 import React from 'react';
 
-const PageHeader = ({ title, description }) => {
+interface PageHeaderProps {
+  title: string;
+  description?: string;
+}
+
+const PageHeader: React.FC<PageHeaderProps> = ({ title, description }) => {
   return (
     <div className="mb-8 animate-fade-in">
       <h1 className="text-2xl font-bold text-text-100 md:text-3xl">{title}</h1>

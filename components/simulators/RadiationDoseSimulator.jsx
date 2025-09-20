@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import SimulatorContainer from '../../ui/SimulatorContainer';
-import Select from '../../ui/Select';
-import Slider from '../../ui/Slider';
+import SimulatorContainer from './ui/SimulatorContainer';
+import Select from './ui/Select';
+import Slider from './ui/Slider';
 
 const RadiationDoseSimulator = () => {
   const [gatingType, setGatingType] = useState('prospective');
@@ -68,7 +68,7 @@ const RadiationDoseSimulator = () => {
 
   return (
     <SimulatorContainer title="辐射剂量模拟器">
-      <div className="space-y-4">
+      <div className="mb-4 space-y-4">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Select 
             label="门控类型" 
@@ -85,8 +85,8 @@ const RadiationDoseSimulator = () => {
           />
         </div>
         
-        <div className="mt-4 rounded-md border border-border bg-bg-100 p-4">
-          <div className="mb-4 text-sm font-medium text-text-100">有效剂量比较 (mSv)</div>
+        <div className="rounded-md border border-border bg-bg-100 p-4">
+          <div className="mb-2 text-sm font-medium text-text-100">有效剂量比较 (mSv)</div>
           <div className="h-64 w-full md:h-80">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
@@ -109,7 +109,7 @@ const RadiationDoseSimulator = () => {
           </div>
         </div>
         
-        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="rounded-md border border-border bg-bg-100 p-4">
             <h3 className="mb-2 text-sm font-medium text-text-100">剂量比较</h3>
             <div className="space-y-2">
@@ -175,7 +175,7 @@ const RadiationDoseSimulator = () => {
         </div>
       </div>
       
-      <div className="mt-4 rounded-md bg-bg-200 p-4 text-sm text-text-200">
+      <div className="rounded-md bg-bg-200 p-4 text-sm text-text-200">
         <h3 className="mb-2 font-medium text-text-100">说明</h3>
         <p>此模拟器展示了不同心脏CT扫描协议的辐射剂量比较：</p>
         <ul className="mt-2 list-inside list-disc space-y-1">
