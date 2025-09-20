@@ -1,6 +1,13 @@
 import React from 'react';
 
-const SectionCard = ({ title, description, children, className = '' }) => {
+interface SectionCardProps {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+  className?: string;
+}
+
+const SectionCard: React.FC<SectionCardProps> = ({ title, description, children, className = '' }) => {
   return (
     <div className={`enhanced-card mb-8 animate-slide-up ${className}`}>
       {(title || description) && (

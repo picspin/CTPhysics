@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import SimulatorContainer from '../../ui/SimulatorContainer';
-import Select from '../../ui/Select';
-import Slider from '../../ui/Slider';
+import SimulatorContainer from './ui/SimulatorContainer';
+import Select from './ui/Select';
+import Slider from './ui/Slider';
 
 const XrayAttenuationSimulator = () => {
   const [selectedTissue, setSelectedTissue] = useState('soft_tissue');
@@ -96,7 +96,7 @@ const XrayAttenuationSimulator = () => {
 
   return (
     <SimulatorContainer title="X射线衰减模拟器">
-      <div className="space-y-4">
+      <div className="mb-4 space-y-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Select 
             label="选择组织类型" 
@@ -117,9 +117,9 @@ const XrayAttenuationSimulator = () => {
           )}
         </div>
         
-        <div className="mt-4 rounded-md border border-border bg-bg-100 p-4">
-          <div className="mb-4 text-sm font-medium text-text-100">X射线能量与衰减系数关系</div>
-          <div className="h-72 w-full md:h-80">
+        <div className="rounded-md border border-border bg-bg-100 p-3 sm:p-4">
+          <div className="mb-2 text-sm font-medium text-text-100">X射线能量与衰减系数关系</div>
+          <div className="h-64 w-full md:h-80">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
                 data={chartData}
@@ -153,7 +153,7 @@ const XrayAttenuationSimulator = () => {
         </div>
       </div>
       
-      <div className="mt-4 rounded-md bg-bg-200 p-4 text-sm text-text-200">
+      <div className="rounded-md bg-bg-200 p-3 text-sm text-text-200 sm:p-4">
         <h3 className="mb-2 font-medium text-text-100">说明</h3>
         <p>此模拟器展示了不同组织在不同X射线能量下的衰减特性。注意碘在33 keV处的K边缘效应，这是双能CT的基础。</p>
         <p className="mt-2">图表中的衰减系数是模拟值，用于教育目的。在实际临床应用中，这些值会根据具体的组织成分和密度而变化。</p>
