@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
 import Select from '../../ui/Select';
 import Slider from '../../ui/Slider';
 import Button from '../../ui/Button';
@@ -30,8 +29,9 @@ const BackprojectionSimulator = ({ options }) => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [currentAngle, setCurrentAngle] = useState(0);
   
-  // 用于动画的引用
+  // 用于动画与canvas
   const animationRef = useRef(null);
+  const canvasRef = useRef(null);
 
   // 生成投影角度
   const projectionAngles = generateProjectionAngles(projectionCount);
@@ -53,13 +53,8 @@ const BackprojectionSimulator = ({ options }) => {
     // 启动动画
     const animate = () => {
       setCurrentAngle(prevAngle => nextAngle(prevAngle, speed));
-      
       animationRef.current = setTimeout(() => {
-        if (currentAngle >= 178) {
-          // 动画完成
-          setIsAnimating(false);
-          return;
-        }
+        if (currentAngle >= 178) { setIsAnimating(false); return; }
         requestAnimationFrame(animate);
       }, 50);
     };
@@ -73,6 +68,32 @@ const BackprojectionSimulator = ({ options }) => {
       clearTimeout(animationRef.current);
     };
   }, []);
+
+  // Canvas 绘制投影线
+  useEffect(() => {
+    const canvas = canvasRef.current; if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const w = canvas.clientWidth; const h = canvas.clientHeight;
+    canvas.width = w; canvas.height = h;
+    ctx.clearRect(0,0,w,h);
+    ctx.fillStyle = '#000000'; ctx.fillRect(0,0,w,h);
+    const drawLine = (angleDeg) => {
+      const angle = angleDeg * Math.PI / 180;
+      ctx.save();
+      ctx.translate(w/2, h/2);
+      ctx.rotate(angle);
+      ctx.fillStyle = 'rgba(37,99,235,0.15)';
+      const heightPx = fanBeamAngle === 90 ? h : h * (fanBeamAngle/100);
+      const y = -heightPx/2;
+      ctx.fillRect(-w/2, y, w, heightPx);
+      ctx.restore();
+    };
+    if (isAnimating) {
+      drawLine(currentAngle);
+    } else {
+      projectionAngles.forEach((a)=> drawLine(a));
+    }
+  }, [currentAngle, isAnimating, projectionAngles, fanBeamAngle]);
 
   // 获取内核图像
   const getKernelImage = () => {
@@ -214,61 +235,7 @@ const BackprojectionSimulator = ({ options }) => {
               {isFiltered ? '滤波反投影重建' : '反投影重建'}
             </div>
             <div className="aspect-square w-full overflow-hidden rounded-md bg-black">
-              <div className="relative h-full w-full">
-                {/* 动态投影线 */}
-                {isAnimating ? (
-                  <motion.div
-                    key="animation-line"
-                    className="absolute inset-0 bg-primary-100 pointer-events-none"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 0.15 }}
-                    style={getProjectionLineStyle(currentAngle, fanBeamAngle)}
-                  />
-                ) : (
-                  projectionAngles.map((angle, index) => (
-                    <motion.div
-                      key={index}
-                      className="absolute inset-0 bg-primary-100 pointer-events-none"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 0.15 }}
-                      transition={{ duration: 0.3, delay: index * 0.1 }}
-                      style={getProjectionLineStyle(angle, fanBeamAngle)}
-                    />
-                  ))
-                )}
-                
-                {/* 重建结果 */}
-                <motion.div
-                  className="absolute inset-0 flex items-center justify-center"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: isAnimating ? 0.5 : 1 }}
-                  transition={{ duration: 0.5 }}
-                >
-                  <img 
-                    src={getReconstructionImagePath()} 
-                    alt={`${isFiltered ? '滤波' : ''}反投影重建结果`}
-                    className="h-full w-full object-contain opacity-70"
-                    onError={(e) => {
-                      // 如果特定重建图像不可用，显示占位符
-                      e.target.style.display = 'none';
-                    }}
-                  />
-                  
-                  {/* 占位图像（当真实图像不可用时） */}
-                  <div className="absolute inset-0 flex h-full w-full items-center justify-center">
-                    {selectedImage === 'phantom' ? (
-                      <div className="h-3/4 w-3/4 rounded-full border-4 border-white opacity-30">
-                        <div className="mx-auto mt-8 h-1/3 w-1/2 rounded-full border-4 border-white"></div>
-                      </div>
-                    ) : (
-                      <div className="h-3/4 w-3/4 rounded-md border-4 border-white opacity-30">
-                        <div className="mx-auto mt-8 h-1/3 w-1/2 rounded-full border-4 border-white"></div>
-                        <div className="mx-auto mt-4 h-1/6 w-2/3 rounded-md border-4 border-white"></div>
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              </div>
+              <canvas ref={canvasRef} className="h-full w-full" />
             </div>
           </div>
         </div>

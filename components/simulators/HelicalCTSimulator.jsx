@@ -13,6 +13,7 @@ const HelicalCTSimulator = ({ options }) => {
   const [slices, setSlices] = useState([]);
   const [speed, setSpeed] = useState(0.5); // % per frame
   const rafRef = useRef(null);
+  const gantryCanvasRef = useRef(null);
   
   const images = options?.images || [
     { id: 'body', name: '人体模型' },
@@ -89,6 +90,29 @@ const HelicalCTSimulator = ({ options }) => {
       clearTimeout(timer);
     };
   }, [isScanning, scanProgress, pitch, speed]);
+  
+  // Canvas gantry drawing
+  useEffect(() => {
+    const el = gantryCanvasRef.current; if (!el) return;
+    const ctx = el.getContext('2d');
+    const w = el.clientWidth, h = el.clientHeight; el.width = w; el.height = h;
+    ctx.clearRect(0,0,w,h);
+    if (!(isScanning || scanProgress > 0)) return;
+    const y = (scanProgress/100) * h;
+    ctx.save();
+    ctx.translate(w/2, y);
+    // ring
+    ctx.strokeStyle = '#2563EB'; ctx.lineWidth = 4; ctx.beginPath(); ctx.ellipse(0,0,96,24,0,0,Math.PI*2); ctx.stroke();
+    const t = Date.now()/1000; const ang = isScanning ? (t % 1) * Math.PI*2 : 0;
+    const rx = 96*Math.cos(ang), ry = 24*Math.sin(ang);
+    const dx = 96*Math.cos(ang+Math.PI), dy = 24*Math.sin(ang+Math.PI);
+    // beam
+    if (isScanning) { ctx.globalAlpha = 0.3; ctx.strokeStyle = '#0EA5E9'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(rx,ry); ctx.lineTo(dx,dy); ctx.stroke(); ctx.globalAlpha = 1; }
+    // markers
+    ctx.fillStyle = '#0EA5E9'; ctx.beginPath(); ctx.arc(rx,ry,6,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#0EA5E9'; ctx.beginPath(); ctx.arc(dx,dy,6,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }, [isScanning, scanProgress]);
 
   return (
     <SimulatorContainer title="螺旋CT模拟器">
@@ -173,34 +197,8 @@ const HelicalCTSimulator = ({ options }) => {
                 </div>
               )}
               
-              {/* CT扫描环 */}
-              <motion.div 
-                className="absolute left-1/2 top-0 z-0 h-12 w-48 -translate-x-1/2 rounded-full border-4 border-primary-100 pointer-events-none"
-                style={{ 
-                  top: `${scanProgress}%`,
-                  display: isScanning || scanProgress > 0 ? 'block' : 'none'
-                }}
-                animate={{ 
-                  rotate: isScanning ? 360 : 0 
-                }}
-                transition={{ 
-                  duration: 1,
-                  repeat: isScanning ? Infinity : 0,
-                  ease: "linear"
-                }}
-              >
-                {/* X射线源 */}
-                <div className="absolute -left-2 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-accent-100">
-                  {/* X射线束 - 仅在扫描时显示 */}
-                  {isScanning && (
-                    <div className="absolute left-1/2 top-1/2 h-1 w-24 -translate-x-0 -translate-y-1/2 bg-accent-100/30 animate-pulse" 
-                      style={{ transformOrigin: 'left center' }}
-                    />
-                  )}
-                </div>
-                {/* 探测器 */}
-                <div className="absolute -right-2 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-accent-100" />
-              </motion.div>
+              {/* Canvas绘制CT扫描环 */}
+              <canvas ref={gantryCanvasRef} className="absolute left-0 top-0 h-full w-full" />
               
               {/* 扫描切片 */}
               {slices.map((position, index) => (

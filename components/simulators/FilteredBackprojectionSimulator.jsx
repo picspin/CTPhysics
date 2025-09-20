@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useEffect, useState } from 'react';
 import SimulatorContainer from '../../ui/SimulatorContainer';
 import Slider from '../../ui/Slider';
 import Select from '../../ui/Select';
@@ -153,6 +153,36 @@ export default function FilteredBackprojectionSimulator() {
     }
   }
 
+  const canvasReconRef = useRef(null);
+  const canvasBPRef = useRef(null);
+  const canvasPhantomRef = useRef(null);
+
+  useEffect(() => {
+    const drawGrid = (canvas, data, scale = 3) => {
+      if (!canvas) return;
+      const w = data[0].length, h = data.length;
+      canvas.width = w*scale; canvas.height = h*scale;
+      const ctx = canvas.getContext('2d');
+      const img = ctx.createImageData(w, h);
+      // Normalize
+      let min=Infinity,max=-Infinity; for (let y=0;y<h;y++) for (let x=0;x<w;x++){ const v=data[y][x]; if(v<min)min=v; if(v>max)max=v; }
+      const d=max-min || 1;
+      for (let y=0; y<h; y++) {
+        for (let x=0; x<w; x++) {
+          const g = Math.max(0, Math.min(255, Math.round(((data[y][x]-min)/d)*255)));
+          const i = (y*w + x)*4;
+          img.data[i]=g; img.data[i+1]=g; img.data[i+2]=g; img.data[i+3]=255;
+        }
+      }
+      const tmp = document.createElement('canvas'); tmp.width=w; tmp.height=h; const tctx = tmp.getContext('2d'); tctx.putImageData(img,0,0);
+      ctx.imageSmoothingEnabled = false; ctx.clearRect(0,0,canvas.width,canvas.height);
+      ctx.drawImage(tmp, 0, 0, w, h, 0, 0, w*scale, h*scale);
+    };
+    drawGrid(canvasReconRef.current, recon, 3);
+    drawGrid(canvasBPRef.current, bpRecon, 3);
+    drawGrid(canvasPhantomRef.current, phantom, 3);
+  }, [recon, bpRecon, phantom, N]);
+
   return (
     <SimulatorContainer title="滤波反投影 (FBP) 交互步骤">
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
@@ -189,17 +219,13 @@ export default function FilteredBackprojectionSimulator() {
         </div>
         <div className="rounded-md border border-border bg-bg-100 p-2">
           <div className="mb-2 text-sm font-medium text-text-100">重建图像 (进行中)</div>
-          <div className="aspect-square w-full overflow-hidden bg-black">
-            <div className="grid h-full w-full" style={{gridTemplateColumns:`repeat(${N},1fr)`, gridTemplateRows:`repeat(${N},1fr)`}}>
-              {recon.flat().map((v, i) => (
-                <div key={i} style={{ backgroundColor: `rgba(255,255,255,${Math.max(0, Math.min(1, v/200))})` }} />
-              ))}
-            </div>
+          <div className="aspect-square w-full overflow-hidden bg-black flex items-center justify-center">
+            <canvas ref={canvasReconRef} style={{ imageRendering: 'pixelated' }} />
           </div>
         </div>
       </div>
     {/* Compare side-by-side */}
-    <div className="mt-6 rounded-md border border-border bg-bg-100 p-3">
+        <div className="mt-6 rounded-md border border-border bg-bg-100 p-3">
       <div className="mb-3 flex items-center justify-between">
         <div className="text-sm font-medium text-text-100">对比视图：原始体模 vs 未滤波反投影 vs 滤波反投影</div>
         <Button size="sm" onClick={downloadComparisonPNG}>下载对比PNG</Button>
@@ -207,33 +233,21 @@ export default function FilteredBackprojectionSimulator() {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <div>
           <div className="mb-2 text-xs text-text-200">原始体模</div>
-          <div className="aspect-square w-full overflow-hidden bg-black">
-            <div className="grid h-full w-full" style={{gridTemplateColumns:`repeat(${N},1fr)`, gridTemplateRows:`repeat(${N},1fr)`}}>
-              {phantom.flat().map((v, i) => (
-                <div key={i} style={{ backgroundColor: `rgba(255,255,255,${Math.max(0, Math.min(1, v))})` }} />
-              ))}
-            </div>
-          </div>
+              <div className="aspect-square w-full overflow-hidden bg-black flex items-center justify-center">
+                <canvas ref={canvasPhantomRef} style={{ imageRendering: 'pixelated' }} />
+              </div>
         </div>
         <div>
           <div className="mb-2 text-xs text-text-200">未滤波反投影 (前 {usedStep} 角)</div>
-          <div className="aspect-square w-full overflow-hidden bg-black">
-            <div className="grid h-full w-full" style={{gridTemplateColumns:`repeat(${N},1fr)`, gridTemplateRows:`repeat(${N},1fr)`}}>
-              {bpRecon.flat().map((v, i) => (
-                <div key={i} style={{ backgroundColor: `rgba(255,255,255,${Math.max(0, Math.min(1, v/200))})` }} />
-              ))}
-            </div>
-          </div>
+              <div className="aspect-square w-full overflow-hidden bg-black flex items-center justify-center">
+                <canvas ref={canvasBPRef} style={{ imageRendering: 'pixelated' }} />
+              </div>
         </div>
         <div>
           <div className="mb-2 text-xs text-text-200">滤波反投影 (前 {usedStep} 角)</div>
-          <div className="aspect-square w-full overflow-hidden bg-black">
-            <div className="grid h-full w-full" style={{gridTemplateColumns:`repeat(${N},1fr)`, gridTemplateRows:`repeat(${N},1fr)`}}>
-              {recon.flat().map((v, i) => (
-                <div key={i} style={{ backgroundColor: `rgba(255,255,255,${Math.max(0, Math.min(1, v/200))})` }} />
-              ))}
-            </div>
-          </div>
+              <div className="aspect-square w-full overflow-hidden bg-black flex items-center justify-center">
+                <canvas ref={canvasReconRef} style={{ imageRendering: 'pixelated' }} />
+              </div>
         </div>
       </div>
     </div>
