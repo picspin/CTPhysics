@@ -1,8 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useEffect, useState } from 'react';
 import SimulatorContainer from '../../ui/SimulatorContainer';
 import Select from '../../ui/Select';
 import Slider from '../../ui/Slider';
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Area, AreaChart } from 'recharts';
+import { scaleLinear, area as d3Area } from 'd3';
 
 const MATERIALS = [
   { id: 'aluminum', name: '铝 (2.5mm)', muLow: 0.35, muHigh: 0.18 },
@@ -34,6 +34,9 @@ export default function BeamHardeningSimulator() {
   const [material, setMaterial] = useState('bone');
   const [thickness, setThickness] = useState(1.0);
   const mat = MATERIALS.find(m => m.id === material) || MATERIALS[2];
+  const containerRef = useRef(null);
+  const svgRef = useRef(null);
+  const [size, setSize] = useState({ width: 640, height: 280 });
 
   const data = useMemo(() => {
     const spec = spectrum(kvp);
@@ -45,6 +48,17 @@ export default function BeamHardeningSimulator() {
     const curve = hardened.map(h => ({ energy: h.e, I0: spec.find(x => x.e === h.e).I0, I: h.I }));
     return { curve, totalI0, totalI, meanE0, meanE };
   }, [kvp, material, thickness]);
+
+  useEffect(() => {
+    const resize = () => {
+      if (!containerRef.current) return;
+      const w = containerRef.current.clientWidth;
+      setSize({ width: Math.max(300, w), height: 280 });
+    };
+    resize();
+    window.addEventListener('resize', resize);
+    return () => window.removeEventListener('resize', resize);
+  }, []);
 
   return (
     <SimulatorContainer title="束硬化可视化">
@@ -58,21 +72,31 @@ export default function BeamHardeningSimulator() {
             <div className="mt-1">强度总量：<span className="font-medium text-text-100">{data.totalI0.toFixed(2)} → {data.totalI.toFixed(2)}</span></div>
           </div>
         </div>
-        <div className="rounded-md border border-border bg-bg-100 p-3">
+        <div className="rounded-md border border-border bg-bg-100 p-3" ref={containerRef}>
           <div className="mb-2 text-sm font-medium text-text-100">入射谱 vs 束硬化后谱</div>
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data.curve} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="energy" label={{ value: '能量 (keV)', position: 'insideBottomRight', offset: -5 }} />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Area type="monotone" dataKey="I0" name="入射谱 I0" stroke="#9CA3AF" fill="#9CA3AF" fillOpacity={0.3} />
-                <Area type="monotone" dataKey="I" name="束硬化后 I" stroke="#FF8C00" fill="#FF8C00" fillOpacity={0.25} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+          <svg ref={svgRef} width={size.width} height={size.height} role="img" aria-label="入射谱与束硬化后谱">
+            {(() => {
+              const padding = { top: 10, right: 10, bottom: 26, left: 36 };
+              const innerW = size.width - padding.left - padding.right;
+              const innerH = size.height - padding.top - padding.bottom;
+              const energies = data.curve.map(d => d.energy);
+              const x = scaleLinear().domain([Math.min(...energies), Math.max(...energies)]).range([0, innerW]);
+              const y = scaleLinear().domain([0, Math.max(...data.curve.map(d => Math.max(d.I0, d.I))) * 1.1]).range([innerH, 0]);
+              const areaI0 = d3Area().x(d => x(d.energy)).y0(innerH).y1(d => y(d.I0))(data.curve);
+              const areaI = d3Area().x(d => x(d.energy)).y0(innerH).y1(d => y(d.I))(data.curve);
+              return (
+                <g transform={`translate(${padding.left},${padding.top})`}>
+                  <rect x={0} y={0} width={innerW} height={innerH} fill="none" />
+                  <path d={areaI0} fill="#9CA3AF" opacity={0.35} stroke="#9CA3AF" />
+                  <path d={areaI} fill="#2563EB" opacity={0.25} stroke="#2563EB" />
+                  <line x1={0} y1={innerH} x2={innerW} y2={innerH} stroke="#e5e7eb" />
+                  <line x1={0} y1={0} x2={0} y2={innerH} stroke="#e5e7eb" />
+                  <text x={innerW} y={innerH + 20} textAnchor="end" className="text-[10px] fill-text-300">能量 (keV)</text>
+                  <text x={0} y={-4} className="text-[10px] fill-text-300">强度 (arb.)</text>
+                </g>
+              );
+            })()}
+          </svg>
         </div>
       </div>
       <div className="mt-4 rounded-md bg-bg-200 p-4 text-sm text-text-200">
