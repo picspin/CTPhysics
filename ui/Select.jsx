@@ -1,23 +1,19 @@
 import React from 'react';
+import { Select as AntSelect } from 'antd';
 
 const Select = ({ label, options, value, onChange, className = '', id }) => {
   const selectId = id || `select-${label || 'field'}`;
   return (
     <div className={`space-y-1 ${className}`}>
       {label && <label htmlFor={selectId} className="block text-sm font-medium text-text-100">{label}</label>}
-      <select
+      <AntSelect
         id={selectId}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(val) => onChange(val)}
         aria-label={label || 'select'}
-        className="w-full rounded-md border border-border bg-bg-100 px-3 py-2 text-sm text-text-100 shadow-sm focus:border-primary-200 focus:outline-none focus:ring-2 focus:ring-primary-200"
-      >
-        {options.map((option) => (
-          <option key={option.id || option.value} value={option.id || option.value}>
-            {option.name}
-          </option>
-        ))}
-      </select>
+        className="w-full"
+        options={options.map((o)=>({ value: o.id || o.value, label: o.name }))}
+      />
     </div>
   );
 };

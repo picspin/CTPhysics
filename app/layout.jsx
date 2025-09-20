@@ -1,5 +1,6 @@
 import React from 'react';
 import './globals.css'; // Import global styles
+import 'antd/dist/reset.css';
 import Sidebar from '../Sidebar';
 import Header from '../Header';
 import { Inter } from 'next/font/google';

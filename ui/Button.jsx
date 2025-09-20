@@ -1,4 +1,5 @@
 import React from 'react';
+import { Button as AntButton } from 'antd';
 
 const Button = ({ children, onClick, disabled = false, size = 'md', className = '' }) => {
   const sizeClasses = {
@@ -8,13 +9,9 @@ const Button = ({ children, onClick, disabled = false, size = 'md', className = 
   };
 
   return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={`rounded-md bg-primary-200 ${sizeClasses[size]} font-semibold text-white shadow-sm transition-colors hover:bg-primary-300 focus:outline-none focus:ring-2 focus:ring-accent-100 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
-    >
+    <AntButton onClick={onClick} disabled={disabled} size={size === 'sm' ? 'small' : size === 'lg' ? 'large' : 'middle'} className={className} type="primary">
       {children}
-    </button>
+    </AntButton>
   );
 };
 
