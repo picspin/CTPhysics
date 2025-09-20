@@ -110,8 +110,8 @@ const HelicalCTSimulator = ({ options }) => {
     const ang = (scanProgress/100) * turns * Math.PI * 2;
     const rx = 24*Math.cos(ang), ry = 96*Math.sin(ang);
     const dx = 24*Math.cos(ang+Math.PI), dy = 96*Math.sin(ang+Math.PI);
-    // beam
-    if (isScanning) { ctx.globalAlpha = 0.3; ctx.strokeStyle = '#0EA5E9'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(rx,ry); ctx.lineTo(dx,dy); ctx.stroke(); ctx.globalAlpha = 1; }
+    // beam: vertical strip at body center (gantry aligned around body)
+    if (isScanning) { ctx.globalAlpha = 0.25; ctx.fillStyle = '#0EA5E9'; ctx.fillRect(-3, -h, 6, h*2); ctx.globalAlpha = 1; }
     // markers
     ctx.fillStyle = '#0EA5E9'; ctx.beginPath(); ctx.arc(rx,ry,6,0,Math.PI*2); ctx.fill();
     ctx.fillStyle = '#0EA5E9'; ctx.beginPath(); ctx.arc(dx,dy,6,0,Math.PI*2); ctx.fill();
@@ -215,7 +215,13 @@ const HelicalCTSimulator = ({ options }) => {
       
       <div className="mt-4 rounded-md bg-bg-200 p-4 text-sm text-text-200">
         <h3 className="mb-2 font-medium text-text-100">说明</h3>
-        <p>此模拟器展示了螺旋CT的扫描过程。在螺旋CT中，X射线管和探测器连续旋转，同时患者床持续移动，形成螺旋扫描路径。</p>
+        <p>此模拟器展示了螺旋CT的扫描过程。X射线管/探测器围绕主体旋转的同时，扫描床以恒定速度推进。扇束在空间中形成螺旋路径。</p>
+        <p className="mt-2"><strong>螺距 (Pitch)</strong> 定义为：Pitch = 360°旋转时床前进的距离 / 准直器宽度。</p>
+        <ul className="mt-2 list-inside list-disc space-y-1">
+          <li>蓝色曲线：扇束中心的螺旋路径</li>
+          <li>红色区间：一次完整的360°旋转</li>
+          <li>绿色带：由相隔180°投影插值重建的一层，显示“切片加宽”效应</li>
+        </ul>
         
         <div className="mt-2 space-y-2">
           <p><strong>螺距</strong>是指床移动距离与准直器宽度的比值：</p>
