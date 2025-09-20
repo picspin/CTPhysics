@@ -100,6 +100,15 @@ export default function FilteredBackprojectionSimulator() {
   const usedStep = Math.max(1, step);
   const recon = useMemo(() => backproject(filtered.slice(0, usedStep), angles.slice(0, usedStep), N), [filtered, angles, usedStep, N]);
   const bpRecon = useMemo(() => backproject(sino.slice(0, usedStep), angles.slice(0, usedStep), N), [sino, angles, usedStep, N]);
+  
+  // when "开始扫描" pressed (in this simulator, start from step=1), auto-play progression until full
+  useEffect(() => {
+    // If user hasn't moved the slider yet, keep stepping to show reconstruction
+    if (usedStep < projections) {
+      const id = setTimeout(() => setStep(usedStep + 1), 80);
+      return () => clearTimeout(id);
+    }
+  }, [usedStep, projections]);
 
   function normalize2D(a) {
     let min = Infinity, max = -Infinity;

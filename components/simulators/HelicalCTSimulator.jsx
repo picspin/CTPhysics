@@ -14,6 +14,9 @@ const HelicalCTSimulator = ({ options }) => {
   const [speed, setSpeed] = useState(0.5); // % per frame
   const rafRef = useRef(null);
   const gantryCanvasRef = useRef(null);
+  const scanAreaRef = useRef(null);
+  const [scanAreaHeight, setScanAreaHeight] = useState(0);
+  
   
   const images = options?.images || [
     { id: 'body', name: '人体模型' },
@@ -90,6 +93,39 @@ const HelicalCTSimulator = ({ options }) => {
       clearTimeout(timer);
     };
   }, [isScanning, scanProgress, pitch, speed]);
+
+  // measure scan area height
+  useEffect(() => {
+    const el = scanAreaRef.current; if (!el) return;
+    const resize = () => setScanAreaHeight(el.clientHeight);
+    resize();
+    window.addEventListener('resize', resize);
+    return () => window.removeEventListener('resize', resize);
+  }, []);
+
+  // Canvas gantry drawing (fixed at center, body moves through)
+  useEffect(() => {
+    const el = gantryCanvasRef.current; if (!el) return;
+    const ctx = el.getContext('2d');
+    const w = el.clientWidth, h = el.clientHeight; el.width = w; el.height = h;
+    ctx.clearRect(0,0,w,h);
+    if (!(isScanning || scanProgress > 0)) return;
+    const y = h/2;
+    ctx.save();
+    ctx.translate(w/2, y);
+    // ring
+    ctx.strokeStyle = '#2563EB'; ctx.lineWidth = 4; ctx.beginPath(); ctx.ellipse(0,0,96,24,0,0,Math.PI*2); ctx.stroke();
+    // rotating source/detector
+    const t = Date.now()/1000; const ang = isScanning ? (t % 1) * Math.PI*2 : 0;
+    const rx = 96*Math.cos(ang), ry = 24*Math.sin(ang);
+    const dx = 96*Math.cos(ang+Math.PI), dy = 24*Math.sin(ang+Math.PI);
+    // beam
+    if (isScanning) { ctx.globalAlpha = 0.3; ctx.strokeStyle = '#0EA5E9'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(rx,ry); ctx.lineTo(dx,dy); ctx.stroke(); ctx.globalAlpha = 1; }
+    // markers
+    ctx.fillStyle = '#0EA5E9'; ctx.beginPath(); ctx.arc(rx,ry,6,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#0EA5E9'; ctx.beginPath(); ctx.arc(dx,dy,6,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }, [isScanning, scanProgress]);
   
   // Canvas gantry drawing
   useEffect(() => {
@@ -157,10 +193,11 @@ const HelicalCTSimulator = ({ options }) => {
           </div>
           
           <div className="mt-6 flex flex-col items-center">
-            <div className="relative h-72 w-full max-w-md overflow-hidden rounded-md bg-black md:h-80">
+            <div ref={scanAreaRef} className="relative h-72 w-full max-w-md overflow-hidden rounded-md bg-black md:h-80">
               {/* 患者体模 */}
               {selectedImage && (
-                <div className="absolute left-1/2 top-0 h-full w-full -translate-x-1/2 flex justify-center items-center">
+                <div className="absolute left-1/2 top-0 h-full w-full -translate-x-1/2 flex justify-center items-center"
+                     style={{ transform: `translate(-50%, ${-((scanProgress/100) * scanAreaHeight - scanAreaHeight/2)}px)` }}>
                   <img 
                     src={`/images/${selectedImage}.${selectedImage.includes('helical_') ? 'gif' : 'png'}`} 
                     alt={images.find(img => img.id === selectedImage)?.name || '扫描对象'}
@@ -197,8 +234,8 @@ const HelicalCTSimulator = ({ options }) => {
                 </div>
               )}
               
-              {/* Canvas绘制CT扫描环 */}
-              <canvas ref={gantryCanvasRef} className="absolute left-0 top-0 h-full w-full" />
+              {/* Canvas绘制CT扫描环 (固定位置) */}
+              <canvas ref={gantryCanvasRef} className="absolute left-0 top-0 h-full w-full pointer-events-none" />
               
               {/* 扫描切片 */}
               {slices.map((position, index) => (
