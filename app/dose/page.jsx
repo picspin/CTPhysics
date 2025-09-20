@@ -6,8 +6,6 @@ import SectionCard from '../../ui/SectionCard';
 import KeyPoints from '../../ui/KeyPoints';
 import SimulatorContainer from '../../ui/SimulatorContainer';
 import RadiationDoseSimulator from '../../components/simulators/RadiationDoseSimulator';
-
-// 从JSON文件导入数据
 import doseData from '../../dose.json';
 
 export default function DosePage() {
@@ -36,7 +34,7 @@ export default function DosePage() {
       ))}
       
       <SimulatorContainer title="CT剂量模拟器">
-        <RadiationDoseSimulator />
+        <RadiationDoseSimulator options={doseData.sections.find(s=>s.id==='radiation-dose')?.simulator?.options} />
       </SimulatorContainer>
     </div>
   );

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import SimulatorContainer from '../../ui/SimulatorContainer';
 import Select from '../../ui/Select';
@@ -11,6 +11,8 @@ const HelicalCTSimulator = ({ options }) => {
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
   const [slices, setSlices] = useState([]);
+  const [speed, setSpeed] = useState(0.5); // % per frame
+  const rafRef = useRef(null);
   
   const images = options?.images || [
     { id: 'body', name: '人体模型' },
@@ -42,14 +44,13 @@ const HelicalCTSimulator = ({ options }) => {
 
   // 扫描进度更新
   useEffect(() => {
-    let animationFrame;
     let timer;
     
     if (isScanning) {
       const animate = () => {
         setScanProgress((prev) => {
           // 调整速度，使动画更平滑
-          const increment = 0.5; // 每帧增加0.5%
+          const increment = speed; // 可调速度
           const next = prev + increment;
           
           // 每当扫描到一个新的切片位置时添加切片
@@ -73,21 +74,21 @@ const HelicalCTSimulator = ({ options }) => {
         });
         
         if (scanProgress < 100) {
-          animationFrame = requestAnimationFrame(animate);
+          rafRef.current = requestAnimationFrame(animate);
         }
       };
       
       // 短暂延迟后开始动画，给用户视觉反馈
       timer = setTimeout(() => {
-        animationFrame = requestAnimationFrame(animate);
+        rafRef.current = requestAnimationFrame(animate);
       }, 300);
     }
     
     return () => {
-      cancelAnimationFrame(animationFrame);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
       clearTimeout(timer);
     };
-  }, [isScanning, scanProgress, pitch]);
+  }, [isScanning, scanProgress, pitch, speed]);
 
   return (
     <SimulatorContainer title="螺旋CT模拟器">
@@ -229,6 +230,9 @@ const HelicalCTSimulator = ({ options }) => {
               ) : (
                 <p>点击"开始扫描"按钮开始模拟螺旋CT扫描</p>
               )}
+            </div>
+            <div className="mt-4 w-full max-w-md">
+              <Slider label={`速度: ${speed.toFixed(1)}%/步`} min={0.2} max={2} step={0.1} value={speed} onChange={(v)=>setSpeed(parseFloat(v))} />
             </div>
           </div>
         </div>

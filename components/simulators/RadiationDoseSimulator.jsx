@@ -3,19 +3,20 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import SimulatorContainer from '../../ui/SimulatorContainer';
 import Select from '../../ui/Select';
 import Slider from '../../ui/Slider';
+import { computeDoseComparison, riskLevelForDose } from '../../lib/physics/dose';
 
-const RadiationDoseSimulator = () => {
+const RadiationDoseSimulator = ({ options }) => {
   const [gatingType, setGatingType] = useState('prospective');
   const [patientSize, setPatientSize] = useState('medium');
   const [chartData, setChartData] = useState([]);
   
-  const gatingTypes = [
+  const gatingTypes = options?.gatingTypes || [
     { id: 'prospective', name: '前瞻性门控' },
     { id: 'retrospective', name: '回顾性门控' },
     { id: 'retrospective-modulation', name: '带ECG调制的回顾性门控' }
   ];
   
-  const patientSizes = [
+  const patientSizes = options?.patientSizes || [
     { id: 'small', name: '小型患者' },
     { id: 'medium', name: '中型患者' },
     { id: 'large', name: '大型患者' }
@@ -23,47 +24,7 @@ const RadiationDoseSimulator = () => {
   
   // 生成模拟数据
   useEffect(() => {
-    const generateData = () => {
-      // 基础剂量值（单位：mSv）
-      const baseDose = {
-        'prospective': 3,
-        'retrospective': 12,
-        'retrospective-modulation': 8
-      };
-      
-      // 患者大小影响因子
-      const sizeFactors = {
-        'small': 0.8,
-        'medium': 1.0,
-        'large': 1.5
-      };
-      
-      // 计算实际剂量
-      const actualDose = baseDose[gatingType] * sizeFactors[patientSize];
-      
-      // 生成比较数据
-      const data = [
-        {
-          name: '前瞻性门控',
-          dose: baseDose['prospective'] * sizeFactors[patientSize],
-          active: gatingType === 'prospective'
-        },
-        {
-          name: '带ECG调制的回顾性门控',
-          dose: baseDose['retrospective-modulation'] * sizeFactors[patientSize],
-          active: gatingType === 'retrospective-modulation'
-        },
-        {
-          name: '回顾性门控',
-          dose: baseDose['retrospective'] * sizeFactors[patientSize],
-          active: gatingType === 'retrospective'
-        }
-      ];
-      
-      setChartData(data);
-    };
-    
-    generateData();
+    setChartData(computeDoseComparison(gatingType, patientSize));
   }, [gatingType, patientSize]);
 
   return (
@@ -139,32 +100,19 @@ const RadiationDoseSimulator = () => {
             <div className="space-y-2">
               {(() => {
                 const currentDose = chartData.find(item => item.active)?.dose || 0;
-                let riskLevel, riskText;
-                
-                if (currentDose < 5) {
-                  riskLevel = '低';
-                  riskText = '相当于约1.5年的自然背景辐射';
-                } else if (currentDose < 10) {
-                  riskLevel = '中';
-                  riskText = '相当于约3年的自然背景辐射';
-                } else {
-                  riskLevel = '高';
-                  riskText = '相当于约4年的自然背景辐射';
-                }
-                
+                const { level, text } = riskLevelForDose(currentDose);
                 return (
                   <>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-text-200">风险等级</span>
                       <span className={`font-medium ${
-                        riskLevel === '低' ? 'text-green-500' : 
-                        riskLevel === '中' ? 'text-amber-500' : 'text-red-500'
+                        level === '低' ? 'text-green-500' : level === '中' ? 'text-amber-500' : 'text-red-500'
                       }`}>
-                        {riskLevel}
+                        {level}
                       </span>
                     </div>
                     <div className="text-sm text-text-200">
-                      <p>{riskText}</p>
+                      <p>{text}</p>
                       <p className="mt-2">辐射剂量应遵循ALARA原则：合理可行尽量低 (As Low As Reasonably Achievable)</p>
                     </div>
                   </>

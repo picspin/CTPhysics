@@ -9,7 +9,7 @@ import dynamic from 'next/dynamic';
 
 // 使用dynamic导入组件，禁用SSR以避免导入错误
 const CardiacGatingSimulator = dynamic(
-  () => import('../../CardiacGatingSimulator'),
+  () => import('../../components/simulators/CardiacGatingSimulator'),
   { ssr: false }
 );
 

@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import Select from '../../ui/Select';
 import Slider from '../../ui/Slider';
 import Button from '../../ui/Button';
+import { generateProjectionAngles, nextAngle } from '../../lib/physics/reconstruction';
 
 const BackprojectionSimulator = ({ options }) => {
   // 使用options中的配置，如果没有则使用默认值
@@ -33,20 +34,12 @@ const BackprojectionSimulator = ({ options }) => {
   const animationRef = useRef(null);
 
   // 生成投影角度
-  const generateProjectionAngles = (count) => {
-    const angles = [];
-    const step = 180 / count;
-    for (let i = 0; i < count; i++) {
-      angles.push(i * step);
-    }
-    return angles;
-  };
-
   const projectionAngles = generateProjectionAngles(projectionCount);
   
   // 开始动画
+  const [speed, setSpeed] = useState(2);
   const startAnimation = () => {
-    console.log('startAnimation called. Current state:', { isAnimating }); // Add log
+    console.log('startAnimation called. Current state:', { isAnimating });
     if (isAnimating) {
       // 如果已经在动画中，则停止
       clearTimeout(animationRef.current);
@@ -59,10 +52,7 @@ const BackprojectionSimulator = ({ options }) => {
     
     // 启动动画
     const animate = () => {
-      setCurrentAngle(prevAngle => {
-        const newAngle = (prevAngle + 2) % 180; // 每次增加2度，最大180度
-        return newAngle;
-      });
+      setCurrentAngle(prevAngle => nextAngle(prevAngle, speed));
       
       animationRef.current = setTimeout(() => {
         if (currentAngle >= 178) {
@@ -71,7 +61,7 @@ const BackprojectionSimulator = ({ options }) => {
           return;
         }
         requestAnimationFrame(animate);
-      }, 50); // 约20帧/秒
+      }, 50);
     };
     
     animate();
@@ -181,6 +171,9 @@ const BackprojectionSimulator = ({ options }) => {
             >
               {isAnimating ? '停止动画' : '开始重建'}
             </Button>
+            <div className="w-40">
+              <Slider label={`速度: ${speed}°/步`} min={1} max={10} value={speed} onChange={setSpeed} step={1} />
+            </div>
           </div>
         </div>
         

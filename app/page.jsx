@@ -1,11 +1,11 @@
 'use client';
 
 import React from 'react';
-import PageHeader from '../PageHeader';
-import SectionCard from '../SectionCard';
-import KeyPoints from '../KeyPoints';
-import SimulatorContainer from '../SimulatorContainer';
-import TabGroup from '../TabGroup';
+import PageHeader from '../ui/PageHeader';
+import SectionCard from '../ui/SectionCard';
+import KeyPoints from '../ui/KeyPoints';
+import SimulatorContainer from '../ui/SimulatorContainer';
+import TabGroup from '../ui/TabGroup';
 
 // 模拟数据，实际应用中会从API或JSON文件获取
 const pageData = {
