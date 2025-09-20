@@ -11,7 +11,7 @@ const Button = ({ children, onClick, disabled = false, size = 'md', className = 
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`rounded-md bg-primary-100 ${sizeClasses[size]} font-medium text-white shadow-sm transition-colors hover:bg-primary-200 focus:outline-none focus:ring-2 focus:ring-primary-100 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+      className={`rounded-md bg-primary-200 ${sizeClasses[size]} font-semibold text-white shadow-sm transition-colors hover:bg-primary-300 focus:outline-none focus:ring-2 focus:ring-accent-100 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
     >
       {children}
     </button>

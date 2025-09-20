@@ -19,8 +19,6 @@ export const metadata = {
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
-  // Allow zoom for accessibility
-  maximumScale: 5,
 };
 
 export default function RootLayout({ children }) {
@@ -31,7 +29,7 @@ export default function RootLayout({ children }) {
           <Sidebar />
           <div className="flex w-full flex-col transition-all duration-300 md:pl-64">
             <Header />
-            <main className="flex-1 p-4 md:p-6 lg:p-8">
+            <main id="main-content" role="main" className="flex-1 p-4 md:p-6 lg:p-8">
               <div className="mx-auto max-w-6xl animate-fadeIn">
                 {children}
               </div>
