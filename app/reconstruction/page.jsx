@@ -8,6 +8,7 @@ import SimulatorContainer from '../../ui/SimulatorContainer'; // Adjusted path
 import TabGroup from '../../ui/TabGroup'; // Adjusted path
 import BackprojectionSimulator from '../../components/simulators/BackprojectionSimulator'; // Adjusted path
 import HelicalCTSimulator from '../../components/simulators/HelicalCTSimulator'; // Adjusted path
+import SinogramSimulator from '../../components/simulators/SinogramSimulator';
 
 // 从JSON文件导入数据
 import reconstructionData from '../../reconstruction.json'; // Adjusted path
@@ -40,13 +41,15 @@ export default function ReconstructionPage() {
       <SimulatorContainer title="CT重建模拟器">
         <TabGroup
           tabs={[
+            { id: 'sinogram', label: '正弦图' },
             { id: 'backprojection', label: '反投影重建' },
             { id: 'helical', label: '螺旋CT' },
           ]}
-          defaultTab="backprojection"
+          defaultTab="sinogram"
         >
           {(activeTab) => (
             <div className="p-4">
+              {activeTab === 'sinogram' && <SinogramSimulator />}
               {activeTab === 'backprojection' && <BackprojectionSimulator options={reconstructionData.sections.find(s => s.id === 'backprojection')?.simulator?.options} />}
               {activeTab === 'helical' && <HelicalCTSimulator options={reconstructionData.sections.find(s => s.id === 'helical-ct')?.simulator?.options} />}
             </div>

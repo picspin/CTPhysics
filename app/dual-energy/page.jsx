@@ -7,6 +7,7 @@ import KeyPoints from '../../ui/KeyPoints';
 import SimulatorContainer from '../../ui/SimulatorContainer';
 import DualEnergyReconstructionSimulator from '../../components/simulators/DualEnergyReconstructionSimulator';
 import XrayAttenuationSimulator from '../../components/simulators/XrayAttenuationSimulator';
+import BeamHardeningSimulator from '../../components/simulators/BeamHardeningSimulator';
 import TabGroup from '../../ui/TabGroup';
 
 // 从JSON文件导入数据
@@ -41,15 +42,17 @@ export default function DualEnergyPage() {
         <TabGroup
           tabs={[
             { id: 'attenuation', label: 'X射线衰减' },
+            { id: 'beam-hardening', label: '束硬化' },
             { id: 'dual-energy', label: '双能CT' },
           ]}
         >
-          <div id="attenuation" className="p-4">
-            <XrayAttenuationSimulator />
-          </div>
-          <div id="dual-energy" className="p-4">
-            <DualEnergyReconstructionSimulator />
-          </div>
+          {(activeId)=> (
+            <div className="p-4">
+              {activeId === 'attenuation' && <XrayAttenuationSimulator />}
+              {activeId === 'beam-hardening' && <BeamHardeningSimulator />}
+              {activeId === 'dual-energy' && <DualEnergyReconstructionSimulator />}
+            </div>
+          )}
         </TabGroup>
       </SimulatorContainer>
     </div>
