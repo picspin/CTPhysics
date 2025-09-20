@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useEffect, useState } from 'react';
 import SimulatorContainer from '../../ui/SimulatorContainer';
 import Slider from '../../ui/Slider';
 import Select from '../../ui/Select';
@@ -60,6 +60,30 @@ export default function SinogramSimulator() {
   const phantom = useMemo(() => generatePhantom(phantomType), [phantomType]);
   const angles = useMemo(() => Array.from({ length: projections }, (_, i) => i * (180 / projections)), [projections]);
   const sino = useMemo(() => radonTransform(phantom, angles, detectors), [phantom, angles, detectors]);
+  const canvasRef = useRef(null);
+  const thumbRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current; if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const w = detectors, h = sino.length; const scale = 3; canvas.width = w*scale; canvas.height = h*scale;
+    const imageData = ctx.createImageData(w, h);
+    for (let y=0; y<h; y++) {
+      for (let x=0; x<w; x++) {
+        const v = Math.min(1, sino[y][x] / 50);
+        const i = (y*w + x) * 4;
+        imageData.data[i+0] = 255; // orange-ish
+        imageData.data[i+1] = Math.floor(140 * v);
+        imageData.data[i+2] = 0;
+        imageData.data[i+3] = Math.floor(255 * v);
+      }
+    }
+    // scale up
+    const tmp = document.createElement('canvas'); tmp.width = w; tmp.height = h; const tctx = tmp.getContext('2d'); tctx.putImageData(imageData, 0, 0);
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0,0,canvas.width, canvas.height);
+    ctx.drawImage(tmp, 0, 0, w, h, 0, 0, w*scale, h*scale);
+  }, [sino, detectors]);
 
   return (
     <SimulatorContainer title="正弦图 (Sinogram) 可视化">
@@ -82,13 +106,7 @@ export default function SinogramSimulator() {
           </div>
           <div className="rounded-md border border-border bg-bg-100 p-2">
             <div className="mb-2 text-sm font-medium text-text-100">正弦图</div>
-            <div className="aspect-square w-full overflow-hidden bg-black">
-              <div className="grid h-full w-full" style={{gridTemplateColumns:`repeat(${detectors},1fr)`, gridTemplateRows:`repeat(${sino.length},1fr)`}}>
-                {sino.flat().map((v, i) => (
-                  <div key={i} style={{ backgroundColor: `rgba(255,140,0,${Math.min(1, v / 50)})` }} />
-                ))}
-              </div>
-            </div>
+            <canvas ref={canvasRef} className="w-full" style={{ imageRendering: 'pixelated' }} />
           </div>
         </div>
       </div>

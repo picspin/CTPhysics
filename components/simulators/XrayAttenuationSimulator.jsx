@@ -1,15 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceArea } from 'recharts';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import SimulatorContainer from '../../ui/SimulatorContainer';
 import Select from '../../ui/Select';
 import Slider from '../../ui/Slider';
 import { generateAttenuationDataset } from '../../lib/physics/attenuation';
+import { scaleLinear, line as d3Line } from 'd3';
 
 const XrayAttenuationSimulator = () => {
   const [selectedTissue, setSelectedTissue] = useState('soft_tissue');
   const [iodineConcentration, setIodineConcentration] = useState(5);
   const [chartData, setChartData] = useState([]);
   const [highlightKEdge, setHighlightKEdge] = useState(true);
+  const svgRef = useRef(null);
+  const containerRef = useRef(null);
+  const [size, setSize] = useState({ width: 640, height: 320 });
   
   const tissues = [
     { id: 'soft_tissue', name: '软组织（如肌肉）' },
@@ -26,22 +29,56 @@ const XrayAttenuationSimulator = () => {
     const energies = Array.from({ length: ((140 - 20) / 5) + 1 }, (_, i) => 20 + i * 5);
     setChartData(generateAttenuationDataset(energies, iodineConcentration));
   }, [iodineConcentration]);
+
+  useEffect(() => {
+    const resize = () => {
+      if (!containerRef.current) return;
+      const w = containerRef.current.clientWidth;
+      setSize({ width: Math.max(300, w), height: 320 });
+    };
+    resize();
+    window.addEventListener('resize', resize);
+    return () => window.removeEventListener('resize', resize);
+  }, []);
   
   // 计算逻辑已集中到 lib/physics/attenuation
   
   // 获取图表中显示的线条颜色
   const getLineColor = (tissue) => {
     const colors = {
-      soft_tissue: '#FF8C00', // 主题色
-      fat: '#FFC107',
-      bone: '#795548',
-      iodine: '#4A90E2', // 强调色
-      iodine_enhanced: '#003a80',
-      water: '#00BCD4',
-      air: '#9E9E9E'
+      soft_tissue: '#111827',
+      fat: '#6B7280',
+      bone: '#1F2937',
+      iodine: '#2563EB',
+      iodine_enhanced: '#0EA5E9',
+      water: '#059669',
+      air: '#9CA3AF'
     };
     return colors[tissue] || '#000000';
   };
+
+  const paths = useMemo(() => {
+    if (!chartData.length) return { lines: {}, x: null, y: null };
+    const padding = { top: 10, right: 12, bottom: 30, left: 40 };
+    const innerW = size.width - padding.left - padding.right;
+    const innerH = size.height - padding.top - padding.bottom;
+    const x = scaleLinear().domain([20, 140]).range([0, innerW]);
+    const maxY = Math.max(
+      ...chartData.flatMap(d => [d.soft_tissue, d.fat, d.bone, d.iodine, d.iodine_enhanced, d.water, d.air])
+    );
+    const y = scaleLinear().domain([0, maxY * 1.1]).range([innerH, 0]);
+    const mk = (key) => d3Line().x(d => x(d.energy)).y(d => y(d[key]))(chartData);
+    const lines = {
+      soft_tissue: mk('soft_tissue'),
+      fat: mk('fat'),
+      bone: mk('bone'),
+      iodine: mk('iodine'),
+      iodine_enhanced: mk('iodine_enhanced'),
+      water: mk('water'),
+      air: mk('air')
+    };
+    return { lines, x, y, padding, innerW, innerH };
+  }, [chartData, size]);
 
   return (
     <SimulatorContainer title="X射线衰减模拟器">
@@ -66,42 +103,24 @@ const XrayAttenuationSimulator = () => {
           )}
         </div>
         
-        <div className="mt-4 rounded-md border border-border bg-bg-100 p-4">
-          <div className="mb-4 text-sm font-medium text-text-100">X射线能量与衰减系数关系</div>
-          <div className="h-72 w-full md:h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart
-                data={chartData}
-                margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="energy" 
-                  label={{ value: 'X射线能量 (keV)', position: 'insideBottomRight', offset: -10 }} 
-                />
-                <YAxis 
-                  label={{ value: '衰减系数 (cm⁻¹)', angle: -90, position: 'insideLeft' }} 
-                />
-                <Tooltip formatter={(value) => [value.toFixed(2), '衰减系数']} />
-                <Legend layout="horizontal" verticalAlign="bottom" wrapperStyle={{ paddingTop: 10 }} />
+        <div className="mt-4 rounded-md border border-border bg-bg-100 p-4" ref={containerRef}>
+          <div className="mb-2 text-sm font-medium text-text-100">X射线能量与衰减系数关系</div>
+          <svg ref={svgRef} width={size.width} height={size.height} role="img" aria-label="X射线能量与衰减系数关系">
+            {paths.x && (
+              <g transform={`translate(${paths.padding.left},${paths.padding.top})`}>
                 {highlightKEdge && (
-                  <ReferenceArea x1={33} x2={40} y1={0} y2={Number.MAX_VALUE} strokeOpacity={0.3} fill="#4A90E2" fillOpacity={0.05} />
+                  <rect x={paths.x(33)} y={0} width={paths.x(40) - paths.x(33)} height={paths.innerH} fill="#2563EB" opacity={0.06} />
                 )}
-                {tissues.map(tissue => (
-                  <Line
-                    key={tissue.id}
-                    type="monotone"
-                    dataKey={tissue.id}
-                    name={tissue.name}
-                    stroke={getLineColor(tissue.id)}
-                    dot={false}
-                    strokeWidth={selectedTissue === tissue.id ? 3 : 1}
-                    opacity={selectedTissue === tissue.id || selectedTissue === 'all' ? 1 : 0.3}
-                  />
+                {tissues.map(t => (
+                  <path key={t.id} d={paths.lines[t.id]} fill="none" stroke={getLineColor(t.id)} strokeWidth={selectedTissue === t.id ? 2.5 : 1} opacity={selectedTissue === t.id ? 1 : 0.35} />
                 ))}
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+                <line x1={0} y1={paths.innerH} x2={paths.innerW} y2={paths.innerH} stroke="#e5e7eb" />
+                <line x1={0} y1={0} x2={0} y2={paths.innerH} stroke="#e5e7eb" />
+                <text x={paths.innerW} y={paths.innerH + 20} textAnchor="end" className="text-[10px] fill-text-300">能量 (keV)</text>
+                <text x={0} y={-4} className="text-[10px] fill-text-300">衰减 (cm⁻¹)</text>
+              </g>
+            )}
+          </svg>
         </div>
       </div>
       
