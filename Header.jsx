@@ -23,7 +23,7 @@ const Header = () => {
     <header className="sticky top-0 z-20 border-b border-border-100 bg-bg-100/90 backdrop-blur-md">
       <div className="flex h-16 items-center justify-between px-4 md:px-6 lg:px-8">
         <div className="md:hidden">
-          <Link href="/" className="text-xl font-bold text-primary-100 focus-ring">
+          <Link href="/" className="text-xl font-bold text-primary-200 focus-ring" aria-label="CT Physics 首页">
             CT Physics
           </Link>
         </div>

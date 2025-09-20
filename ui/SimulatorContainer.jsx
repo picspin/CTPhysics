@@ -9,7 +9,7 @@ const SimulatorContainer = ({ title, children, className = '' }) => {
             <h3 className="font-medium">{title}</h3>
           </div>
         )}
-        <div className="p-5">{children}</div>
+        <div className="p-5 simulator-container">{children}</div>
       </div>
     </div>
   );

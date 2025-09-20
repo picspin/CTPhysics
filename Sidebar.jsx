@@ -70,7 +70,7 @@ const Sidebar = () => {
       >
         <div className="flex h-16 items-center border-b border-border-100 px-6">
           <Link href="/" className="flex items-center space-x-2 focus-ring">
-            <span className="text-xl font-bold text-primary-100">CT Physics</span>
+            <span className="text-xl font-bold text-primary-200">CT Physics</span>
           </Link>
         </div>
         <nav className="p-6">

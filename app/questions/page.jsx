@@ -35,18 +35,20 @@ export default function QuestionsPage() {
               key={`q${question.id}`}
               className="border-b border-border/30 pb-4 last:border-b-0 last:pb-0"
             >
-              <div 
-                className="flex cursor-pointer items-center justify-between py-2"
+              <button 
+                className="flex w-full cursor-pointer items-center justify-between py-2 text-left focus:outline-none focus:ring-2 focus:ring-primary-200 rounded"
+                aria-expanded={!!expandedQuestions[`q${question.id}`]}
+                aria-controls={`answer-q${question.id}`}
                 onClick={() => toggleQuestion(`q${question.id}`)}
               >
-                <h4 className="text-lg font-medium">{question.question}</h4>
-                <span className="text-primary-100">
+                <h3 className="text-lg font-medium">{question.question}</h3>
+                <span className="text-accent-200">
                   {expandedQuestions[`q${question.id}`] ? '−' : '+'}
                 </span>
-              </div>
+              </button>
               
               {expandedQuestions[`q${question.id}`] && (
-                <div className="mt-2 space-y-4 rounded-lg bg-bg-200/50 p-4 text-text-200">
+                <div id={`answer-q${question.id}`} className="mt-2 space-y-4 rounded-lg bg-bg-200/50 p-4 text-text-200">
                   <div className="space-y-2">
                     <p className="font-medium">选项：</p>
                     <ul className="list-inside list-disc space-y-1">
