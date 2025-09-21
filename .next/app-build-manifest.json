@@ -12,7 +12,7 @@
       "static/chunks/fd9d1056-4b6ac1ed2d7c66b5.js",
       "static/chunks/117-56c97bb0d6c3e660.js",
       "static/chunks/main-app-ca56db589a5fd643.js",
-      "static/css/1139d67dfac24ad1.css",
+      "static/css/360fcb7eb5f04b56.css",
       "static/chunks/365-2426e3849a23b3c7.js",
       "static/chunks/app/layout-a710d1b6664edbcc.js"
     ],
@@ -24,17 +24,13 @@
       "static/chunks/357-0723e4e281eabf65.js",
       "static/chunks/app/cardiac/page-68675ed34cc07107.js"
     ],
-    "/dual-energy/page": [
+    "/page": [
       "static/chunks/webpack-a52ff59491e2d530.js",
       "static/chunks/fd9d1056-4b6ac1ed2d7c66b5.js",
       "static/chunks/117-56c97bb0d6c3e660.js",
       "static/chunks/main-app-ca56db589a5fd643.js",
       "static/chunks/357-0723e4e281eabf65.js",
-      "static/chunks/31-dc66da85fa893c80.js",
-      "static/chunks/428-9a30c998c1ef153a.js",
-      "static/chunks/489-630ad0f59459bc2e.js",
-      "static/chunks/610-fc629abaf1912439.js",
-      "static/chunks/app/dual-energy/page-f8716387ba1e784d.js"
+      "static/chunks/app/page-d2b5a584a1157560.js"
     ],
     "/dose/page": [
       "static/chunks/webpack-a52ff59491e2d530.js",
@@ -45,14 +41,6 @@
       "static/chunks/31-dc66da85fa893c80.js",
       "static/chunks/489-630ad0f59459bc2e.js",
       "static/chunks/app/dose/page-a2594940e8dc10e9.js"
-    ],
-    "/page": [
-      "static/chunks/webpack-a52ff59491e2d530.js",
-      "static/chunks/fd9d1056-4b6ac1ed2d7c66b5.js",
-      "static/chunks/117-56c97bb0d6c3e660.js",
-      "static/chunks/main-app-ca56db589a5fd643.js",
-      "static/chunks/357-0723e4e281eabf65.js",
-      "static/chunks/app/page-d2b5a584a1157560.js"
     ],
     "/questions/page": [
       "static/chunks/webpack-a52ff59491e2d530.js",
@@ -70,7 +58,19 @@
       "static/chunks/31-dc66da85fa893c80.js",
       "static/chunks/428-9a30c998c1ef153a.js",
       "static/chunks/287-1fbf2120c6637f6a.js",
-      "static/chunks/app/reconstruction/page-20f912e3a47935f6.js"
+      "static/chunks/app/reconstruction/page-c3718dfc96c52e5a.js"
+    ],
+    "/dual-energy/page": [
+      "static/chunks/webpack-a52ff59491e2d530.js",
+      "static/chunks/fd9d1056-4b6ac1ed2d7c66b5.js",
+      "static/chunks/117-56c97bb0d6c3e660.js",
+      "static/chunks/main-app-ca56db589a5fd643.js",
+      "static/chunks/357-0723e4e281eabf65.js",
+      "static/chunks/31-dc66da85fa893c80.js",
+      "static/chunks/428-9a30c998c1ef153a.js",
+      "static/chunks/489-630ad0f59459bc2e.js",
+      "static/chunks/610-fc629abaf1912439.js",
+      "static/chunks/app/dual-energy/page-f8716387ba1e784d.js"
     ]
   }
 }

@@ -117,7 +117,7 @@ const HelicalCTSimulator = ({ options }) => {
     ctx.fillStyle = '#0EA5E9'; ctx.beginPath(); ctx.arc(dx,dy,6,0,Math.PI*2); ctx.fill();
     ctx.restore();
   }, [isScanning, scanProgress, pitch]);
-
+  
   return (
     <SimulatorContainer title="螺旋CT模拟器">
       <div className="space-y-4">
@@ -177,22 +177,21 @@ const HelicalCTSimulator = ({ options }) => {
               {/* Canvas绘制CT扫描环 (固定位置) */}
               <canvas ref={gantryCanvasRef} className="absolute left-0 top-0 h-full w-full pointer-events-none" />
               
-              {/* 扫描切片 */}
+              {/* 扫描切片：中心随gantry x移动，从右到左在中心位置生成 */}
               {slices.map((position, index) => (
                 <motion.div
                   key={index}
-                  className="absolute left-1/2 z-0 -translate-x-1/2"
-                  style={{ top: `${position}%` }}
+                  className="absolute top-1/2 -translate-y-1/2"
+                  style={{ left: `${100 - position}%` }}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 0.6 }}
                   transition={{ duration: 0.3 }}
                 >
-                  {/* 切片可视化 - 根据螺距调整宽度和颜色 */}
                   <div 
-                    className={`h-2 rounded-full ${pitch <= 1 ? 'bg-green-500' : pitch < 2 ? 'bg-blue-500' : 'bg-red-500'}`}
+                    className={`h-12 rounded-sm ${pitch <= 1 ? 'bg-green-500' : pitch < 2 ? 'bg-blue-500' : 'bg-red-500'}`}
                     style={{ 
-                      width: `${Math.max(24, 48 / pitch)}px`, // 螺距越小，切片越宽（表示重叠）
-                      opacity: pitch <= 1 ? 0.6 : 0.4 // 螺距越小，切片越明显
+                      width: `${Math.max(24, 48 / pitch)}px`,
+                      opacity: pitch <= 1 ? 0.6 : 0.4
                     }}
                   />
                 </motion.div>
@@ -235,18 +234,6 @@ const HelicalCTSimulator = ({ options }) => {
         <div className="mt-3">
           <p><strong>当前螺距：</strong> {getCurrentPitchDescription()}</p>
           <p className="mt-1"><strong>获取的切片数：</strong> {slices.length} 个</p>
-        </div>
-      </div>
-
-      <div className="mt-4 rounded-md border border-border bg-bg-100 p-4">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <Select label="螺距图示 (Pitch)" options={[{id:'0.5',name:'0.5'},{id:'1.0',name:'1.0'},{id:'1.5',name:'1.5'},{id:'2.0',name:'2.0'}]} value={String(pitchIllustration)} onChange={(v)=>setPitchIllustration(parseFloat(v))} />
-          <div className="text-sm text-text-200">
-            <p>螺距越小（小于1），图像重叠更多，剂量较高；螺距越大（大于1），扫描更快但可能丢失信息，剂量较低。</p>
-          </div>
-        </div>
-        <div className="mt-4 flex items-center justify-center">
-          <img src={`https://www.xrayphysics.com/ctsim_l${pitchIllustration}.PNG`} alt={`Pitch ${pitchIllustration}`} className="max-h-64" onError={(e)=>{e.target.style.display='none';}} />
         </div>
       </div>
 
