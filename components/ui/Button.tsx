@@ -1,38 +1,50 @@
 import React from 'react';
 
-const Button = ({ 
-  children, 
-  variant = 'primary', 
-  size = 'md', 
-  onClick, 
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'neon';
+  size?: 'sm' | 'md' | 'lg';
+  isLoading?: boolean;
+}
+
+export const Button: React.FC<ButtonProps> = ({
+  children,
+  variant = 'primary',
+  size = 'md',
+  isLoading,
   className = '',
-  disabled = false,
-  type = 'button'
+  disabled,
+  ...props
 }) => {
-  const baseStyles = "inline-flex items-center justify-center rounded-xl font-medium transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary-100/50 focus:ring-offset-2";
+  const baseStyles = 'inline-flex items-center justify-center rounded-md font-medium transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
   
-  const variantStyles = {
-    primary: "bg-gradient-to-r from-primary-100 to-primary-200 text-white hover:shadow-md hover:-translate-y-0.5 disabled:opacity-70 disabled:hover:transform-none disabled:hover:shadow-none",
-    secondary: "bg-bg-200 text-text-100 hover:bg-bg-300 hover:shadow-sm hover:-translate-y-0.5 disabled:opacity-70 disabled:hover:transform-none disabled:hover:shadow-none",
-    outline: "border border-border/40 bg-transparent text-text-100 hover:border-primary-100/30 hover:bg-bg-200/70 hover:shadow-sm hover:-translate-y-0.5 disabled:opacity-70 disabled:hover:transform-none disabled:hover:shadow-none"
+  const variants = {
+    primary: 'bg-primary-100 text-white hover:bg-primary-200 focus:ring-primary-100',
+    secondary: 'bg-accent-100 text-white hover:bg-accent-200 focus:ring-accent-100',
+    outline: 'border-2 border-primary-100 text-primary-100 hover:bg-primary-100 hover:text-white',
+    ghost: 'text-text-200 hover:bg-bg-300 hover:text-text-100',
+    danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
+    neon: 'bg-transparent border border-[var(--sim-accent)] text-[var(--sim-accent)] shadow-[0_0_10px_rgba(0,210,255,0.3)] hover:bg-[var(--sim-accent)] hover:text-black hover:shadow-[0_0_20px_var(--sim-accent)]',
   };
-  
-  const sizeStyles = {
-    sm: "px-3 py-1.5 text-xs",
-    md: "px-4 py-2 text-sm",
-    lg: "px-6 py-3 text-base"
+
+  const sizes = {
+    sm: 'px-3 py-1.5 text-sm',
+    md: 'px-4 py-2 text-base',
+    lg: 'px-6 py-3 text-lg',
   };
-  
+
   return (
     <button
-      type={type}
-      onClick={onClick}
-      disabled={disabled}
-      className={`${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
+      className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
+      disabled={disabled || isLoading}
+      {...props}
     >
+      {isLoading ? (
+        <svg className="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+        </svg>
+      ) : null}
       {children}
     </button>
   );
 };
-
-export default Button;

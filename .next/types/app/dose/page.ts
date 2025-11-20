@@ -1,4 +1,4 @@
-// File: E:\Projects\CTPhysics\app\dose\page.jsx
+// File: E:\Projects\CTPhysics\app\dose\page.tsx
 import * as entry from '../../../../app/dose/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

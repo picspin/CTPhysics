@@ -1,8 +1,5 @@
 /node_modules
 /.vscode
-/website_analysis.md
-/architecture_design.md
 /.trae
-/.next/*
-/website_analysis.md
-/architecture_design.md
+/.next
+/.next/types

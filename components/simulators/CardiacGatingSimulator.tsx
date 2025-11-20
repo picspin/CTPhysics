@@ -5,7 +5,7 @@ import { motion, useSpring, useTransform } from 'framer-motion';
 import SimulatorContainer from '../ui/SimulatorContainer';
 import Select from '../ui/Select';
 import Slider from '../ui/Slider';
-import Button from '../ui/Button';
+import { Button } from '../ui/Button';
 import { CardiacGatingOptions } from '@/types';
 import { calculateOptimalPhase, calculateTemporalResolution } from '@/utils/physics-calculations';
 import { drawSmoothLine, Particle } from '@/utils/animation-utils';
@@ -19,10 +19,10 @@ const CardiacGatingSimulator: React.FC<Props> = ({ options }) => {
     { id: 'prospective', name: 'Prospective Gating' },
     { id: 'retrospective', name: 'Retrospective Gating' }
   ];
-  
+
   const gatingTypes = options?.gatingTypes || defaultGatingTypes;
   const heartRateRange = options?.heartRateRange || { min: 40, max: 120, step: 5 };
-  
+
   const [gatingType, setGatingType] = useState('prospective');
   const [heartRate, setHeartRate] = useState(70);
   const [isScanning, setIsScanning] = useState(false);
@@ -30,15 +30,15 @@ const CardiacGatingSimulator: React.FC<Props> = ({ options }) => {
   const [acquisitionPoints, setAcquisitionPoints] = useState<{ time: number; phase: string }[]>([]);
   const [currentTime, setCurrentTime] = useState(0);
   const [scanQuality, setScanQuality] = useState(100);
-  
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
   const particlesRef = useRef<Particle[]>([]);
-  
+
   // Spring animations for heart
   const heartScale = useSpring(1);
   const heartOpacity = useSpring(0.8);
-  
+
   // Generate realistic ECG data
   useEffect(() => {
     const generateECG = () => {
@@ -47,14 +47,14 @@ const CardiacGatingSimulator: React.FC<Props> = ({ options }) => {
       const samplesPerSecond = 100;
       const totalSamples = duration * samplesPerSecond;
       const rrInterval = 60 / heartRate; // R-R interval in seconds
-      
+
       for (let i = 0; i < totalSamples; i++) {
         const time = i / samplesPerSecond;
         const cycleTime = time % rrInterval;
         const normalizedTime = cycleTime / rrInterval;
-        
+
         let value = 0;
-        
+
         // P wave (5-10% of cycle)
         if (normalizedTime < 0.1) {
           value = 0.2 * Math.sin((normalizedTime / 0.1) * Math.PI);
@@ -89,32 +89,32 @@ const CardiacGatingSimulator: React.FC<Props> = ({ options }) => {
         else {
           value = 0;
         }
-        
+
         // Add some noise
         value += (Math.random() - 0.5) * 0.02;
-        
+
         data.push({ time, value });
       }
-      
+
       setEcgData(data);
     };
-    
+
     generateECG();
   }, [heartRate]);
-  
+
   // Draw ECG and acquisition visualization
   useEffect(() => {
     if (!canvasRef.current) return;
-    
+
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    
+
     const draw = () => {
       // Clear canvas
       ctx.fillStyle = '#000000';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
+
       // Draw grid
       ctx.strokeStyle = '#1a1a1a';
       ctx.lineWidth = 1;
@@ -130,22 +130,22 @@ const CardiacGatingSimulator: React.FC<Props> = ({ options }) => {
         ctx.lineTo(canvas.width, y);
         ctx.stroke();
       }
-      
+
       // Draw ECG
       if (ecgData.length > 0) {
         const visibleDuration = 5; // Show 5 seconds
         const startTime = Math.max(0, currentTime - visibleDuration);
         const endTime = currentTime;
-        
+
         const points = ecgData
           .filter(point => point.time >= startTime && point.time <= endTime)
           .map(point => ({
             x: ((point.time - startTime) / visibleDuration) * canvas.width,
             y: canvas.height / 2 - point.value * canvas.height * 0.3
           }));
-        
+
         drawSmoothLine(ctx, points, '#4A90E2', 2);
-        
+
         // Draw current time indicator
         if (isScanning) {
           ctx.strokeStyle = '#FF7A00';
@@ -156,7 +156,7 @@ const CardiacGatingSimulator: React.FC<Props> = ({ options }) => {
           ctx.stroke();
         }
       }
-      
+
       // Draw acquisition points
       acquisitionPoints.forEach(point => {
         const x = ((point.time - Math.max(0, currentTime - 5)) / 5) * canvas.width;
@@ -165,18 +165,18 @@ const CardiacGatingSimulator: React.FC<Props> = ({ options }) => {
           ctx.beginPath();
           ctx.arc(x, canvas.height / 2, 5, 0, Math.PI * 2);
           ctx.fill();
-          
+
           // Add label
           ctx.fillStyle = '#FFFFFF';
           ctx.font = '10px sans-serif';
           ctx.fillText(point.phase, x - 10, canvas.height / 2 + 20);
         }
       });
-      
+
       // Update and draw particles
       particlesRef.current = particlesRef.current.filter(particle => {
         particle.update(16); // Assuming 60fps
-        
+
         if (!particle.isDead()) {
           particle.draw(ctx);
           return true;
@@ -184,29 +184,29 @@ const CardiacGatingSimulator: React.FC<Props> = ({ options }) => {
         return false;
       });
     };
-    
+
     draw();
   }, [ecgData, currentTime, acquisitionPoints, gatingType, isScanning]);
-  
+
   // Animation loop
   useEffect(() => {
     if (isScanning) {
       const startTime = Date.now();
       const rrInterval = 60000 / heartRate; // R-R interval in ms
-      
+
       const animate = () => {
         const elapsed = Date.now() - startTime;
         const newTime = elapsed / 1000;
         setCurrentTime(newTime);
-        
+
         // Heart beat animation
         const cycleTime = elapsed % rrInterval;
         const normalizedTime = cycleTime / rrInterval;
-        
+
         if (normalizedTime < 0.1) {
           heartScale.set(1.2);
           heartOpacity.set(1);
-          
+
           // Add particles on heartbeat
           if (canvasRef.current && particlesRef.current.length < 50) {
             const canvas = canvasRef.current;
@@ -227,7 +227,7 @@ const CardiacGatingSimulator: React.FC<Props> = ({ options }) => {
           heartScale.set(1);
           heartOpacity.set(0.8);
         }
-        
+
         // Determine acquisition windows
         if (gatingType === 'prospective') {
           // Acquire only during diastole (70-80% of R-R interval)
@@ -245,29 +245,29 @@ const CardiacGatingSimulator: React.FC<Props> = ({ options }) => {
             setAcquisitionPoints(prev => [...prev, { time: newTime, phase }]);
           }
         }
-        
+
         // Calculate scan quality based on heart rate variability
         const optimalPhase = calculateOptimalPhase(heartRate, 0.5);
         const quality = heartRate < 65 ? 100 : Math.max(50, 100 - (heartRate - 65));
         setScanQuality(quality);
-        
+
         if (newTime < 10) { // 10 second scan
           animationRef.current = requestAnimationFrame(animate);
         } else {
           setIsScanning(false);
         }
       };
-      
+
       animationRef.current = requestAnimationFrame(animate);
     }
-    
+
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
     };
   }, [isScanning, heartRate, gatingType, acquisitionPoints, heartScale, heartOpacity]);
-  
+
   const startScan = () => {
     if (isScanning) {
       setIsScanning(false);
@@ -278,11 +278,11 @@ const CardiacGatingSimulator: React.FC<Props> = ({ options }) => {
       setIsScanning(true);
     }
   };
-  
+
   const temporalResolution = calculateTemporalResolution(0.5, false);
-  
+
   return (
-    <SimulatorContainer 
+    <SimulatorContainer
       title="Cardiac CT Gating Simulator"
       description="Visualize how ECG-synchronized acquisition works in cardiac CT"
       helpContent={
@@ -305,7 +305,7 @@ const CardiacGatingSimulator: React.FC<Props> = ({ options }) => {
             value={gatingType}
             onChange={setGatingType}
           />
-          
+
           <Slider
             label="Heart Rate"
             min={heartRateRange.min}
@@ -316,7 +316,7 @@ const CardiacGatingSimulator: React.FC<Props> = ({ options }) => {
             unit=" bpm"
           />
         </div>
-        
+
         {/* ECG Visualization */}
         <div className="relative">
           <canvas
@@ -325,7 +325,7 @@ const CardiacGatingSimulator: React.FC<Props> = ({ options }) => {
             height={300}
             className="w-full h-64 border border-border-100 rounded-lg"
           />
-          
+
           {/* Heart animation */}
           <motion.div
             className="absolute top-4 right-4"
@@ -341,19 +341,19 @@ const CardiacGatingSimulator: React.FC<Props> = ({ options }) => {
             </svg>
           </motion.div>
         </div>
-        
+
         {/* Scan button and status */}
         <div className="flex items-center justify-between">
           <Button onClick={startScan} variant="primary" size="lg">
             {isScanning ? 'Stop Scan' : 'Start Cardiac Scan'}
           </Button>
-          
+
           <div className="text-right">
             <div className="text-sm text-text-200">Temporal Resolution</div>
             <div className="text-lg font-semibold text-text-100">{temporalResolution * 1000}ms</div>
           </div>
         </div>
-        
+
         {/* Results and metrics */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <motion.div
@@ -366,7 +366,7 @@ const CardiacGatingSimulator: React.FC<Props> = ({ options }) => {
               {acquisitionPoints.length}
             </div>
           </motion.div>
-          
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -380,7 +380,7 @@ const CardiacGatingSimulator: React.FC<Props> = ({ options }) => {
               {scanQuality}%
             </div>
           </motion.div>
-          
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -393,7 +393,7 @@ const CardiacGatingSimulator: React.FC<Props> = ({ options }) => {
             </div>
           </motion.div>
         </div>
-        
+
         {/* Recommendations */}
         <motion.div
           initial={{ opacity: 0 }}

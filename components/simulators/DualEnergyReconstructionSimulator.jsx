@@ -1,28 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import SimulatorContainer from './ui/SimulatorContainer';
-import Select from './ui/Select';
-import TabGroup from './TabGroup';
-import Button from './ui/Button';
+import SimulatorContainer from '@/components/ui/SimulatorContainer';
+import { Select } from '@/components/ui/Select';
+import TabGroup from '@/components/ui/TabGroup';
+import { Button } from '@/components/ui/Button';
 
 const DualEnergyReconstructionSimulator = () => {
   const [reconstructionType, setReconstructionType] = useState('virtual_noncontrast');
   const [selectedCase, setSelectedCase] = useState('liver');
   const [materialComposition, setMaterialComposition] = useState([]);
-  
+
   const reconstructionTypes = [
     { id: 'virtual_noncontrast', label: '虚拟平扫' },
     { id: 'iodine_overlay', label: '碘叠加' },
     { id: 'bone_subtraction', label: '骨骼减除' },
     { id: 'lung_perfusion', label: '肺灌注' }
   ];
-  
+
   const cases = [
     { id: 'liver', name: '肝脏病变' },
     { id: 'lung', name: '肺栓塞' },
     { id: 'kidney', name: '肾结石' }
   ];
-  
+
   // 生成模拟材料分解数据
   useEffect(() => {
     const generateMaterialData = () => {
@@ -50,13 +50,13 @@ const DualEnergyReconstructionSimulator = () => {
           { name: '钙（结石）', conventional: 5, virtual_noncontrast: 15, iodine_overlay: 5, bone_subtraction: 5, lung_perfusion: 5 }
         ]
       };
-      
+
       setMaterialComposition(compositions[selectedCase]);
     };
-    
+
     generateMaterialData();
   }, [selectedCase]);
-  
+
   // 获取图表中显示的条形颜色
   const getBarColor = (material) => {
     const colors = {
@@ -74,20 +74,20 @@ const DualEnergyReconstructionSimulator = () => {
     <SimulatorContainer title="双能重建模拟器">
       <div className="mb-4 space-y-4">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <Select 
-            label="选择病例" 
-            options={cases} 
-            value={selectedCase} 
-            onChange={setSelectedCase} 
+          <Select
+            label="选择病例"
+            options={cases}
+            value={selectedCase}
+            onChange={setSelectedCase}
           />
         </div>
-        
-        <TabGroup 
-          tabs={reconstructionTypes} 
-          activeTab={reconstructionType} 
-          onChange={setReconstructionType} 
+
+        <TabGroup
+          tabs={reconstructionTypes}
+          activeTab={reconstructionType}
+          onChange={setReconstructionType}
         />
-        
+
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <div className="rounded-md border border-border-100 bg-bg-100 p-4">
             <div className="mb-2 text-sm font-medium text-text-100">常规CT图像</div>
@@ -103,7 +103,7 @@ const DualEnergyReconstructionSimulator = () => {
                       </div>
                     </div>
                   )}
-                  
+
                   {selectedCase === 'lung' && (
                     <div className="h-3/4 w-3/4 rounded-md bg-gray-900">
                       <div className="relative h-full w-full">
@@ -113,7 +113,7 @@ const DualEnergyReconstructionSimulator = () => {
                       </div>
                     </div>
                   )}
-                  
+
                   {selectedCase === 'kidney' && (
                     <div className="h-3/4 w-3/4 rounded-md bg-gray-700">
                       <div className="relative h-full w-full">
@@ -124,14 +124,14 @@ const DualEnergyReconstructionSimulator = () => {
                     </div>
                   )}
                 </div>
-                
+
                 <div className="absolute bottom-2 left-2 rounded bg-black bg-opacity-50 px-2 py-1 text-xs text-white">
                   常规单能CT
                 </div>
               </div>
             </div>
           </div>
-          
+
           <div className="rounded-md border border-border-100 bg-bg-100 p-4">
             <div className="mb-2 text-sm font-medium text-text-100">双能CT重建</div>
             <div className="aspect-square w-full overflow-hidden rounded-md bg-black">
@@ -146,7 +146,7 @@ const DualEnergyReconstructionSimulator = () => {
                       </div>
                     </div>
                   )}
-                  
+
                   {selectedCase === 'liver' && reconstructionType === 'iodine_overlay' && (
                     <div className="h-3/4 w-3/4 rounded-full bg-gray-700">
                       <div className="relative h-full w-full">
@@ -155,7 +155,7 @@ const DualEnergyReconstructionSimulator = () => {
                       </div>
                     </div>
                   )}
-                  
+
                   {selectedCase === 'lung' && reconstructionType === 'lung_perfusion' && (
                     <div className="h-3/4 w-3/4 rounded-md bg-gray-900">
                       <div className="relative h-full w-full">
@@ -165,7 +165,7 @@ const DualEnergyReconstructionSimulator = () => {
                       </div>
                     </div>
                   )}
-                  
+
                   {selectedCase === 'kidney' && reconstructionType === 'virtual_noncontrast' && (
                     <div className="h-3/4 w-3/4 rounded-md bg-gray-600">
                       <div className="relative h-full w-full">
@@ -175,17 +175,17 @@ const DualEnergyReconstructionSimulator = () => {
                       </div>
                     </div>
                   )}
-                  
+
                   {/* 默认显示 */}
                   {((selectedCase === 'liver' && (reconstructionType === 'bone_subtraction' || reconstructionType === 'lung_perfusion')) ||
                     (selectedCase === 'lung' && (reconstructionType === 'virtual_noncontrast' || reconstructionType === 'iodine_overlay' || reconstructionType === 'bone_subtraction')) ||
                     (selectedCase === 'kidney' && (reconstructionType === 'iodine_overlay' || reconstructionType === 'bone_subtraction' || reconstructionType === 'lung_perfusion'))) && (
-                    <div className="flex h-full w-full items-center justify-center text-white">
-                      <p>此重建类型不适用于当前病例</p>
-                    </div>
-                  )}
+                      <div className="flex h-full w-full items-center justify-center text-white">
+                        <p>此重建类型不适用于当前病例</p>
+                      </div>
+                    )}
                 </div>
-                
+
                 <div className="absolute bottom-2 left-2 rounded bg-black bg-opacity-50 px-2 py-1 text-xs text-white">
                   {reconstructionTypes.find(type => type.id === reconstructionType)?.label || ''}
                 </div>
@@ -193,7 +193,7 @@ const DualEnergyReconstructionSimulator = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="rounded-md border border-border-100 bg-bg-100 p-4">
           <div className="mb-2 text-sm font-medium text-text-100">材料分解</div>
           <div className="h-64 w-full md:h-72">
@@ -208,16 +208,16 @@ const DualEnergyReconstructionSimulator = () => {
                 <YAxis dataKey="name" type="category" width={80} />
                 <Tooltip formatter={(value) => [`${value}%`, '比例']} />
                 <Legend />
-                <Bar 
-                  dataKey="conventional" 
-                  name="常规CT" 
-                  fill="#cccccc" 
+                <Bar
+                  dataKey="conventional"
+                  name="常规CT"
+                  fill="#cccccc"
                   radius={[0, 4, 4, 0]}
                 />
-                <Bar 
-                  dataKey={reconstructionType} 
-                  name={reconstructionTypes.find(type => type.id === reconstructionType)?.label || ''} 
-                  fill="#FF8C00" 
+                <Bar
+                  dataKey={reconstructionType}
+                  name={reconstructionTypes.find(type => type.id === reconstructionType)?.label || ''}
+                  fill="#FF8C00"
                   radius={[0, 4, 4, 0]}
                 />
               </BarChart>
@@ -225,7 +225,7 @@ const DualEnergyReconstructionSimulator = () => {
           </div>
         </div>
       </div>
-      
+
       <div className="rounded-md bg-bg-200 p-4 text-sm text-text-200">
         <h3 className="mb-2 font-medium text-text-100">说明</h3>
         <p>此模拟器展示了双能CT的不同重建类型：</p>

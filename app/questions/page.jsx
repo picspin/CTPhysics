@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import PageHeader from '../../ui/PageHeader';
-import SectionCard from '../../ui/SectionCard';
+import PageHeader from '@/components/ui/PageHeader';
+import SectionCard from '@/components/ui/SectionCard';
 
 // 从JSON文件导入数据
-import questionsData from '../../questions.json';
+import questionsData from '@/data/questions.json';
 
 export default function QuestionsPage() {
   const [expandedQuestions, setExpandedQuestions] = useState({});
@@ -19,23 +19,23 @@ export default function QuestionsPage() {
 
   return (
     <div className="space-y-8 animate-fadeIn">
-      <PageHeader 
-        title={questionsData.title} 
-        description={questionsData.description} 
+      <PageHeader
+        title={questionsData.title}
+        description={questionsData.description}
       />
-      
-      <SectionCard 
+
+      <SectionCard
         title="CT物理复习题"
         description="测试您对CT物理概念的理解"
         className="hover-lift"
       >
         <div className="space-y-6">
           {questionsData.questions && questionsData.questions.map((question, index) => (
-            <div 
+            <div
               key={`q${question.id}`}
               className="border-b border-border/30 pb-4 last:border-b-0 last:pb-0"
             >
-              <div 
+              <div
                 className="flex cursor-pointer items-center justify-between py-2"
                 onClick={() => toggleQuestion(`q${question.id}`)}
               >
@@ -44,7 +44,7 @@ export default function QuestionsPage() {
                   {expandedQuestions[`q${question.id}`] ? '−' : '+'}
                 </span>
               </div>
-              
+
               {expandedQuestions[`q${question.id}`] && (
                 <div className="mt-2 space-y-4 rounded-lg bg-bg-200/50 p-4 text-text-200">
                   <div className="space-y-2">

@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Helix CT Simulator v2.0</title>
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --panel-bg: #252525;
+            --text-color: #e0e0e0;
+            --accent-color: #00d2ff;
+            --danger-color: #ff4444;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 上半部分：显示区 */
+        .main-display {
+            display: flex;
+            flex: 1;
+            /* 占据剩余空间 */
+            min-height: 0;
+            /* 防止溢出 */
+            border-bottom: 4px solid #000;
+        }
+
+        /* 左侧 3D 容器 */
+        #view-3d-container {
+            flex: 1;
+            position: relative;
+            background: #111;
+            border-right: 2px solid #333;
+            overflow: hidden;
+        }
+
+        /* 确保 Canvas 填满容器 */
+        #view-3d-container canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+            outline: none;
+        }
+
+        /* 右侧 2D 图像容器 */
+        #view-image-container {
+            flex: 1;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        canvas#phantom-canvas {
+            background: #000;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+            max-width: 90%;
+            max-height: 80%;
+            aspect-ratio: 1/1;
+        }
+
+        /* UI 覆盖层文字 */
+        .overlay-text {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            font-family: monospace;
+            font-size: 14px;
+            color: var(--accent-color);
+            pointer-events: none;
+            z-index: 10;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+        }
+
+        /* 底部控制面板 */
+        .control-panel {
+            height: 300px;
+            background-color: var(--panel-bg);
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            padding: 15px;
+            box-sizing: border-box;
+            box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.5);
+            z-index: 20;
+        }
+
+        .panel-group {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid #444;
+            border-radius: 6px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            gap: 10px;
+        }
+
+        .panel-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: #fff;
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 4px;
+            text-transform: uppercase;
+        }
+
+        .control-row {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-size: 11px;
+            margin-bottom: 4px;
+            color: #aaa;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .val-display {
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+        }
+
+        button.action-btn {
+            background: #444;
+            color: white;
+            border: 1px solid #666;
+            padding: 12px;
+            cursor: pointer;
+            font-weight: bold;
+            border-radius: 4px;
+            transition: 0.2s;
+            margin-top: auto;
+        }
+
+        button.action-btn:hover {
+            background: #555;
+        }
+
+        button.action-btn.active {
+            background: var(--accent-color);
+            color: #000;
+            box-shadow: 0 0 10px var(--accent-color);
+            border-color: var(--accent-color);
+        }
+
+        button.action-btn.danger.active {
+            background: var(--danger-color);
+            box-shadow: 0 0 10px var(--danger-color);
+            border-color: var(--danger-color);
+            color: white;
+        }
+
+        select {
+            background: #333;
+            color: #fff;
+            border: 1px solid #555;
+            padding: 5px;
+            width: 100%;
+        }
+
+        /* 加载指示器 */
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            color: var(--accent-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            font-family: monospace;
+            font-size: 24px;
+        }
+    </style>
+
+    <!-- Import Maps for reliable Three.js loading -->
+    <script type="importmap">
+{
+"imports": {
+"three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+"three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+}
+}
+</script>
+</head>
+
+<body>
+
+    <div id="loading-overlay">INITIALIZING SYSTEM...</div>
+
+    <div class="main-display">
+        <!-- 3D View -->
+        <div id="view-3d-container">
+            <div class="overlay-text">
+                GANTRY ROOM VIEW<br>
+                STATUS: <span id="status-text">STANDBY</span>
+            </div>
+        </div>
+
+        <!-- Image View -->
+        <div id="view-image-container">
+            <div class="overlay-text">REAL-TIME RECONSTRUCTION</div>
+            <canvas id="phantom-canvas" width="512" height="512"></canvas>
+            <div style="margin-top: 10px; font-family: monospace; font-size: 12px; color: #888;" id="dose-info">
+                Dose: 0.0 mGy
+            </div>
+        </div>
+    </div>
+
+    <div class="control-panel">
+        <!-- Panel 1: Geometry -->
+        <div class="panel-group">
+            <div class="panel-title">Motion Control</div>
+            <div class="control-row">
+                <label>Rotation Time (s)<span id="disp-speed" class="val-display">0.5</span></label>
+                <input type="range" id="in-speed" min="0.2" max="2.0" step="0.1" value="0.5">
+            </div>
+            <div class="control-row">
+                <label>Pitch (Table Speed)<span id="disp-pitch" class="val-display">1.0</span></label>
+                <input type="range" id="in-pitch" min="0.1" max="2.0" step="0.1" value="1.0">
+            </div>
+            <button id="btn-scan" class="action-btn danger">START SCAN</button>
+        </div>
+
+        <!-- Panel 2: X-Ray -->
+        <div class="panel-group">
+            <div class="panel-title">Exposure</div>
+            <div class="control-row">
+                <label>Tube Voltage (kV)<span id="disp-kv" class="val-display">120</span></label>
+                <input type="range" id="in-kv" min="80" max="140" step="10" value="120">
+            </div>
+            <div class="control-row">
+                <label>Tube Current (mA)<span id="disp-ma" class="val-display">200</span></label>
+                <input type="range" id="in-ma" min="50" max="800" step="50" value="200">
+            </div>
+        </div>
+
+        <!-- Panel 3: Recon -->
+        <div class="panel-group">
+            <div class="panel-title">Reconstruction</div>
+            <div class="control-row">
+                <label>Kernel</label>
+                <select id="in-kernel">
+                    <option value="soft">Standard (Soft)</option>
+                    <option value="bone">Bone (Sharp)</option>
+                    <option value="lung">Lung (High Contrast)</option>
+                </select>
+            </div>
+            <button id="btn-de" class="action-btn">Dual Energy: OFF</button>
+        </div>
+
+        <!-- Panel 4: Log -->
+        <div class="panel-group">
+            <div class="panel-title">System Log</div>
+            <div id="sys-log"
+                style="font-family: monospace; font-size: 10px; color: #0f0; overflow-y: auto; height: 100%;">
+                > System Booting...<br>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // --- State ---
+        const params = {
+            speed: 0.5,
+            pitch: 1.0,
+            kv: 120,
+            ma: 200,
+            kernel: 'soft',
+            dualEnergy: false,
+            scanning: false
+        };
+
+        // --- DOM Elements ---
+        const dom = {
+            speed: document.getElementById('in-speed'),
+            pitch: document.getElementById('in-pitch'),
+            kv: document.getElementById('in-kv'),
+            ma: document.getElementById('in-ma'),
+            kernel: document.getElementById('in-kernel'),
+            btnScan: document.getElementById('btn-scan'),
+            btnDe: document.getElementById('btn-de'),
+            dispSpeed: document.getElementById('disp-speed'),
+            dispPitch: document.getElementById('disp-pitch'),
+            dispKv: document.getElementById('disp-kv'),
+            dispMa: document.getElementById('disp-ma'),
+            log: document.getElementById('sys-log'),
+            status: document.getElementById('status-text'),
+            dose: document.getElementById('dose-info'),
+            container3D: document.getElementById('view-3d-container'),
+            canvas2D: document.getElementById('phantom-canvas')
+        };
+
+        function log(msg) {
+            dom.log.innerHTML += `> ${msg}<br>`;
+            dom.log.scrollTop = dom.log.scrollHeight;
+        }
+
+        // --- 3D Scene Setup ---
+        let scene, camera, renderer, controls;
+        let gantryGroup, tableGroup, laser;
+
+        function init3D() {
+            const width = dom.container3D.clientWidth;
+            const height = dom.container3D.clientHeight;
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x111111);
+            scene.fog = new THREE.Fog(0x111111, 5, 15);
+
+            camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 100);
+            camera.position.set(5, 3, 6);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            dom.container3D.appendChild(renderer.domElement);
+
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+
+            // Lighting
+            const ambient = new THREE.AmbientLight(0x404040, 2);
+            scene.add(ambient);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+            dirLight.position.set(5, 10, 7);
+            scene.add(dirLight);
+
+            // --- Models ---
+
+            // 1. Gantry Housing (Static part)
+            const housingGeo = new THREE.BoxGeometry(4, 5, 2);
+            // Create a hole in the box (using simple trick: render mask or just a torus shape visual)
+            // For simplicity, we use a big Torus for the cover
+            const coverGeo = new THREE.TorusGeometry(3.2, 1.2, 16, 50);
+            const coverMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.4 });
+            const housing = new THREE.Mesh(coverGeo, coverMat);
+            housing.position.y = 0;
+            scene.add(housing);
+
+            // Floor
+            const floorGeo = new THREE.PlaneGeometry(20, 20);
+            const floorMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8 });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.y = -3;
+            scene.add(floor);
+
+            // 2. Rotating Gantry (Internal)
+            gantryGroup = new THREE.Group();
+
+            // Inner Ring
+            const ringGeo = new THREE.TorusGeometry(2.5, 0.2, 16, 100);
+            const ringMat = new THREE.MeshBasicMaterial({ color: 0x333333 });
+            const ring = new THREE.Mesh(ringGeo, ringMat);
+            gantryGroup.add(ring);
+
+            // X-Ray Tube
+            const tube = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.8, 0.6), new THREE.MeshStandardMaterial({ color: 0xffaa00 }));
+            tube.position.y = 2.0;
+            gantryGroup.add(tube);
+
+            // Detector
+            const det = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.3, 0.8), new THREE.MeshStandardMaterial({ color: 0x0088ff }));
+            det.position.y = -2.0;
+            gantryGroup.add(det);
+
+            scene.add(gantryGroup);
+
+            // 3. Table & Phantom
+            tableGroup = new THREE.Group();
+
+            const bedGeo = new THREE.BoxGeometry(1.2, 0.1, 8);
+            const bedMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+            const bed = new THREE.Mesh(bedGeo, bedMat);
+            tableGroup.add(bed);
+
+            // Phantom Head
+            const phGeo = new THREE.CylinderGeometry(0.5, 0.5, 1.5, 32);
+            const phMat = new THREE.MeshStandardMaterial({ color: 0xdddddd });
+            const phantom = new THREE.Mesh(phGeo, phMat);
+            phantom.rotation.x = Math.PI / 2;
+            phantom.position.y = 0.3;
+            tableGroup.add(phantom);
+
+            tableGroup.position.y = -0.5;
+            tableGroup.position.z = 4; // Start outside
+            scene.add(tableGroup);
+
+            // Laser
+            const laserGeo = new THREE.PlaneGeometry(0.05, 5);
+            const laserMat = new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide, transparent: true, opacity: 0.5 });
+            laser = new THREE.Mesh(laserGeo, laserMat);
+            laser.rotation.z = Math.PI / 2; // Horizontal line
+            scene.add(laser);
+            laser.visible = false;
+        }
+
+        // --- 2D Image Simulation (Canvas) ---
+        const ctx = dom.canvas2D.getContext('2d');
+
+        function drawPhantom() {
+            const w = dom.canvas2D.width;
+            const h = dom.canvas2D.height;
+            const cx = w / 2;
+            const cy = h / 2;
+            const scale = 200;
+
+            // Clear
+            ctx.fillStyle = "#000";
+            ctx.fillRect(0, 0, w, h);
+
+            // Drawing helper
+            function ellipse(x, y, rw, rh, ang, col) {
+                ctx.beginPath();
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(ang * Math.PI / 180);
+                ctx.scale(rw, rh);
+                ctx.arc(0, 0, 1, 0, 2 * Math.PI);
+                ctx.restore();
+                ctx.fillStyle = col;
+                ctx.fill();
+            }
+
+            // 1. Bone (Skull)
+            let boneColor = params.dualEnergy ? "#88ccff" : "#cccccc";
+            ellipse(cx, cy, 0.9 * scale, 0.92 * scale, 0, boneColor);
+
+            // 2. Brain
+            ellipse(cx, cy, 0.85 * scale, 0.87 * scale, 0, "#222");
+
+            // 3. Ventricles (Structure)
+            ellipse(cx - 0.2 * scale, cy, 0.15 * scale, 0.25 * scale, -15, "#444");
+            ellipse(cx + 0.2 * scale, cy, 0.15 * scale, 0.25 * scale, 15, "#444");
+
+            // --- Noise & Artifact Simulation ---
+            const imgData = ctx.getImageData(0, 0, w, h);
+            const data = imgData.data;
+
+            // Physics approximation:
+            // Low mA = High Noise
+            // High kV = Less Noise (better penetration)
+            const signalStrength = (params.ma * Math.pow(params.kv, 2)) / 1000000;
+            const noiseFactor = Math.max(0, 60 - signalStrength * 2);
+
+            for (let i = 0; i < data.length; i += 4) {
+                const val = data[i]; // Greyscale, so r=g=b
+                if (val > 10) { // Only add noise to matter, less to air
+                    const noise = (Math.random() - 0.5) * noiseFactor;
+                    data[i] = val + noise;
+                    data[i + 1] = val + noise;
+                    data[i + 2] = val + noise;
+
+                    // Dual Energy highlighting
+                    if (params.dualEnergy && val > 150) {
+                        // If bone (bright), boost blue channel
+                        data[i + 2] += 50;
+                    }
+                } else {
+                    // Air noise
+                    const airNoise = (Math.random()) * (noiseFactor * 0.2);
+                    data[i] = airNoise;
+                    data[i + 1] = airNoise;
+                    data[i + 2] = airNoise;
+                }
+            }
+            ctx.putImageData(imgData, 0, 0);
+
+            // --- Kernel / Pitch Effects (CSS Filters) ---
+            let filters = [];
+            if (params.kernel === 'soft') filters.push('blur(1px)');
+            if (params.kernel === 'bone') filters.push('contrast(1.3)');
+            if (params.kernel === 'lung') filters.push('contrast(2.0) brightness(0.8)');
+
+            // High pitch artifacts (motion blur)
+            if (params.scanning && params.pitch > 1.5) {
+                filters.push('blur(2px)');
+            }
+
+            ctx.filter = filters.join(' ');
+            ctx.drawImage(dom.canvas2D, 0, 0);
+            ctx.filter = 'none';
+        }
+
+        // --- Animation Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (controls) controls.update();
+
+            if (params.scanning) {
+                // 1. Rotate Gantry
+                // speed is seconds per rotation.
+                const rotSpeed = (Math.PI * 2) / (params.speed * 60);
+                if (gantryGroup) gantryGroup.rotation.z -= rotSpeed;
+
+                // 2. Move Table
+                // Speed = Pitch * Thickness / RotationTime
+                // Arbitrary world units: Let's say Beam Width is 0.1 units
+                const moveSpeed = (params.pitch * 0.1) * (rotSpeed / (Math.PI * 2));
+                if (tableGroup) {
+                    tableGroup.position.z -= moveSpeed;
+                    // Reset loop
+                    if (tableGroup.position.z < -4) {
+                        tableGroup.position.z = 4;
+                    }
+                }
+
+                // Update Noise continuously
+                drawPhantom();
+            }
+
+            if (renderer && scene && camera) {
+                renderer.render(scene, camera);
+            }
+        }
+
+        // --- Event Listeners ---
+        function updateUI() {
+            dom.dispSpeed.textContent = params.speed;
+            dom.dispPitch.textContent = params.pitch;
+            dom.dispKv.textContent = params.kv;
+            dom.dispMa.textContent = params.ma;
+
+            // Calc Dose (CTDI approx)
+            const dose = (params.ma * Math.pow(params.kv / 100, 2) / params.pitch).toFixed(1);
+            dom.dose.textContent = `CTDI: ${dose} mGy`;
+        }
+
+        function setupEvents() {
+            dom.speed.addEventListener('input', (e) => { params.speed = parseFloat(e.target.value); updateUI(); });
+            dom.pitch.addEventListener('input', (e) => { params.pitch = parseFloat(e.target.value); updateUI(); });
+            dom.kv.addEventListener('input', (e) => { params.kv = parseInt(e.target.value); updateUI(); drawPhantom(); });
+            dom.ma.addEventListener('input', (e) => { params.ma = parseInt(e.target.value); updateUI(); drawPhantom(); });
+
+            dom.kernel.addEventListener('change', (e) => {
+                params.kernel = e.target.value;
+                log(`Kernel changed to: ${params.kernel}`);
+                drawPhantom();
+            });
+
+            dom.btnDe.addEventListener('click', () => {
+                params.dualEnergy = !params.dualEnergy;
+                dom.btnDe.textContent = params.dualEnergy ? "Dual Energy: ON" : "Dual Energy: OFF";
+                dom.btnDe.classList.toggle('active');
+                drawPhantom();
+            });
+
+            dom.btnScan.addEventListener('click', () => {
+                params.scanning = !params.scanning;
+                if (params.scanning) {
+                    dom.btnScan.textContent = "STOP SCAN";
+                    dom.btnScan.classList.add('active');
+                    dom.status.textContent = "EXPOSURE";
+                    dom.status.style.color = "red";
+                    if (laser) laser.visible = true;
+                    log("Scan started.");
+                } else {
+                    dom.btnScan.textContent = "START SCAN";
+                    dom.btnScan.classList.remove('active');
+                    dom.status.textContent = "STANDBY";
+                    dom.status.style.color = "var(--accent-color)";
+                    if (laser) laser.visible = false;
+                    log("Scan stopped.");
+                }
+            });
+
+            // Window Resize
+            window.addEventListener('resize', () => {
+                if (!camera || !renderer) return;
+                const w = dom.container3D.clientWidth;
+                const h = dom.container3D.clientHeight;
+                camera.aspect = w / h;
+                camera.updateProjectionMatrix();
+                renderer.setSize(w, h);
+            });
+        }
+
+        // --- Main Init ---
+        window.onload = () => {
+            try {
+                init3D();
+                setupEvents();
+                updateUI();
+                drawPhantom(); // Initial draw
+                animate();
+                document.getElementById('loading-overlay').style.display = 'none';
+                log("System Ready.");
+            } catch (e) {
+                console.error(e);
+                document.getElementById('loading-overlay').textContent = "ERROR: " + e.message;
+            }
+        };
+    </script>
+</body>
+
+</html>

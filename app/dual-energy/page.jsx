@@ -1,27 +1,27 @@
 'use client';
 
 import React from 'react';
-import PageHeader from '../../ui/PageHeader';
-import SectionCard from '../../ui/SectionCard';
-import KeyPoints from '../../ui/KeyPoints';
-import SimulatorContainer from '../../ui/SimulatorContainer';
-import DualEnergyReconstructionSimulator from '../../components/simulators/DualEnergyReconstructionSimulator';
-import XrayAttenuationSimulator from '../../components/simulators/XrayAttenuationSimulator';
-import TabGroup from '../../ui/TabGroup';
+import PageHeader from '@/components/ui/PageHeader';
+import SectionCard from '@/components/ui/SectionCard';
+import KeyPoints from '@/components/ui/KeyPoints';
+import SimulatorContainer from '@/components/ui/SimulatorContainer';
+import DualEnergyReconstructionSimulator from '@/components/simulators/DualEnergyReconstructionSimulator';
+import XrayAttenuationSimulator from '@/components/simulators/XrayAttenuationSimulator';
+import TabGroup from '@/components/ui/TabGroup';
 
 // 从JSON文件导入数据
-import dualEnergyData from '../../dual-energy.json';
+import dualEnergyData from '@/data/dual-energy.json';
 
 export default function DualEnergyPage() {
   return (
     <div className="space-y-8 animate-fadeIn">
-      <PageHeader 
-        title={dualEnergyData.title} 
-        description={dualEnergyData.description} 
+      <PageHeader
+        title={dualEnergyData.title}
+        description={dualEnergyData.description}
       />
-      
+
       {dualEnergyData.sections.map((section) => (
-        <SectionCard 
+        <SectionCard
           key={section.id}
           title={section.title}
           description={section.description}
@@ -29,14 +29,14 @@ export default function DualEnergyPage() {
         >
           <div className="space-y-4">
             <p className="text-text-200">{section.content}</p>
-            
+
             {section.keyPoints && (
               <KeyPoints points={section.keyPoints} />
             )}
           </div>
         </SectionCard>
       ))}
-      
+
       <SimulatorContainer title="束硬化与双能CT模拟器">
         <TabGroup
           tabs={[

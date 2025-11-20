@@ -1,59 +1,24 @@
-import React, { useState } from 'react';
+import React from 'react';
 
-const Slider = ({ 
-  label, 
-  min, 
-  max, 
-  value, 
-  onChange, 
-  step = 1, 
-  className = '' 
-}) => {
-  const [isFocused, setIsFocused] = useState(false);
-  
-  const percentage = ((value - min) / (max - min)) * 100;
-  
+interface SliderProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  label?: string;
+  valueDisplay?: string | number;
+}
+
+export const Slider: React.FC<SliderProps> = ({ label, valueDisplay, className = '', ...props }) => {
   return (
-    <div className={`${className}`}>
-      {label && (
-        <label className="mb-2 block text-sm font-medium text-text-100">
-          {label}
-        </label>
+    <div className={`flex flex-col gap-1 ${className}`}>
+      {(label || valueDisplay !== undefined) && (
+        <div className="flex justify-between text-xs text-gray-400 mb-1">
+          {label && <span>{label}</span>}
+          {valueDisplay !== undefined && <span className="font-bold text-[var(--sim-accent)]">{valueDisplay}</span>}
+        </div>
       )}
-      <div className="relative pt-1">
-        <div className="relative h-2 w-full rounded-full bg-bg-200">
-          <div 
-            className="absolute h-full rounded-full bg-gradient-to-r from-primary-100 to-primary-200 transition-all duration-300"
-            style={{ width: `${percentage}%` }}
-          ></div>
-        </div>
-        <input
-          type="range"
-          min={min}
-          max={max}
-          step={step}
-          value={value}
-          onChange={(e) => onChange(parseFloat(e.target.value))}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
-          className="absolute inset-0 h-2 w-full cursor-pointer appearance-none bg-transparent focus:outline-none"
-        />
-        <div 
-          className={`absolute -mt-1 h-4 w-4 rounded-full bg-white shadow-md transition-all duration-300 ${
-            isFocused ? 'ring-4 ring-primary-100/30' : ''
-          }`}
-          style={{ 
-            left: `calc(${percentage}% - 0.5rem)`,
-            top: '0.25rem'
-          }}
-        ></div>
-        <div className="mt-4 flex justify-between text-xs text-text-200">
-          <span>{min}</span>
-          <span>{max}</span>
-        </div>
-      </div>
+      <input
+        type="range"
+        className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-[var(--sim-accent)]"
+        {...props}
+      />
     </div>
   );
 };
-
-export default Slider;

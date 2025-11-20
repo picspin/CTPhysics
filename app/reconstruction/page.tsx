@@ -18,9 +18,9 @@ import reconstructionData from '@/data/reconstruction.json';
 const ReconstructionPage: React.FC = () => {
   // Validate and type the data
   const pageData = validatePageData(reconstructionData) as PageData;
-  
+
   const [activeSection, setActiveSection] = useState(pageData.sections[0]?.id || 'backprojection');
-  
+
   const tabs = pageData.sections.map(section => ({
     id: section.id,
     label: section.title,
@@ -34,29 +34,29 @@ const ReconstructionPage: React.FC = () => {
       </svg>
     ) : null
   }));
-  
+
   const activeContent = pageData.sections.find(section => section.id === activeSection);
-  
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      <PageHeader 
-        title={pageData.title} 
-        description={pageData.description} 
+      <PageHeader
+        title={pageData.title}
+        description={pageData.description}
       />
-      
+
       <div className="mt-8">
-        <TabGroup 
-          tabs={tabs} 
-          activeTab={activeSection} 
+        <TabGroup
+          tabs={tabs}
+          activeTab={activeSection}
           onChange={setActiveSection}
           variant="underline"
         />
       </div>
-      
+
       <div className="mt-8">
         {activeContent && (
           <motion.div
@@ -66,8 +66,8 @@ const ReconstructionPage: React.FC = () => {
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.3 }}
           >
-            <SectionCard 
-              title={activeContent.title} 
+            <SectionCard
+              title={activeContent.title}
               description={activeContent.description}
             >
               {activeContent.content && (
@@ -75,14 +75,14 @@ const ReconstructionPage: React.FC = () => {
                   <p className="whitespace-pre-line">{activeContent.content}</p>
                 </div>
               )}
-              
+
               {activeContent.keyPoints && (
                 <KeyPoints points={activeContent.keyPoints} />
               )}
-              
+
               {activeContent.simulator && (
                 <div className="mt-8">
-                  <SimulatorContainer 
+                  <SimulatorContainer
                     title={`${activeContent.title} Simulator`}
                     description="Interact with the parameters to see how they affect the results"
                   >
@@ -90,7 +90,7 @@ const ReconstructionPage: React.FC = () => {
                       <BackprojectionSimulator options={activeContent.simulator.options} />
                     )}
                     {activeContent.simulator.type === 'helical-ct' && (
-                      <HelicalCTSimulator options={activeContent.simulator.options} />
+                      <HelicalCTSimulator />
                     )}
                   </SimulatorContainer>
                 </div>
@@ -99,7 +99,7 @@ const ReconstructionPage: React.FC = () => {
           </motion.div>
         )}
       </div>
-      
+
       {/* Additional learning resources */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -126,15 +126,15 @@ const ReconstructionPage: React.FC = () => {
             </li>
           </ul>
         </div>
-        
+
         <div className="bg-accent-100 bg-opacity-10 rounded-lg border border-accent-100 border-opacity-30 p-6">
           <h3 className="text-lg font-semibold text-accent-100 mb-3">
             Clinical Tip
           </h3>
           <p className="text-sm text-text-100">
-            When selecting pitch values for helical CT, consider the clinical indication. 
-            Use lower pitch (0.5-0.8) for high-resolution studies like CT angiography, 
-            and higher pitch (1.2-1.5) for rapid surveys or trauma protocols where 
+            When selecting pitch values for helical CT, consider the clinical indication.
+            Use lower pitch (0.5-0.8) for high-resolution studies like CT angiography,
+            and higher pitch (1.2-1.5) for rapid surveys or trauma protocols where
             speed is critical.
           </p>
         </div>
