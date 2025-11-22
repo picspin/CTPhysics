@@ -1,8 +1,8 @@
 /node_modules
 /.vscode
 /.trae
-/.trae/*
-/.next 
+.trae/*
+.next/ 
 /.next/* 
 /.agent
 /.agent/*
