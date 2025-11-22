@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import LiquidGlass from '../ui/LiquidGlass';
 
 interface NavItem {
   href: string;
@@ -156,55 +157,59 @@ const Sidebar: React.FC = () => {
 
         {/* Navigation */}
         <nav className="flex-1 p-4">
-          <ul className="space-y-1">
+          <ul className="space-y-2">
             {navItems.map((item) => {
               const active = isActive(item.href);
 
               return (
                 <li key={item.href}>
                   <Link href={item.href} onClick={() => setIsOpen(false)}>
-                    <motion.div
-                      className={`
-                        flex items-center justify-between px-4 py-3 rounded-lg
-                        transition-all duration-200 relative overflow-hidden
-                        ${active
-                          ? 'bg-primary-100 bg-opacity-10 text-primary-100'
-                          : 'text-text-200 hover:bg-bg-200 hover:text-text-100'
-                        }
-                      `}
-                      whileHover={{ x: 4 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      {/* Active indicator */}
-                      {active && (
+                    <div className="relative">
+                      {active ? (
+                        <LiquidGlass intensity="low" className="rounded-lg overflow-hidden">
+                          <motion.div
+                            className="flex items-center justify-between px-4 py-3 text-primary-100"
+                            whileHover={{ x: 4 }}
+                            whileTap={{ scale: 0.98 }}
+                          >
+                            <div className="flex items-center space-x-3 z-10 relative">
+                              <motion.span
+                                animate={{ rotate: 360 }}
+                                transition={{ duration: 0.5 }}
+                              >
+                                {item.icon}
+                              </motion.span>
+                              <span className="font-medium">{item.label}</span>
+                            </div>
+                            {item.badge && (
+                              <span className="px-2 py-0.5 text-xs bg-primary-100 text-white rounded-full z-10 relative">
+                                {item.badge}
+                              </span>
+                            )}
+                          </motion.div>
+                        </LiquidGlass>
+                      ) : (
                         <motion.div
-                          layoutId="activeNav"
-                          className="absolute left-0 top-0 bottom-0 w-1 bg-primary-100"
-                          initial={false}
-                          transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                        />
-                      )}
-
-                      <div className="flex items-center space-x-3">
-                        <motion.span
-                          animate={{ rotate: active ? 360 : 0 }}
-                          transition={{ duration: 0.5 }}
+                          className="flex items-center justify-between px-4 py-3 rounded-lg text-text-200 hover:text-text-100 transition-colors relative overflow-hidden group"
+                          whileHover={{ x: 4 }}
+                          whileTap={{ scale: 0.98 }}
                         >
-                          {item.icon}
-                        </motion.span>
-                        <span className="font-medium">{item.label}</span>
-                      </div>
+                          {/* Hover background effect */}
+                          <div className="absolute inset-0 bg-bg-200 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
 
-                      {item.badge && (
-                        <motion.span
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="px-2 py-0.5 text-xs bg-primary-100 text-white rounded-full"
-                        >
-                          {item.badge}
-                        </motion.span>
+                          <div className="flex items-center space-x-3 z-10 relative">
+                            <span>{item.icon}</span>
+                            <span className="font-medium">{item.label}</span>
+                          </div>
+
+                          {item.badge && (
+                            <span className="px-2 py-0.5 text-xs bg-bg-300 text-text-200 rounded-full z-10 relative">
+                              {item.badge}
+                            </span>
+                          )}
+                        </motion.div>
                       )}
-                    </motion.div>
+                    </div>
                   </Link>
                 </li>
               );

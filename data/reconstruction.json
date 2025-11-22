@@ -11,13 +11,39 @@
         "type": "backprojection",
         "options": {
           "images": [
-            {"id": "abdomen", "name": "腹部", "src": "/images/abdomen.png"},
-            {"id": "phantom", "name": "模型", "src": "/images/phantom.png"}
+            {
+              "id": "abdomen",
+              "name": "腹部",
+              "src": "/images/abdomen.png"
+            },
+            {
+              "id": "phantom",
+              "name": "模型",
+              "src": "/images/phantom.png"
+            },
+            {
+              "id": "fracture",
+              "name": "骨折 (3D)",
+              "src": "/images/fracture.png"
+            }
           ],
           "fanBeamAngles": [
-            {"value": 30, "name": "30度"},
-            {"value": 60, "name": "60度"},
-            {"value": 90, "name": "90度"}
+            {
+              "value": 30,
+              "name": "30度"
+            },
+            {
+              "value": 60,
+              "name": "60度"
+            },
+            {
+              "value": 90,
+              "name": "90度"
+            },
+            {
+              "value": 120,
+              "name": "120度"
+            }
           ]
         }
       },
@@ -48,19 +74,63 @@
         "type": "helical-ct",
         "options": {
           "images": [
-            {"id": "body", "name": "人体模型", "src": "/images/body.png"},
-            {"id": "ctsim_a30", "name": "CT模拟30°", "src": "/images/ctsim_a30.gif"},
-            {"id": "ctsim_a60", "name": "CT模拟60°", "src": "/images/ctsim_a60.gif"},
-            {"id": "ctsim_a90", "name": "CT模拟90°", "src": "/images/ctsim_a90.gif"},
-            {"id": "helical_30", "name": "螺旋CT 30°", "src": "/images/helical_30.gif"},
-            {"id": "helical_60", "name": "螺旋CT 60°", "src": "/images/helical_60.gif"},
-            {"id": "helical_90", "name": "螺旋CT 90°", "src": "/images/helical_90.gif"}
+            {
+              "id": "body",
+              "name": "人体模型",
+              "src": "/images/body.png"
+            },
+            {
+              "id": "ctsim_a30",
+              "name": "CT模拟30°",
+              "src": "/images/ctsim_a30.gif"
+            },
+            {
+              "id": "ctsim_a60",
+              "name": "CT模拟60°",
+              "src": "/images/ctsim_a60.gif"
+            },
+            {
+              "id": "ctsim_a90",
+              "name": "CT模拟90°",
+              "src": "/images/ctsim_a90.gif"
+            },
+            {
+              "id": "helical_30",
+              "name": "螺旋CT 30°",
+              "src": "/images/helical_30.gif"
+            },
+            {
+              "id": "helical_60",
+              "name": "螺旋CT 60°",
+              "src": "/images/helical_60.gif"
+            },
+            {
+              "id": "helical_90",
+              "name": "螺旋CT 90°",
+              "src": "/images/helical_90.gif"
+            }
           ],
           "pitchValues": [
-            {"value": 0.5, "name": "0.5 (重叠扫描)", "description": "相邻螺旋之间有50%的重叠，图像质量高但辐射剂量大"},
-            {"value": 1.0, "name": "1.0 (无间隙扫描)", "description": "相邻螺旋之间刚好无间隙，平衡了图像质量和辐射剂量"},
-            {"value": 1.5, "name": "1.5 (小间隙扫描)", "description": "相邻螺旋之间有小间隙，扫描速度较快，可能有轻微信息丢失"},
-            {"value": 2.0, "name": "2.0 (大间隙扫描)", "description": "相邻螺旋之间有大间隙，扫描速度快但可能丢失信息"}
+            {
+              "value": 0.5,
+              "name": "0.5 (重叠扫描)",
+              "description": "相邻螺旋之间有50%的重叠，图像质量高但辐射剂量大"
+            },
+            {
+              "value": 1.0,
+              "name": "1.0 (无间隙扫描)",
+              "description": "相邻螺旋之间刚好无间隙，平衡了图像质量和辐射剂量"
+            },
+            {
+              "value": 1.5,
+              "name": "1.5 (小间隙扫描)",
+              "description": "相邻螺旋之间有小间隙，扫描速度较快，可能有轻微信息丢失"
+            },
+            {
+              "value": 2.0,
+              "name": "2.0 (大间隙扫描)",
+              "description": "相邻螺旋之间有大间隙，扫描速度快但可能丢失信息"
+            }
           ]
         }
       },
@@ -70,6 +140,18 @@
         "螺距小于1.0时有重叠扫描，图像质量更高但辐射剂量更大",
         "螺距大于1.0时有间隙扫描，扫描速度更快但可能丢失信息",
         "现代螺旋CT通过插值技术将螺旋路径数据转换为横断面切片"
+      ]
+    },
+    {
+      "id": "cone-beam",
+      "title": "锥束CT重建",
+      "description": "锥束CT (CBCT) 使用锥形X射线束和平板探测器，一次旋转即可获取体积数据。",
+      "content": "锥束CT (Cone Beam CT, CBCT) 与传统的扇形束CT不同。传统CT使用扇形束和一维探测器阵列，逐层扫描。而CBCT使用锥形X射线束和二维平板探测器。这意味着CBCT可以在一次旋转中获取整个感兴趣体积的数据，而不是像螺旋CT那样需要多次旋转或床移动。\n\nCBCT的主要优势包括：\n1. 扫描时间短\n2. 辐射剂量通常较低\n3. 空间分辨率高（各向同性体素）\n4. 伪影较少（如金属伪影）\n\n然而，CBCT也有缺点，主要是散射辐射较多，导致软组织对比度不如传统CT。因此，CBCT常用于牙科、骨科和介入放射学，而在需要精细软组织分辨的诊断中（如腹部、脑部）仍首选传统CT。\n\n重建算法通常使用FDK (Feldkamp-Davis-Kress) 算法，这是滤波反投影算法向三维的扩展。",
+      "keyPoints": [
+        "CBCT使用锥形束和平板探测器，一次旋转获取体积数据",
+        "具有高空间分辨率和各向同性体素",
+        "散射辐射较多，软组织对比度较低",
+        "常用于牙科、骨科和介入引导"
       ]
     }
   ]

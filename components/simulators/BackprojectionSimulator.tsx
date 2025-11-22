@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { Select } from '../ui/Select';
 import { Slider } from '../ui/Slider';
 import { Button } from '../ui/Button';
 import { BackprojectionOptions } from '@/types';
 import { generateSinogram, applyRampFilter } from '@/utils/physics-calculations';
 import { AnimationController } from '@/utils/animation-utils';
+import FracturePhantom from './FracturePhantom';
 
 interface Props {
   options?: BackprojectionOptions;
@@ -16,14 +16,15 @@ interface Props {
 const BackprojectionSimulator: React.FC<Props> = ({ options }) => {
   const defaultImages = [
     { id: 'phantom', name: 'Shepp-Logan Phantom' },
-    { id: 'abdomen', name: 'Abdomen CT' },
-    { id: 'chest', name: 'Chest CT' }
+    { id: 'abdomen', name: 'Abdomen CT (Simulated)' },
+    { id: 'fracture', name: 'Bone Fracture (3D)' }
   ];
 
   const defaultFanBeamAngles = [
     { value: 30, name: '30°' },
     { value: 60, name: '60°' },
-    { value: 90, name: '90°' }
+    { value: 90, name: '90°' },
+    { value: 120, name: '120°' }
   ];
 
   const images = options?.images || defaultImages;
@@ -32,190 +33,238 @@ const BackprojectionSimulator: React.FC<Props> = ({ options }) => {
   const [selectedImage, setSelectedImage] = useState(images[0]?.id || 'phantom');
   const [fanBeamAngle, setFanBeamAngle] = useState(fanBeamAngles[1]?.value || 60);
   const [projectionCount, setProjectionCount] = useState(36);
-  const [isFiltered, setIsFiltered] = useState(true);
   const [isAnimating, setIsAnimating] = useState(false);
-  const [reconstructionProgress, setReconstructionProgress] = useState(0);
+  const [progress, setProgress] = useState(0);
 
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationController = useRef(new AnimationController());
+  // Canvas refs for the 4 windows
+  const phantomCanvasRef = useRef<HTMLCanvasElement>(null);
+  const acquisitionCanvasRef = useRef<HTMLCanvasElement>(null);
+  const rawBpCanvasRef = useRef<HTMLCanvasElement>(null);
+  const filteredBpCanvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Data refs
   const imageDataRef = useRef<number[][]>([]);
   const sinogramRef = useRef<number[][]>([]);
+  const animationController = useRef(new AnimationController());
 
-  // Generate phantom image data
-  const generatePhantomData = useCallback(() => {
+  // Generate phantom data based on selection
+  const generateData = useCallback(() => {
     const size = 256;
     const data: number[][] = Array(size).fill(null).map(() => Array(size).fill(0));
     const center = size / 2;
 
-    // Main ellipse
-    for (let y = 0; y < size; y++) {
-      for (let x = 0; x < size; x++) {
-        const dx = (x - center) / (size * 0.35);
-        const dy = (y - center) / (size * 0.25);
-        if (dx * dx + dy * dy <= 1) {
-          data[y][x] = 1.0;
+    if (selectedImage === 'phantom') {
+      // Shepp-Logan Phantom generation (simplified)
+      const ellipses = [
+        { cx: 0, cy: 0, a: 0.92, b: 0.69, theta: 90, val: 2.0 },
+        { cx: 0, cy: -0.0184, a: 0.874, b: 0.6624, theta: 90, val: -0.98 },
+        { cx: 0.22, cy: 0, a: 0.31, b: 0.11, theta: 72, val: -0.02 },
+        { cx: -0.22, cy: 0, a: 0.41, b: 0.16, theta: 108, val: -0.02 },
+        { cx: 0, cy: 0.35, a: 0.25, b: 0.21, theta: 90, val: 0.01 },
+        { cx: 0, cy: 0.1, a: 0.046, b: 0.046, theta: 0, val: 0.01 },
+        { cx: 0, cy: -0.1, a: 0.046, b: 0.046, theta: 0, val: 0.01 },
+        { cx: -0.08, cy: -0.605, a: 0.046, b: 0.023, theta: 0, val: 0.01 },
+        { cx: 0, cy: -0.605, a: 0.023, b: 0.023, theta: 0, val: 0.01 },
+        { cx: 0.06, cy: -0.605, a: 0.046, b: 0.023, theta: 90, val: 0.01 }
+      ];
+
+      ellipses.forEach(e => {
+        const cos = Math.cos(e.theta * Math.PI / 180);
+        const sin = Math.sin(e.theta * Math.PI / 180);
+        for (let y = 0; y < size; y++) {
+          for (let x = 0; x < size; x++) {
+            const dx = (x - center) / (size / 2);
+            const dy = (y - center) / (size / 2);
+            const tdx = (dx - e.cx) * cos + (dy - e.cy) * sin;
+            const tdy = -(dx - e.cx) * sin + (dy - e.cy) * cos;
+            if ((tdx * tdx) / (e.a * e.a) + (tdy * tdy) / (e.b * e.b) <= 1) {
+              data[y][x] += e.val;
+            }
+          }
+        }
+      });
+    } else if (selectedImage === 'abdomen') {
+      // Procedural Abdomen
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          const dx = (x - center) / (size * 0.4);
+          const dy = (y - center) / (size * 0.3);
+          if (dx * dx + dy * dy <= 1) {
+            data[y][x] = 0.5; // Body
+
+            // Spine
+            const sx = (x - center) / (size * 0.08);
+            const sy = (y - center - size * 0.15) / (size * 0.08);
+            if (sx * sx + sy * sy <= 1) data[y][x] = 0.9;
+
+            // Liver (approx)
+            const lx = (x - center + size * 0.15) / (size * 0.15);
+            const ly = (y - center + size * 0.05) / (size * 0.12);
+            if (lx * lx + ly * ly <= 1) data[y][x] = 0.6;
+          }
+        }
+      }
+    } else {
+      // Fracture (Placeholder for 3D shader implementation)
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          const dx = (x - center) / (size * 0.1);
+          const dy = (y - center) / (size * 0.3);
+          if (dx * dx + dy * dy <= 1) {
+            // Bone with fracture
+            if (Math.abs(y - center) < 2 && Math.abs(x - center) < size * 0.08) {
+              data[y][x] = 0; // Fracture line
+            } else {
+              data[y][x] = 0.9;
+            }
+          }
         }
       }
     }
 
-    // Add smaller ellipses for Shepp-Logan phantom
-    const ellipses = [
-      { cx: 0.0, cy: -0.0184, a: 0.6624, b: 0.874, theta: 0, value: -0.98 },
-      { cx: 0.0, cy: -0.0184, a: 0.41, b: 0.16, theta: 0, value: -0.02 },
-      { cx: 0.22, cy: 0.0, a: 0.11, b: 0.31, theta: -18, value: -0.02 },
-      { cx: -0.22, cy: 0.0, a: 0.16, b: 0.41, theta: 18, value: -0.02 }
-    ];
-
-    ellipses.forEach(ellipse => {
-      const { cx, cy, a, b, theta, value } = ellipse;
-      const rad = theta * Math.PI / 180;
-      const cos_t = Math.cos(rad);
-      const sin_t = Math.sin(rad);
-
-      for (let y = 0; y < size; y++) {
-        for (let x = 0; x < size; x++) {
-          const dx = (x - center) / (size * 0.5) - cx;
-          const dy = (y - center) / (size * 0.5) - cy;
-          const x_rot = dx * cos_t + dy * sin_t;
-          const y_rot = -dx * sin_t + dy * cos_t;
-
-          if ((x_rot / a) ** 2 + (y_rot / b) ** 2 <= 1) {
-            data[y][x] += value;
-          }
-        }
-      }
-    });
-
     return data;
+  }, [selectedImage]);
+
+  // Draw functions for each window
+  const drawPhantomWindow = useCallback((ctx: CanvasRenderingContext2D, angle: number) => {
+    const size = 256;
+    const scale = ctx.canvas.width / size;
+
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    ctx.save();
+    ctx.scale(scale, scale);
+
+    // Draw Phantom
+    const imageData = ctx.createImageData(size, size);
+    const data = imageDataRef.current;
+    for (let i = 0; i < size * size; i++) {
+      const val = Math.floor(data[Math.floor(i / size)][i % size] * 255);
+      imageData.data[i * 4] = val;
+      imageData.data[i * 4 + 1] = val;
+      imageData.data[i * 4 + 2] = val;
+      imageData.data[i * 4 + 3] = 255;
+    }
+    ctx.putImageData(imageData, 0, 0);
+
+    // Draw Source and Detector
+    const center = size / 2;
+    const radius = size * 0.45;
+    const sourceX = center + radius * Math.cos(angle);
+    const sourceY = center + radius * Math.sin(angle);
+    const detX = center - radius * Math.cos(angle);
+    const detY = center - radius * Math.sin(angle);
+
+    ctx.beginPath();
+    ctx.arc(sourceX, sourceY, 5, 0, Math.PI * 2);
+    ctx.fillStyle = '#FFD700'; // Gold source
+    ctx.fill();
+
+    // Fan beam
+    ctx.beginPath();
+    ctx.moveTo(sourceX, sourceY);
+    const fanRad = (fanBeamAngle * Math.PI) / 180 / 2;
+    ctx.lineTo(
+      center - radius * Math.cos(angle + fanRad),
+      center - radius * Math.sin(angle + fanRad)
+    );
+    ctx.lineTo(
+      center - radius * Math.cos(angle - fanRad),
+      center - radius * Math.sin(angle - fanRad)
+    );
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255, 215, 0, 0.2)';
+    ctx.fill();
+
+    ctx.restore();
+  }, [fanBeamAngle]);
+
+  const drawAcquisitionWindow = useCallback((ctx: CanvasRenderingContext2D, currentProj: number) => {
+    const sinogram = sinogramRef.current;
+    if (!sinogram.length) return;
+
+    const width = ctx.canvas.width;
+    const height = ctx.canvas.height;
+
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, width, height);
+
+    // Draw Sinogram being built
+    const scaleX = width / sinogram[0].length;
+    const scaleY = height / sinogram.length;
+
+    for (let p = 0; p <= currentProj; p++) {
+      for (let d = 0; d < sinogram[0].length; d++) {
+        const val = Math.floor(sinogram[p][d] * 255);
+        ctx.fillStyle = `rgb(${val},${val},${val})`;
+        ctx.fillRect(d * scaleX, p * scaleY, scaleX, scaleY);
+      }
+    }
+
+    // Highlight current line
+    ctx.fillStyle = '#FFD700';
+    ctx.fillRect(0, currentProj * scaleY, width, 2);
+
   }, []);
 
-  // Draw reconstruction
-  const drawReconstruction = useCallback((ctx: CanvasRenderingContext2D, size: number) => {
+  const drawReconstructionWindow = useCallback((ctx: CanvasRenderingContext2D, currentProj: number, filtered: boolean) => {
+    const size = 256;
     const reconstruction = Array(size).fill(null).map(() => Array(size).fill(0));
     const sinogram = sinogramRef.current;
-    const numProjections = Math.floor(projectionCount * reconstructionProgress);
+    const center = size / 2;
 
-    for (let p = 0; p < numProjections; p++) {
+    // Perform backprojection up to current projection
+    for (let p = 0; p <= currentProj; p++) {
       const angle = (p / projectionCount) * Math.PI;
       let projection = sinogram[p];
 
-      if (isFiltered) {
+      if (filtered) {
         projection = applyRampFilter(projection);
       }
 
-      // Backproject
       for (let y = 0; y < size; y++) {
         for (let x = 0; x < size; x++) {
-          const xRot = (x - size / 2) * Math.cos(angle) + (y - size / 2) * Math.sin(angle);
-          const detectorIndex = Math.floor(xRot + projection.length / 2);
-
-          if (detectorIndex >= 0 && detectorIndex < projection.length) {
-            reconstruction[y][x] += projection[detectorIndex];
+          const xRot = (x - center) * Math.cos(angle) + (y - center) * Math.sin(angle);
+          const detIdx = Math.floor(xRot + projection.length / 2);
+          if (detIdx >= 0 && detIdx < projection.length) {
+            reconstruction[y][x] += projection[detIdx];
           }
         }
       }
     }
 
     // Normalize and draw
-    const reconstructionImageData = ctx.createImageData(size, size);
-    let min = Infinity, max = -Infinity;
+    const imgData = ctx.createImageData(size, size);
+    let max = 0;
+    for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) max = Math.max(max, reconstruction[y][x]);
 
-    for (let y = 0; y < size; y++) {
-      for (let x = 0; x < size; x++) {
-        min = Math.min(min, reconstruction[y][x]);
-        max = Math.max(max, reconstruction[y][x]);
-      }
+    for (let i = 0; i < size * size; i++) {
+      const val = Math.floor((reconstruction[Math.floor(i / size)][i % size] / (max || 1)) * 255);
+      imgData.data[i * 4] = val;
+      imgData.data[i * 4 + 1] = val;
+      imgData.data[i * 4 + 2] = val;
+      imgData.data[i * 4 + 3] = 255;
     }
 
-    for (let y = 0; y < size; y++) {
-      for (let x = 0; x < size; x++) {
-        const idx = (y * size + x) * 4;
-        const value = Math.floor(((reconstruction[y][x] - min) / (max - min)) * 255);
-        reconstructionImageData.data[idx] = value;
-        reconstructionImageData.data[idx + 1] = value;
-        reconstructionImageData.data[idx + 2] = value;
-        reconstructionImageData.data[idx + 3] = 255;
-      }
-    }
+    ctx.putImageData(imgData, 0, 0);
 
-    ctx.putImageData(reconstructionImageData, 0, size + 10);
-  }, [projectionCount, reconstructionProgress, isFiltered]);
+    // Scale to canvas size
+    ctx.drawImage(ctx.canvas, 0, 0, size, size, 0, 0, ctx.canvas.width, ctx.canvas.height);
 
-  // Draw images on canvas
-  const drawImages = useCallback(() => {
-    if (!canvasRef.current) return;
+  }, [projectionCount]);
 
-    const ctx = canvasRef.current.getContext('2d');
-    if (!ctx) return;
-
-    const imageData = imageDataRef.current;
-    const size = imageData.length;
-
-    // Clear canvas
-    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-
-    // Draw original image
-    const originalImageData = ctx.createImageData(size, size);
-    for (let y = 0; y < size; y++) {
-      for (let x = 0; x < size; x++) {
-        const idx = (y * size + x) * 4;
-        const value = Math.floor(imageData[y][x] * 255);
-        originalImageData.data[idx] = value;
-        originalImageData.data[idx + 1] = value;
-        originalImageData.data[idx + 2] = value;
-        originalImageData.data[idx + 3] = 255;
-      }
-    }
-    ctx.putImageData(originalImageData, 0, 0);
-
-    // Draw sinogram
-    const sinogram = sinogramRef.current;
-    if (sinogram.length > 0) {
-      const sinogramImageData = ctx.createImageData(sinogram[0].length, sinogram.length);
-      for (let y = 0; y < sinogram.length; y++) {
-        for (let x = 0; x < sinogram[0].length; x++) {
-          const idx = (y * sinogram[0].length + x) * 4;
-          const value = Math.floor(Math.abs(sinogram[y][x]) * 255 / 10);
-          sinogramImageData.data[idx] = value;
-          sinogramImageData.data[idx + 1] = value;
-          sinogramImageData.data[idx + 2] = value;
-          sinogramImageData.data[idx + 3] = 255;
-        }
-      }
-      ctx.putImageData(sinogramImageData, size + 10, 0);
-    }
-
-    // Draw reconstruction
-    if (reconstructionProgress > 0) {
-      drawReconstruction(ctx, size);
-    }
-  }, [reconstructionProgress, drawReconstruction]);
-
-  // Load or generate image data
+  // Main update loop
   useEffect(() => {
-    if (selectedImage === 'phantom') {
-      imageDataRef.current = generatePhantomData();
-    } else {
-      // Load real CT image data (simplified for demo)
-      const size = 256;
-      imageDataRef.current = Array(size).fill(null).map(() =>
-        Array(size).fill(0).map(() => Math.random())
-      );
-    }
+    imageDataRef.current = generateData();
+    sinogramRef.current = generateSinogram(imageDataRef.current, projectionCount, fanBeamAngle);
 
-    // Generate sinogram
-    sinogramRef.current = generateSinogram(
-      imageDataRef.current,
-      projectionCount,
-      fanBeamAngle
-    );
+    // Initial draw
+    if (phantomCanvasRef.current && selectedImage !== 'fracture') drawPhantomWindow(phantomCanvasRef.current.getContext('2d')!, 0);
+    if (acquisitionCanvasRef.current) drawAcquisitionWindow(acquisitionCanvasRef.current.getContext('2d')!, 0);
+    if (rawBpCanvasRef.current) drawReconstructionWindow(rawBpCanvasRef.current.getContext('2d')!, 0, false);
+    if (filteredBpCanvasRef.current) drawReconstructionWindow(filteredBpCanvasRef.current.getContext('2d')!, 0, true);
 
-    // Reset and redraw
-    setReconstructionProgress(0);
-    drawImages();
-  }, [selectedImage, projectionCount, fanBeamAngle, generatePhantomData, drawImages]);
+  }, [selectedImage, projectionCount, fanBeamAngle, generateData, drawPhantomWindow, drawAcquisitionWindow, drawReconstructionWindow]);
 
-  // Start animation
   const startAnimation = () => {
     if (isAnimating) {
       animationController.current.stopAll();
@@ -224,128 +273,94 @@ const BackprojectionSimulator: React.FC<Props> = ({ options }) => {
     }
 
     setIsAnimating(true);
-    setReconstructionProgress(0);
+    setProgress(0);
 
     animationController.current.start(
-      'reconstruction',
+      'recon',
       0,
-      1,
-      { duration: 3000, easing: 'easeInOut' },
-      (value) => {
-        setReconstructionProgress(value);
-        drawImages();
+      projectionCount - 1,
+      { duration: 5000, easing: 'linear' },
+      (val) => {
+        const currentProj = Math.floor(val);
+        const angle = (currentProj / projectionCount) * Math.PI;
+
+        setProgress(val / projectionCount);
+
+        if (phantomCanvasRef.current && selectedImage !== 'fracture') drawPhantomWindow(phantomCanvasRef.current.getContext('2d')!, angle);
+        if (acquisitionCanvasRef.current) drawAcquisitionWindow(acquisitionCanvasRef.current.getContext('2d')!, currentProj);
+
+        // Update reconstructions less frequently for performance
+        if (currentProj % 2 === 0) {
+          if (rawBpCanvasRef.current) drawReconstructionWindow(rawBpCanvasRef.current.getContext('2d')!, currentProj, false);
+          if (filteredBpCanvasRef.current) drawReconstructionWindow(filteredBpCanvasRef.current.getContext('2d')!, currentProj, true);
+        }
       },
-      () => {
-        setIsAnimating(false);
-      }
+      () => setIsAnimating(false)
     );
   };
 
   return (
     <div className="space-y-6">
       {/* Controls */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Select
           label="Select Image"
           options={images.map(img => ({ value: img.id, label: img.name }))}
           value={selectedImage}
           onChange={(e) => setSelectedImage(e.target.value)}
         />
-
         <Select
           label="Fan Beam Angle"
-          options={fanBeamAngles.map(angle => ({
-            value: angle.value.toString(),
-            label: angle.name
-          }))}
+          options={fanBeamAngles.map(a => ({ value: a.value.toString(), label: a.name }))}
           value={fanBeamAngle.toString()}
           onChange={(e) => setFanBeamAngle(parseInt(e.target.value))}
         />
-      </div>
-
-      <div className="space-y-4">
-        <Slider
-          label="Number of Projections"
-          min={4}
-          max={180}
-          value={projectionCount}
-          onChange={(e) => setProjectionCount(Number(e.target.value))}
-          step={4}
-        />
-
-        <div className="flex items-center justify-between">
-          <label className="flex items-center space-x-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={isFiltered}
-              onChange={(e) => setIsFiltered(e.target.checked)}
-              className="w-4 h-4 text-primary-100 rounded focus:ring-primary-100"
-            />
-            <span className="text-sm font-medium text-text-100">
-              Filtered Backprojection
-            </span>
-          </label>
-
-          <Button onClick={startAnimation} variant="primary">
-            {isAnimating ? 'Stop Animation' : 'Start Reconstruction'}
+        <div className="flex items-end">
+          <Button onClick={startAnimation} variant="primary" className="w-full">
+            {isAnimating ? 'Stop' : 'Start Reconstruction'}
           </Button>
         </div>
       </div>
 
-      {/* Visualization */}
-      <div className="relative">
-        <canvas
-          ref={canvasRef}
-          width={522}
-          height={522}
-          className="w-full max-w-2xl mx-auto border border-border-100 rounded-lg bg-black"
-        />
+      <Slider
+        label={`Number of Projections: ${projectionCount}`}
+        min={18}
+        max={180}
+        step={1}
+        value={projectionCount}
+        onChange={(e) => setProjectionCount(parseInt(e.target.value))}
+      />
 
-        {/* Progress indicator */}
-        <AnimatePresence>
-          {isAnimating && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute top-4 right-4 bg-bg-100 rounded-lg p-2 shadow-lg"
-            >
-              <div className="text-sm font-medium text-text-100">
-                Progress: {Math.round(reconstructionProgress * 100)}%
-              </div>
-              <div className="mt-1 w-32 h-2 bg-bg-200 rounded-full overflow-hidden">
-                <motion.div
-                  className="h-full bg-primary-100"
-                  style={{ width: `${reconstructionProgress * 100}%` }}
-                />
-              </div>
-            </motion.div>
+      {/* 4-Window Layout */}
+      <div className="grid grid-cols-2 gap-4">
+        {/* Top Left: Phantom & Geometry */}
+        <div className="bg-black rounded-lg border border-border-100 p-2 relative aspect-square overflow-hidden">
+          <div className="absolute top-2 left-2 text-xs text-white bg-black/50 px-2 rounded z-10">Phantom & Geometry</div>
+          {selectedImage === 'fracture' ? (
+            <FracturePhantom />
+          ) : (
+            <canvas ref={phantomCanvasRef} width={256} height={256} className="w-full h-full" />
           )}
-        </AnimatePresence>
+        </div>
 
-        {/* Labels */}
-        <div className="grid grid-cols-3 gap-4 mt-4 text-center text-sm text-text-200">
-          <div>Original Image</div>
-          <div>Sinogram</div>
-          <div>{isFiltered ? 'Filtered' : 'Unfiltered'} Reconstruction</div>
+        {/* Top Right: Data Acquisition */}
+        <div className="bg-black rounded-lg border border-border-100 p-2 relative aspect-square">
+          <div className="absolute top-2 left-2 text-xs text-white bg-black/50 px-2 rounded">Data Acquisition (Sinogram)</div>
+          <canvas ref={acquisitionCanvasRef} width={256} height={256} className="w-full h-full" />
+        </div>
+
+        {/* Bottom Left: Raw Backprojection */}
+        <div className="bg-black rounded-lg border border-border-100 p-2 relative aspect-square">
+          <div className="absolute top-2 left-2 text-xs text-white bg-black/50 px-2 rounded">Raw Backprojection</div>
+          <canvas ref={rawBpCanvasRef} width={256} height={256} className="w-full h-full" />
+        </div>
+
+        {/* Bottom Right: Filtered Backprojection */}
+        <div className="bg-black rounded-lg border border-border-100 p-2 relative aspect-square">
+          <div className="absolute top-2 left-2 text-xs text-white bg-black/50 px-2 rounded">Filtered Backprojection</div>
+          <canvas ref={filteredBpCanvasRef} width={256} height={256} className="w-full h-full" />
         </div>
       </div>
-
-      {/* Information panel */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
-        className="bg-bg-200 rounded-lg p-4 space-y-2"
-      >
-        <h4 className="font-medium text-text-100">Key Observations:</h4>
-        <ul className="space-y-1 text-sm text-text-200">
-          <li>• More projections lead to better reconstruction quality</li>
-          <li>• Filtered backprojection reduces blurring significantly</li>
-          <li>• The sinogram shows the projection data at different angles</li>
-          <li>• Fan beam angle affects the field of view</li>
-        </ul>
-      </motion.div>
     </div>
   );
 };
