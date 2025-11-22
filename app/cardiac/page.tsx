@@ -14,31 +14,31 @@ import cardiacData from '@/data/cardiac.json';
 const CardiacPage: React.FC = () => {
   const pageData = cardiacData as PageData;
   const [activeSection, setActiveSection] = useState(pageData.sections[0]?.id || 'cardiac-gating');
-  
+
   const tabs = pageData.sections.map(section => ({
     id: section.id,
     label: section.title
   }));
-  
+
   const activeContent = pageData.sections.find(section => section.id === activeSection);
-  
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      <PageHeader 
-        title={pageData.title} 
-        description={pageData.description} 
+      <PageHeader
+        title={pageData.title}
+        description={pageData.description}
       />
-      
-      <TabGroup 
-        tabs={tabs} 
-        activeTab={activeSection} 
-        onChange={setActiveSection} 
+
+      <TabGroup
+        tabs={tabs}
+        activeTab={activeSection}
+        onChange={setActiveSection}
       />
-      
+
       <div className="mt-8">
         {activeContent && (
           <motion.div
@@ -47,27 +47,27 @@ const CardiacPage: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <SectionCard 
-              title={activeContent.title} 
+            <SectionCard
+              title={activeContent.title}
               description={activeContent.description}
             >
               <div className="prose prose-sm max-w-none text-text-100">
                 <p>{activeContent.content}</p>
               </div>
-              
+
               {activeContent.keyPoints && (
                 <KeyPoints points={activeContent.keyPoints} />
               )}
-              
+
               {activeContent.id === 'cardiac-gating' && (
                 <div className="mt-8">
                   <CardiacGatingSimulator />
                 </div>
               )}
-              
+
               {activeContent.id === 'temporal-resolution' && (
                 <div className="mt-8">
-                  <SimulatorContainer 
+                  <SimulatorContainer
                     title="Temporal Resolution Calculator"
                     description="Calculate temporal resolution based on rotation time and reconstruction method"
                   >
@@ -75,10 +75,10 @@ const CardiacPage: React.FC = () => {
                   </SimulatorContainer>
                 </div>
               )}
-              
+
               {activeContent.id === 'radiation-dose' && (
                 <div className="mt-8">
-                  <SimulatorContainer 
+                  <SimulatorContainer
                     title="Cardiac CT Dose Calculator"
                     description="Compare radiation doses between different gating techniques"
                   >
@@ -98,9 +98,9 @@ const CardiacPage: React.FC = () => {
 const TemporalResolutionCalculator: React.FC = () => {
   const [rotationTime, setRotationTime] = useState(0.5);
   const [isMultisource, setIsMultisource] = useState(false);
-  
+
   const temporalResolution = isMultisource ? rotationTime / 4 : rotationTime / 2;
-  
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -118,7 +118,7 @@ const TemporalResolutionCalculator: React.FC = () => {
             className="w-full px-4 py-2 border border-border-100 rounded-lg focus:ring-2 focus:ring-primary-100 focus:border-transparent"
           />
         </div>
-        
+
         <div>
           <label className="flex items-center space-x-3 mt-8">
             <input
@@ -133,7 +133,7 @@ const TemporalResolutionCalculator: React.FC = () => {
           </label>
         </div>
       </div>
-      
+
       <div className="bg-bg-200 rounded-lg p-6">
         <div className="text-center">
           <div className="text-sm text-text-200 mb-2">Temporal Resolution</div>
@@ -145,7 +145,7 @@ const TemporalResolutionCalculator: React.FC = () => {
           </div>
         </div>
       </div>
-      
+
       <div className="text-sm text-text-200">
         <p>
           <strong>Note:</strong> Temporal resolution determines the ability to freeze cardiac motion.
@@ -161,12 +161,11 @@ const TemporalResolutionCalculator: React.FC = () => {
 const CardiacDoseCalculator: React.FC = () => {
   const [gatingType, setGatingType] = useState<'prospective' | 'retrospective'>('prospective');
   const [heartRate, setHeartRate] = useState(70);
-  const [scanLength, setScanLength] = useState(12); // cm
-  
+
   const baseDose = gatingType === 'prospective' ? 3 : 12; // mSv
   const heartRateFactor = heartRate > 70 ? 1.2 : 1.0;
   const estimatedDose = baseDose * heartRateFactor;
-  
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -183,7 +182,7 @@ const CardiacDoseCalculator: React.FC = () => {
             <option value="retrospective">Retrospective ECG-gating</option>
           </select>
         </div>
-        
+
         <div>
           <label className="block text-sm font-medium text-text-100 mb-2">
             Heart Rate (bpm)
@@ -198,7 +197,7 @@ const CardiacDoseCalculator: React.FC = () => {
           />
         </div>
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <motion.div
           className="bg-bg-200 rounded-lg p-4 text-center"
@@ -209,7 +208,7 @@ const CardiacDoseCalculator: React.FC = () => {
             {estimatedDose.toFixed(1)} mSv
           </div>
         </motion.div>
-        
+
         <motion.div
           className="bg-bg-200 rounded-lg p-4 text-center"
           whileHover={{ scale: 1.02 }}
@@ -219,7 +218,7 @@ const CardiacDoseCalculator: React.FC = () => {
             {gatingType === 'prospective' ? '70-80%' : 'Baseline'}
           </div>
         </motion.div>
-        
+
         <motion.div
           className="bg-bg-200 rounded-lg p-4 text-center"
           whileHover={{ scale: 1.02 }}
@@ -230,10 +229,10 @@ const CardiacDoseCalculator: React.FC = () => {
           </div>
         </motion.div>
       </div>
-      
+
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
         <p className="text-sm text-yellow-800">
-          <strong>Recommendation:</strong> 
+          <strong>Recommendation:</strong>
           {heartRate > 70 && ' Consider beta-blockers to reduce heart rate.'}
           {gatingType === 'retrospective' && ' Use ECG-controlled tube current modulation to reduce dose.'}
           {gatingType === 'prospective' && heartRate <= 65 && ' Excellent conditions for low-dose cardiac CT.'}

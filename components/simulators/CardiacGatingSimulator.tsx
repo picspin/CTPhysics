@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, useSpring, useTransform } from 'framer-motion';
+import { motion, useSpring } from 'framer-motion';
 import SimulatorContainer from '../ui/SimulatorContainer';
-import Select from '../ui/Select';
-import Slider from '../ui/Slider';
+import { Select } from '../ui/Select';
+import { Slider } from '../ui/Slider';
 import { Button } from '../ui/Button';
 import { CardiacGatingOptions } from '@/types';
-import { calculateOptimalPhase, calculateTemporalResolution } from '@/utils/physics-calculations';
+import { calculateTemporalResolution } from '@/utils/physics-calculations';
 import { drawSmoothLine, Particle } from '@/utils/animation-utils';
 
 interface Props {
@@ -247,7 +247,7 @@ const CardiacGatingSimulator: React.FC<Props> = ({ options }) => {
         }
 
         // Calculate scan quality based on heart rate variability
-        const optimalPhase = calculateOptimalPhase(heartRate, 0.5);
+        // Removed unused optimalPhase variable
         const quality = heartRate < 65 ? 100 : Math.max(50, 100 - (heartRate - 65));
         setScanQuality(quality);
 
@@ -301,9 +301,9 @@ const CardiacGatingSimulator: React.FC<Props> = ({ options }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Select
             label="Gating Type"
-            options={gatingTypes}
+            options={gatingTypes.map(type => ({ value: type.id, label: type.name }))}
             value={gatingType}
-            onChange={setGatingType}
+            onChange={(e) => setGatingType(e.target.value)}
           />
 
           <Slider
@@ -311,9 +311,9 @@ const CardiacGatingSimulator: React.FC<Props> = ({ options }) => {
             min={heartRateRange.min}
             max={heartRateRange.max}
             value={heartRate}
-            onChange={setHeartRate}
+            onChange={(e) => setHeartRate(Number(e.target.value))}
             step={heartRateRange.step}
-            unit=" bpm"
+            valueDisplay={`${heartRate} bpm`}
           />
         </div>
 

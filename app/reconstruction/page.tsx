@@ -53,7 +53,6 @@ const ReconstructionPage: React.FC = () => {
           tabs={tabs}
           activeTab={activeSection}
           onChange={setActiveSection}
-          variant="underline"
         />
       </div>
 

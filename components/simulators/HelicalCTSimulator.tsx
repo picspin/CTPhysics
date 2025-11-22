@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { Button } from '@/components/ui/Button';
@@ -132,52 +132,19 @@ const HelicalCTSimulator: React.FC = () => {
 
     sceneRef.current = { scene, camera, renderer, gantryGroup, tableGroup, laser, controls };
 
+    const currentContainer = containerRef.current;
+
     // Cleanup
     return () => {
-      if (containerRef.current) {
-        containerRef.current.removeChild(renderer.domElement);
+      if (currentContainer) {
+        currentContainer.removeChild(renderer.domElement);
       }
       renderer.dispose();
     };
   }, []);
 
-  // --- Animation Loop ---
-  useEffect(() => {
-    const animate = () => {
-      requestRef.current = requestAnimationFrame(animate);
-
-      if (sceneRef.current) {
-        const { renderer, scene, camera, gantryGroup, tableGroup, controls } = sceneRef.current;
-        controls.update();
-
-        if (params.scanning) {
-          // Rotate Gantry
-          const rotSpeed = (Math.PI * 2) / (params.speed * 60);
-          gantryGroup.rotation.z -= rotSpeed;
-
-          // Move Table
-          const moveSpeed = (params.pitch * 0.1) * (rotSpeed / (Math.PI * 2));
-          tableGroup.position.z -= moveSpeed;
-          if (tableGroup.position.z < -4) {
-            tableGroup.position.z = 4;
-          }
-        }
-
-        renderer.render(scene, camera);
-      }
-
-      // Draw 2D continuously if scanning or just once if static (handled by effect below)
-      if (params.scanning) {
-        drawPhantom();
-      }
-    };
-
-    requestRef.current = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(requestRef.current!);
-  }, [params.scanning, params.speed, params.pitch]); // Re-bind when scanning params change
-
   // --- 2D Drawing Logic ---
-  const drawPhantom = () => {
+  const drawPhantom = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -244,7 +211,7 @@ const HelicalCTSimulator: React.FC = () => {
     ctx.putImageData(imgData, 0, 0);
 
     // Filters
-    let filters = [];
+    const filters = [];
     if (params.kernel === 'soft') filters.push('blur(1px)');
     if (params.kernel === 'bone') filters.push('contrast(1.3)');
     if (params.kernel === 'lung') filters.push('contrast(2.0) brightness(0.8)');
@@ -253,7 +220,42 @@ const HelicalCTSimulator: React.FC = () => {
     ctx.filter = filters.join(' ');
     ctx.drawImage(canvas, 0, 0);
     ctx.filter = 'none';
-  };
+  }, [params]);
+
+  // --- Animation Loop ---
+  useEffect(() => {
+    const animate = () => {
+      requestRef.current = requestAnimationFrame(animate);
+
+      if (sceneRef.current) {
+        const { renderer, scene, camera, gantryGroup, tableGroup, controls } = sceneRef.current;
+        controls.update();
+
+        if (params.scanning) {
+          // Rotate Gantry
+          const rotSpeed = (Math.PI * 2) / (params.speed * 60);
+          gantryGroup.rotation.z -= rotSpeed;
+
+          // Move Table
+          const moveSpeed = (params.pitch * 0.1) * (rotSpeed / (Math.PI * 2));
+          tableGroup.position.z -= moveSpeed;
+          if (tableGroup.position.z < -4) {
+            tableGroup.position.z = 4;
+          }
+        }
+
+        renderer.render(scene, camera);
+      }
+
+      // Draw 2D continuously if scanning or just once if static (handled by effect below)
+      if (params.scanning) {
+        drawPhantom();
+      }
+    };
+
+    requestRef.current = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(requestRef.current!);
+  }, [params.scanning, params.speed, params.pitch, drawPhantom]); // Re-bind when scanning params change
 
   // Trigger draw on param change
   useEffect(() => {
@@ -265,9 +267,8 @@ const HelicalCTSimulator: React.FC = () => {
     if (sceneRef.current) {
       sceneRef.current.laser.visible = params.scanning;
     }
-  }, [params]);
+  }, [params, drawPhantom]);
 
-  // --- Handlers ---
   const toggleScan = () => {
     setParams(p => ({ ...p, scanning: !p.scanning }));
     addLog(params.scanning ? "Scan stopped." : "Scan started.");

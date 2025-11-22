@@ -6,19 +6,19 @@ export const validatePageData = (data: any): PageData => {
   if (!data.title || typeof data.title !== 'string') {
     throw new Error('Invalid page data: missing or invalid title');
   }
-  
+
   if (!data.description || typeof data.description !== 'string') {
     throw new Error('Invalid page data: missing or invalid description');
   }
-  
+
   if (!Array.isArray(data.sections)) {
     throw new Error('Invalid page data: sections must be an array');
   }
-  
+
   data.sections.forEach((section: any, index: number) => {
     validateSection(section, index);
   });
-  
+
   return data as PageData;
 };
 
@@ -26,33 +26,33 @@ export const validateSection = (section: any, index: number): Section => {
   if (!section.id || typeof section.id !== 'string') {
     throw new Error(`Invalid section at index ${index}: missing or invalid id`);
   }
-  
+
   if (!section.title || typeof section.title !== 'string') {
     throw new Error(`Invalid section ${section.id}: missing or invalid title`);
   }
-  
+
   if (!section.description || typeof section.description !== 'string') {
     throw new Error(`Invalid section ${section.id}: missing or invalid description`);
   }
-  
+
   if (section.keyPoints && !Array.isArray(section.keyPoints)) {
     throw new Error(`Invalid section ${section.id}: keyPoints must be an array`);
   }
-  
+
   if (section.simulator) {
     validateSimulatorConfig(section.simulator);
   }
-  
+
   return section as Section;
 };
 
 export const validateSimulatorConfig = (config: any): SimulatorConfig => {
   const validTypes = ['backprojection', 'helical-ct', 'cardiac-gating', 'dual-energy', 'radiation-dose', 'xray-attenuation'];
-  
+
   if (!config.type || !validTypes.includes(config.type)) {
     throw new Error(`Invalid simulator config: type must be one of ${validTypes.join(', ')}`);
   }
-  
+
   return config as SimulatorConfig;
 };
 
@@ -64,7 +64,7 @@ export const transformLegacyData = (legacyData: any): PageData => {
     description: legacyData.description || '',
     sections: []
   };
-  
+
   if (legacyData.sections) {
     transformed.sections = legacyData.sections.map((section: any) => ({
       id: section.id || generateId(),
@@ -75,7 +75,7 @@ export const transformLegacyData = (legacyData: any): PageData => {
       simulator: section.simulator
     }));
   }
-  
+
   return transformed;
 };
 
@@ -90,12 +90,12 @@ export const mergePageData = (base: PageData, updates: Partial<PageData>): PageD
 
 export const mergeSections = (baseSections: Section[], updateSections: Section[]): Section[] => {
   const sectionMap = new Map<string, Section>();
-  
+
   // Add base sections
   baseSections.forEach(section => {
     sectionMap.set(section.id, section);
   });
-  
+
   // Merge or add update sections
   updateSections.forEach(section => {
     const existing = sectionMap.get(section.id);
@@ -105,7 +105,7 @@ export const mergeSections = (baseSections: Section[], updateSections: Section[]
       sectionMap.set(section.id, section);
     }
   });
-  
+
   return Array.from(sectionMap.values());
 };
 
@@ -145,7 +145,7 @@ export class DataStore {
 
   private loadFromLocalStorage(): void {
     if (!this.localStorage) return;
-    
+
     const keys = Object.keys(this.localStorage).filter(key => key.startsWith('ctphysics_'));
     keys.forEach(key => {
       try {
@@ -160,7 +160,7 @@ export class DataStore {
 
   private saveToLocalStorage<T>(key: string, value: T): void {
     if (!this.localStorage) return;
-    
+
     try {
       this.localStorage.setItem(`ctphysics_${key}`, JSON.stringify(value));
     } catch (error) {
@@ -250,8 +250,8 @@ export const loadSimulatorPresets = (simulatorType: string): any => {
       ]
     }
   };
-  
-  return presets[simulatorType] || {};
+
+  return (presets as any)[simulatorType] || {};
 };
 
 // Utility functions
@@ -264,7 +264,7 @@ export const debounce = <T extends (...args: any[]) => any>(
   wait: number
 ): ((...args: Parameters<T>) => void) => {
   let timeout: NodeJS.Timeout;
-  
+
   return (...args: Parameters<T>) => {
     clearTimeout(timeout);
     timeout = setTimeout(() => func(...args), wait);
@@ -276,7 +276,7 @@ export const throttle = <T extends (...args: any[]) => any>(
   limit: number
 ): ((...args: Parameters<T>) => void) => {
   let inThrottle: boolean;
-  
+
   return (...args: Parameters<T>) => {
     if (!inThrottle) {
       func(...args);
