@@ -84,6 +84,7 @@ const ReconstructionPage: React.FC = () => {
                   <SimulatorContainer
                     title={`${activeContent.title} Simulator`}
                     description="Interact with the parameters to see how they affect the results"
+                    enableLiquidEffect={true}
                   >
                     {activeContent.simulator.type === 'backprojection' && (
                       <BackprojectionSimulator options={activeContent.simulator.options} />

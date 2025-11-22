@@ -1,5 +1,9 @@
 /node_modules
 /.vscode
 /.trae
-/.next
-/.next/types
+/.trae/*
+/.next 
+/.next/* 
+/.agent
+/.agent/*
+/.github/*

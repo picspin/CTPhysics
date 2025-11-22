@@ -73,19 +73,6 @@ src/
 │   │   ├── Sidebar.tsx        # 侧边导航栏
 │   │   ├── Header.tsx         # 顶部导航栏（移动设备）
 │   │   └── Footer.tsx         # 页脚
-│   ├── ui/
-│   │   ├── Button.tsx         # 自定义按钮
-│   │   ├── Select.tsx         # 自定义下拉菜单
-│   │   ├── Slider.tsx         # 自定义滑块
-│   │   ├── Card.tsx           # 内容卡片
-│   │   ├── TabGroup.tsx       # 标签页组件
-│   │   └── SimulatorContainer.tsx # 模拟器容器
-│   ├── simulators/
-│   │   ├── BackprojectionSimulator.tsx    # 反投影模拟器
-│   │   ├── HelicalCTSimulator.tsx         # 螺旋CT模拟器
-│   │   ├── DualEnergyReconstructionSimulator.tsx # 双能CT重建模拟器
-│   │   ├── CardiacGatingSimulator.tsx     # 心脏CT门控模拟器
-│   │   ├── RadiationDoseSimulator.tsx     # 辐射剂量模拟器
 │   │   └── XrayAttenuationSimulator.tsx   # X射线衰减模拟器
 │   └── interactive/
 │       └── QuizComponent.tsx              # 交互式问答组件

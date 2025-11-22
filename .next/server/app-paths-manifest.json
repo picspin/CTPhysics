@@ -1,8 +1,0 @@
-{
-  "/page": "app/page.js",
-  "/reconstruction/page": "app/reconstruction/page.js",
-  "/cardiac/page": "app/cardiac/page.js",
-  "/dose/page": "app/dose/page.js",
-  "/dual-energy/page": "app/dual-energy/page.js",
-  "/questions/page": "app/questions/page.js"
-}
