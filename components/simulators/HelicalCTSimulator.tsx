@@ -11,7 +11,7 @@ import { Card } from '@/components/ui/Card';
 const HelicalCTSimulator: React.FC = () => {
   // --- State ---
   const [params, setParams] = useState({
-    speed: 0.5,
+    speed: 1.0,
     pitch: 1.0,
     kv: 120,
     ma: 200,
@@ -21,7 +21,7 @@ const HelicalCTSimulator: React.FC = () => {
   });
 
   const [dose, setDose] = useState(0);
-  const [logs, setLogs] = useState<string[]>(['> System Booting...']);
+  const [logs, setLogs] = useState<string[]>(['> 系统启动中 (System Booting)...']);
 
   // --- Refs ---
   const containerRef = useRef<HTMLDivElement>(null);
@@ -33,6 +33,7 @@ const HelicalCTSimulator: React.FC = () => {
     renderer: THREE.WebGLRenderer;
     gantryGroup: THREE.Group;
     tableGroup: THREE.Group;
+    helixLine: THREE.Line;
     laser: THREE.Mesh;
     controls: OrbitControls;
   }>();
@@ -122,6 +123,25 @@ const HelicalCTSimulator: React.FC = () => {
     tableGroup.position.z = 4;
     scene.add(tableGroup);
 
+    // 4. Helix Visualization
+    // Create a spiral line
+    const helixPoints = [];
+    const helixRadius = 2.5;
+    const helixTurns = 10;
+    for (let i = 0; i <= helixTurns * 36; i++) {
+      const angle = (i * 10 * Math.PI) / 180;
+      helixPoints.push(new THREE.Vector3(
+        Math.cos(angle) * helixRadius,
+        Math.sin(angle) * helixRadius,
+        -5 // Start z
+      ));
+    }
+    const helixGeo = new THREE.BufferGeometry().setFromPoints(helixPoints);
+    const helixMat = new THREE.LineBasicMaterial({ color: 0x00ff00, transparent: true, opacity: 0.3 });
+    const helixLine = new THREE.Line(helixGeo, helixMat);
+    scene.add(helixLine);
+
+
     // Laser
     const laserGeo = new THREE.PlaneGeometry(0.05, 5);
     const laserMat = new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide, transparent: true, opacity: 0.5 });
@@ -130,7 +150,7 @@ const HelicalCTSimulator: React.FC = () => {
     laser.visible = false;
     scene.add(laser);
 
-    sceneRef.current = { scene, camera, renderer, gantryGroup, tableGroup, laser, controls };
+    sceneRef.current = { scene, camera, renderer, gantryGroup, tableGroup, helixLine, laser, controls };
 
     const currentContainer = containerRef.current;
 
@@ -142,6 +162,37 @@ const HelicalCTSimulator: React.FC = () => {
       renderer.dispose();
     };
   }, []);
+
+  // --- Update Helix based on Pitch ---
+  useEffect(() => {
+    if (sceneRef.current) {
+      const { helixLine } = sceneRef.current;
+      const points = [];
+      const helixRadius = 2.0; // Slightly smaller than gantry
+      const turns = 10;
+      // length was unused
+
+      // Pitch definition: Table movement per rotation / Beam Width.
+      // Here we visualize the path relative to the table/patient Z-axis
+      // Higher pitch = more spread out.
+      const spread = params.pitch * 0.5; // Visual scale factor
+
+      for (let i = 0; i <= turns * 60; i++) {
+        const t = i / 60; // rotations
+        const angle = t * Math.PI * 2;
+        const z = (t * spread) - (turns * spread) / 2; // Center it
+
+        points.push(new THREE.Vector3(
+          Math.cos(angle) * helixRadius,
+          Math.sin(angle) * helixRadius,
+          z
+        ));
+      }
+      helixLine.geometry.setFromPoints(points);
+      (helixLine.material as THREE.LineBasicMaterial).color.setHex(params.pitch > 1.2 ? 0xff0000 : 0x00ff00); // Red if high pitch (gaps)
+    }
+  }, [params.pitch]);
+
 
   // --- 2D Drawing Logic ---
   const drawPhantom = useCallback(() => {
@@ -271,7 +322,7 @@ const HelicalCTSimulator: React.FC = () => {
 
   const toggleScan = () => {
     setParams(p => ({ ...p, scanning: !p.scanning }));
-    addLog(params.scanning ? "Scan stopped." : "Scan started.");
+    addLog(params.scanning ? "扫描已停止 (Scan stopped)." : "扫描开始 (Scan started).");
   };
 
   const toggleDualEnergy = () => {
@@ -279,21 +330,21 @@ const HelicalCTSimulator: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen max-h-screen bg-[var(--sim-bg)] text-[var(--sim-text)] font-sans overflow-hidden">
+    <div className="flex flex-col h-[600px] bg-[var(--sim-bg)] text-[var(--sim-text)] font-sans overflow-hidden rounded-lg shadow-2xl">
       {/* Main Display */}
       <div className="flex flex-1 min-h-0 border-b-4 border-black">
         {/* 3D View */}
         <div ref={containerRef} className="flex-1 relative bg-[#111] border-r-2 border-[#333]">
           <div className="absolute top-4 left-4 font-mono text-sm text-[var(--sim-accent)] z-10 pointer-events-none">
-            GANTRY ROOM VIEW<br />
-            STATUS: <span className={params.scanning ? "text-red-500" : ""}>{params.scanning ? "EXPOSURE" : "STANDBY"}</span>
+            机架室视图 (GANTRY ROOM VIEW)<br />
+            STATUS: <span className={params.scanning ? "text-red-500" : ""}>{params.scanning ? "曝光中 (EXPOSURE)" : "待机 (STANDBY)"}</span>
           </div>
         </div>
 
         {/* Image View */}
         <div className="flex-1 bg-black flex flex-col items-center justify-center relative">
           <div className="absolute top-4 left-4 font-mono text-sm text-[var(--sim-accent)] pointer-events-none">
-            REAL-TIME RECONSTRUCTION
+            实时重建 (REAL-TIME RECONSTRUCTION)
           </div>
           <canvas
             ref={canvasRef}
@@ -302,53 +353,53 @@ const HelicalCTSimulator: React.FC = () => {
             className="bg-black shadow-[0_0_20px_rgba(255,255,255,0.1)] max-w-[90%] max-h-[80%] aspect-square"
           />
           <div className="mt-2 font-mono text-xs text-gray-500">
-            Dose: {dose} mGy
+            剂量 (Dose): {dose} mGy
           </div>
         </div>
       </div>
 
       {/* Control Panel */}
-      <div className="h-[300px] bg-[var(--sim-panel)] grid grid-cols-4 gap-4 p-4 shadow-[0_-4px_10px_rgba(0,0,0,0.5)] z-20">
+      <div className="h-[250px] bg-bg-200 grid grid-cols-4 gap-4 p-4 shadow-[0_-4px_10px_rgba(0,0,0,0.5)] z-20">
 
         {/* Motion Control */}
-        <Card title="Motion Control" className="bg-transparent border-[#444] !p-0">
+        <Card title="运动控制 (Motion Control)" className="bg-transparent border-[#444] !p-0">
           <div className="p-3 flex flex-col gap-4">
             <Slider
-              label="Rotation Time (s)"
+              label="旋转时间 (Rotation Time) [s]"
               valueDisplay={params.speed}
               min={0.2} max={2.0} step={0.1}
               value={params.speed}
               onChange={(e) => setParams({ ...params, speed: parseFloat(e.target.value) })}
             />
             <Slider
-              label="Pitch"
+              label="螺距 (Pitch)"
               valueDisplay={params.pitch}
               min={0.1} max={2.0} step={0.1}
               value={params.pitch}
               onChange={(e) => setParams({ ...params, pitch: parseFloat(e.target.value) })}
             />
             <Button
-              variant={params.scanning ? "danger" : "neon"}
+              variant={params.scanning ? "danger" : "primary"}
               className="mt-auto w-full"
               onClick={toggleScan}
             >
-              {params.scanning ? "STOP SCAN" : "START SCAN"}
+              {params.scanning ? "停止扫描 (STOP)" : "开始扫描 (START)"}
             </Button>
           </div>
         </Card>
 
         {/* Exposure */}
-        <Card title="Exposure" className="bg-transparent border-[#444] !p-0">
+        <Card title="曝光参数 (Exposure)" className="bg-transparent border-[#444] !p-0">
           <div className="p-3 flex flex-col gap-4">
             <Slider
-              label="Tube Voltage (kV)"
+              label="管电压 (Tube Voltage) [kV]"
               valueDisplay={params.kv}
               min={80} max={140} step={10}
               value={params.kv}
               onChange={(e) => setParams({ ...params, kv: parseInt(e.target.value) })}
             />
             <Slider
-              label="Tube Current (mA)"
+              label="管电流 (Tube Current) [mA]"
               valueDisplay={params.ma}
               min={50} max={800} step={50}
               value={params.ma}
@@ -358,14 +409,14 @@ const HelicalCTSimulator: React.FC = () => {
         </Card>
 
         {/* Reconstruction */}
-        <Card title="Reconstruction" className="bg-transparent border-[#444] !p-0">
+        <Card title="重建参数 (Reconstruction)" className="bg-transparent border-[#444] !p-0">
           <div className="p-3 flex flex-col gap-4">
             <Select
-              label="Kernel"
+              label="滤波核 (Kernel)"
               options={[
-                { value: 'soft', label: 'Standard (Soft)' },
-                { value: 'bone', label: 'Bone (Sharp)' },
-                { value: 'lung', label: 'Lung (High Contrast)' },
+                { value: 'soft', label: '标准 (Standard/Soft)' },
+                { value: 'bone', label: '骨窗 (Bone/Sharp)' },
+                { value: 'lung', label: '肺窗 (Lung/High Contrast)' },
               ]}
               value={params.kernel}
               onChange={(e) => {
@@ -374,17 +425,17 @@ const HelicalCTSimulator: React.FC = () => {
               }}
             />
             <Button
-              variant={params.dualEnergy ? "neon" : "outline"}
+              variant={params.dualEnergy ? "primary" : "secondary"}
               className="mt-auto w-full"
               onClick={toggleDualEnergy}
             >
-              {params.dualEnergy ? "Dual Energy: ON" : "Dual Energy: OFF"}
+              {params.dualEnergy ? "双能: 开 (Dual Energy: ON)" : "双能: 关 (Dual Energy: OFF)"}
             </Button>
           </div>
         </Card>
 
         {/* System Log */}
-        <Card title="System Log" className="bg-transparent border-[#444] !p-0">
+        <Card title="系统日志 (System Log)" className="bg-transparent border-[#444] !p-0">
           <div className="p-3 h-full overflow-y-auto font-mono text-[10px] text-green-500">
             {logs.map((log, i) => (
               <div key={i}>{log}</div>

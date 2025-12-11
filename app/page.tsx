@@ -85,10 +85,10 @@ export default function Home() {
   }, []);
 
   const modules = [
-    { href: '/reconstruction', title: 'CT Reconstruction', desc: 'Helical CT, Backprojection & Pitch', color: 'border-orange-500' },
-    { href: '/dose', title: 'Dose Measurement', desc: 'CTDI, DLP & Safety', color: 'border-blue-500' },
-    { href: '/cardiac', title: 'Cardiac CT', desc: 'Gating & Temporal Resolution', color: 'border-red-500' },
-    { href: '/dual-energy', title: 'Dual Energy', desc: 'Spectral Imaging & Tissue Characterization', color: 'border-purple-500' },
+    { href: '/reconstruction', title: 'CT图像重建', desc: '螺旋CT、反投影与螺距 (Helical CT, Backprojection)', color: 'border-orange-500' },
+    { href: '/dose', title: '剂量测量', desc: 'CTDI, DLP 与辐射安全 (Dose & Safety)', color: 'border-blue-500' },
+    { href: '/cardiac', title: '心脏CT', desc: '心电门控与时间分辨率 (Gating & Temporal Resolution)', color: 'border-red-500' },
+    { href: '/dual-energy', title: '双能CT', desc: '能谱成像与组织特征分析 (Spectral Imaging)', color: 'border-purple-500' },
   ];
 
   return (
@@ -104,21 +104,21 @@ export default function Home() {
           transition={{ duration: 0.8 }}
         >
           <h1 className="text-5xl md:text-7xl font-bold tracking-tighter mb-4 bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-blue-500">
-            CT PHYSICS
+            CT 物理原理
           </h1>
           <p className="text-xl md:text-2xl text-gray-300 max-w-2xl mx-auto mb-8 font-light">
-            Interactive Simulation & Advanced Imaging Principles
+            交互式仿真与高级成像原理可视教学平台
           </p>
 
           <div className="flex flex-wrap justify-center gap-4 mb-16">
             <Link href="/reconstruction">
               <Button variant="neon" size="lg" className="min-w-[200px]">
-                Start Simulation
+                开始模拟 (Start Simulation)
               </Button>
             </Link>
             <Link href="/questions">
               <Button variant="outline" size="lg" className="min-w-[200px] border-gray-500 text-gray-300 hover:text-white hover:border-white">
-                Review Questions
+                练习题 (Questions)
               </Button>
             </Link>
           </div>

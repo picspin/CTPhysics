@@ -11,12 +11,12 @@ const Header: React.FC = () => {
 
   // Page titles mapping
   const pageTitles: Record<string, string> = {
-    '/': 'CT Physics Interactive Learning Platform',
-    '/reconstruction': 'CT Reconstruction & Helical CT',
-    '/dose': 'Radiation Dose Measurement',
-    '/cardiac': 'Cardiac CT Imaging',
-    '/dual-energy': 'Dual Energy CT Technology',
-    '/questions': 'Review Questions & Practice'
+    '/': 'CT 物理原理交互式学习平台 (Interactive Platform)',
+    '/reconstruction': 'CT 重建与螺旋CT (Reconstruction & Helical)',
+    '/dose': '辐射剂量测量与安全 (Dose Measurement & Safety)',
+    '/cardiac': '心脏 CT 成像 (Cardiac CT)',
+    '/dual-energy': '双能 CT 技术 (Dual Energy CT)',
+    '/questions': '复习与练习 (Questions & Practice)'
   };
 
   const currentTitle = pageTitles[pathname] || 'CT Physics';
@@ -72,7 +72,7 @@ const Header: React.FC = () => {
                 className="p-2 rounded-lg hover:bg-bg-200 transition-colors duration-200"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                title="Search (Ctrl+K)"
+                title="搜索 (Search) - Ctrl+K"
               >
                 <svg className="w-5 h-5 text-text-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -85,7 +85,7 @@ const Header: React.FC = () => {
                 className="p-2 rounded-lg hover:bg-bg-200 transition-colors duration-200"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                title="Toggle theme"
+                title="切换主题 (Toggle theme)"
               >
                 <svg className="w-5 h-5 text-text-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -98,7 +98,7 @@ const Header: React.FC = () => {
                 className="p-2 rounded-lg hover:bg-bg-200 transition-colors duration-200"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                title="Settings"
+                title="设置 (Settings)"
               >
                 <svg className="w-5 h-5 text-text-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}

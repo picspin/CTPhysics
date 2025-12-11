@@ -23,10 +23,10 @@ const DoseCalculatorSimulator: React.FC = () => {
   const [region, setRegion] = useState('chest');
 
   const regions = [
-    { id: 'head', name: 'Head', kFactor: 0.0021 },
-    { id: 'chest', name: 'Chest', kFactor: 0.014 },
-    { id: 'abdomen', name: 'Abdomen', kFactor: 0.015 },
-    { id: 'pelvis', name: 'Pelvis', kFactor: 0.015 }
+    { id: 'head', name: '头部 (Head)', kFactor: 0.0021 },
+    { id: 'chest', name: '胸部 (Chest)', kFactor: 0.014 },
+    { id: 'abdomen', name: '腹部 (Abdomen)', kFactor: 0.015 },
+    { id: 'pelvis', name: '盆腔 (Pelvis)', kFactor: 0.015 }
   ];
 
   // Calculate dose metrics
@@ -37,19 +37,19 @@ const DoseCalculatorSimulator: React.FC = () => {
 
   return (
     <SimulatorContainer
-      title="Dose Calculator"
-      description="Calculate CTDI, DLP, and Effective Dose based on scan parameters"
+      title="剂量计算器 (Dose Calculator)"
+      description="根据扫描参数计算 CTDI, DLP 和有效剂量"
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div className="space-y-4">
           <Select
-            label="Anatomical Region"
+            label="解剖部位 (Region)"
             options={regions.map(r => ({ value: r.id, label: r.name }))}
             value={region}
             onChange={(e) => setRegion(e.target.value)}
           />
           <Slider
-            label="Tube Voltage (kVp)"
+            label="管电压 (Tube Voltage) [kVp]"
             min={80}
             max={140}
             step={10}
@@ -58,7 +58,7 @@ const DoseCalculatorSimulator: React.FC = () => {
             valueDisplay={kVp}
           />
           <Slider
-            label="Tube Current (mAs)"
+            label="管电流 (Tube Current) [mAs]"
             min={50}
             max={500}
             step={10}
@@ -67,7 +67,7 @@ const DoseCalculatorSimulator: React.FC = () => {
             valueDisplay={mAs}
           />
           <Slider
-            label="Pitch"
+            label="螺距 (Pitch)"
             min={0.5}
             max={2.0}
             step={0.1}
@@ -76,7 +76,7 @@ const DoseCalculatorSimulator: React.FC = () => {
             valueDisplay={pitch}
           />
           <Slider
-            label="Scan Length (cm)"
+            label="扫描长度 (Scan Length) [cm]"
             min={10}
             max={100}
             step={1}
@@ -93,7 +93,7 @@ const DoseCalculatorSimulator: React.FC = () => {
           >
             <div className="flex justify-between items-center">
               <div>
-                <div className="text-sm text-text-200">CTDI<sub>vol</sub></div>
+                <div className="text-sm text-text-200">容积CT剂量指数 (CTDI<sub>vol</sub>)</div>
                 <div className="text-2xl font-bold text-text-100">{ctdi.toFixed(2)}</div>
               </div>
               <div className="text-sm text-text-200">mGy</div>
@@ -106,7 +106,7 @@ const DoseCalculatorSimulator: React.FC = () => {
           >
             <div className="flex justify-between items-center">
               <div>
-                <div className="text-sm text-text-200">DLP</div>
+                <div className="text-sm text-text-200">剂量长度乘积 (DLP)</div>
                 <div className="text-2xl font-bold text-text-100">{dlp.toFixed(0)}</div>
               </div>
               <div className="text-sm text-text-200">mGy·cm</div>
@@ -119,7 +119,7 @@ const DoseCalculatorSimulator: React.FC = () => {
           >
             <div className="flex justify-between items-center">
               <div>
-                <div className="text-sm text-primary-100">Effective Dose</div>
+                <div className="text-sm text-primary-100">有效剂量 (Effective Dose)</div>
                 <div className="text-2xl font-bold text-primary-100">{effectiveDose.toFixed(2)}</div>
               </div>
               <div className="text-sm text-primary-100">mSv</div>
@@ -127,13 +127,13 @@ const DoseCalculatorSimulator: React.FC = () => {
           </motion.div>
 
           {/* Risk assessment */}
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <h4 className="font-medium text-yellow-800 mb-2">Risk Assessment</h4>
-            <p className="text-sm text-yellow-700">
-              {effectiveDose < 1 && 'Minimal risk - comparable to a few months of natural background radiation.'}
-              {effectiveDose >= 1 && effectiveDose < 10 && 'Low risk - comparable to 1-3 years of natural background radiation.'}
-              {effectiveDose >= 10 && effectiveDose < 20 && 'Moderate risk - consider dose optimization strategies.'}
-              {effectiveDose >= 20 && 'Higher risk - ensure clinical justification and optimize protocol.'}
+          <div className="bg-yellow-50/10 border border-yellow-200/50 rounded-lg p-4">
+            <h4 className="font-medium text-yellow-200 mb-2">风险评估 (Risk Assessment)</h4>
+            <p className="text-sm text-yellow-100">
+              {effectiveDose < 1 && '极低风险 - 相当于几个月的自然本底辐射。'}
+              {effectiveDose >= 1 && effectiveDose < 10 && '低风险 - 相当于1-3年的自然本底辐射。'}
+              {effectiveDose >= 10 && effectiveDose < 20 && '中等风险 - 考虑各种剂量优化策略。'}
+              {effectiveDose >= 20 && '较高风险 - 必须确保临床正当性并严格优化方案。'}
             </p>
           </div>
         </div>
@@ -155,9 +155,9 @@ const PatientSizeDoseSimulator: React.FC = () => {
       const baseDose = 10; // mGy
       data.push({
         diameter,
-        manualDose: baseDose * sizeFactor,
-        aecDose: useAEC ? baseDose * Math.sqrt(sizeFactor) : baseDose * sizeFactor,
-        imageNoise: useAEC ? 15 : 15 / Math.sqrt(sizeFactor)
+        manualDose: Number((baseDose * sizeFactor).toFixed(1)),
+        aecDose: Number((useAEC ? baseDose * Math.sqrt(sizeFactor) : baseDose * sizeFactor).toFixed(1)),
+        imageNoise: Number((useAEC ? 15 : 15 / Math.sqrt(sizeFactor)).toFixed(1))
       });
     }
     return data;
@@ -168,13 +168,13 @@ const PatientSizeDoseSimulator: React.FC = () => {
 
   return (
     <SimulatorContainer
-      title="Patient Size & Dose Relationship"
-      description="See how patient size affects dose and image noise"
+      title="患者体型与剂量关系 (Patient Size & Dose)"
+      description="观察患者体型如何影响剂量和图像噪声"
     >
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="space-y-6">
           <Slider
-            label="Patient Diameter (cm)"
+            label="患者直径 (Patient Diameter) [cm]"
             min={15}
             max={45}
             step={5}
@@ -192,22 +192,22 @@ const PatientSizeDoseSimulator: React.FC = () => {
                 className="w-4 h-4 text-primary-100 rounded focus:ring-primary-100"
               />
               <span className="text-sm font-medium text-text-100">
-                Use Automatic Exposure Control (AEC)
+                启用自动曝光控制 (Use AEC)
               </span>
             </label>
           </div>
 
           <div className="bg-bg-200 rounded-lg p-4">
-            <h4 className="font-medium text-text-100 mb-3">Current Values</h4>
+            <h4 className="font-medium text-text-100 mb-3">当前数值</h4>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-text-200">Relative Dose:</span>
+                <span className="text-text-200">相对剂量:</span>
                 <span className="font-medium text-text-100">
                   {currentData.aecDose.toFixed(1)} mGy
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-text-200">Image Noise:</span>
+                <span className="text-text-200">图像噪声:</span>
                 <span className="font-medium text-text-100">
                   {currentData.imageNoise.toFixed(1)} HU
                 </span>
@@ -219,35 +219,35 @@ const PatientSizeDoseSimulator: React.FC = () => {
         <div className="col-span-2 h-80">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={sizeData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#444" />
               <XAxis
                 dataKey="diameter"
-                label={{ value: 'Patient Diameter (cm)', position: 'insideBottom', offset: -5 }}
+                label={{ value: '患者直径 (cm)', position: 'insideBottom', offset: -5, fill: '#888' }}
                 stroke="#6b7280"
               />
               <YAxis
-                label={{ value: 'Dose (mGy)', angle: -90, position: 'insideLeft' }}
+                label={{ value: '剂量 (mGy)', angle: -90, position: 'insideLeft', fill: '#888' }}
                 stroke="#6b7280"
               />
               <Tooltip
-                contentStyle={{ backgroundColor: '#f9fafb', border: '1px solid #e5e7eb' }}
+                contentStyle={{ backgroundColor: '#222', border: '1px solid #444', color: '#eee' }}
               />
               <Legend />
               <Line
                 type="monotone"
                 dataKey="manualDose"
                 stroke="#ef4444"
-                name="Fixed mAs"
+                name="固定电流 (Fixed mAs)"
                 strokeWidth={2}
-                dot={false}
+                dot={true}
               />
               <Line
                 type="monotone"
                 dataKey="aecDose"
                 stroke="#10b981"
-                name="With AEC"
+                name="自动曝光 (With AEC)"
                 strokeWidth={2}
-                dot={false}
+                dot={true}
                 strokeDasharray={useAEC ? "0" : "5 5"}
               />
             </LineChart>
@@ -255,12 +255,12 @@ const PatientSizeDoseSimulator: React.FC = () => {
         </div>
       </div>
 
-      <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h4 className="font-medium text-blue-800 mb-2">Key Insights</h4>
-        <ul className="space-y-1 text-sm text-blue-700">
-          <li>• Without AEC, dose increases quadratically with patient size</li>
-          <li>• AEC maintains consistent image quality by adjusting dose based on patient attenuation</li>
-          <li>• Larger patients require exponentially more dose for the same image quality</li>
+      <div className="mt-6 bg-blue-50/10 border border-blue-200/50 rounded-lg p-4">
+        <h4 className="font-medium text-blue-300 mb-2">关键见解</h4>
+        <ul className="space-y-1 text-sm text-blue-200">
+          <li>• 如果不使用AEC，剂量并不会随体型自动变化，但图像质量会急剧下降（噪声增加）。</li>
+          <li>• AEC 通过根据患者衰减自动调整剂量，保持图像质量一致。</li>
+          <li>• 较大的患者为了获得相同的图像质量，需要指数级更高的剂量（这也解释了所谓的“体型代价”）。</li>
         </ul>
       </div>
     </SimulatorContainer>
@@ -274,10 +274,10 @@ const DoseReductionSimulator: React.FC = () => {
   const [iterativeStrength, setIterativeStrength] = useState(50);
 
   const strategies = [
-    { id: 'none', name: 'Standard Protocol' },
-    { id: 'lowkv', name: 'Low kV Imaging' },
-    { id: 'iterative', name: 'Iterative Reconstruction' },
-    { id: 'combined', name: 'Combined Approach' }
+    { id: 'none', name: '标准方案 (Standard Protocol)' },
+    { id: 'lowkv', name: '低电压成像 (Low kV)' },
+    { id: 'iterative', name: '迭代重建 (Iterative Reconstruction)' },
+    { id: 'combined', name: '组合策略 (Combined Approach)' }
   ];
 
   // Calculate dose reduction
@@ -301,19 +301,19 @@ const DoseReductionSimulator: React.FC = () => {
 
   // Generate comparison data
   const comparisonData = [
-    { technique: 'Standard', dose: baseDose, quality: 100 },
-    { technique: 'Optimized', dose: optimizedDose, quality: 95 - (doseReduction * 0.1) }
+    { technique: '标准 (Standard)', dose: baseDose, quality: 100 },
+    { technique: '优化 (Optimized)', dose: Number(optimizedDose.toFixed(2)), quality: Number((95 - (doseReduction * 0.1)).toFixed(1)) }
   ];
 
   return (
     <SimulatorContainer
-      title="Dose Reduction Strategies"
-      description="Compare different techniques for reducing radiation dose"
+      title="剂量降低策略 (Dose Reduction Strategies)"
+      description="比较不同的辐射剂量降低技术"
     >
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="space-y-6">
           <Select
-            label="Reduction Strategy"
+            label="降低策略 (Strategy)"
             options={strategies.map(s => ({ value: s.id, label: s.name }))}
             value={strategy}
             onChange={(e) => setStrategy(e.target.value)}
@@ -321,7 +321,7 @@ const DoseReductionSimulator: React.FC = () => {
 
           {(strategy === 'lowkv' || strategy === 'combined') && (
             <Slider
-              label="Tube Voltage (kVp)"
+              label="管电压 (Tube Voltage) [kVp]"
               min={80}
               max={120}
               step={10}
@@ -333,7 +333,7 @@ const DoseReductionSimulator: React.FC = () => {
 
           {(strategy === 'iterative' || strategy === 'combined') && (
             <Slider
-              label="Iterative Strength (%)"
+              label="迭代强度 (Iterative Strength) [%]"
               min={0}
               max={100}
               step={10}
@@ -343,13 +343,13 @@ const DoseReductionSimulator: React.FC = () => {
             />
           )}
 
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <h4 className="font-medium text-green-800 mb-1">Dose Reduction</h4>
-            <div className="text-3xl font-bold text-green-700 mt-1">
-              {doseReduction.toFixed(0)}%
+          <div className="bg-green-50/10 border border-green-200/50 rounded-lg p-4">
+            <h4 className="font-medium text-green-300 mb-1">剂量降低</h4>
+            <div className="text-3xl font-bold text-green-400 mt-1">
+              -{doseReduction.toFixed(0)}%
             </div>
-            <div className="text-sm text-green-600 mt-2">
-              {optimizedDose.toFixed(1)} mSv (from {baseDose} mSv)
+            <div className="text-sm text-green-300 mt-2">
+              {optimizedDose.toFixed(1)} mSv (原剂量 {baseDose} mSv)
             </div>
           </div>
         </div>
@@ -357,14 +357,14 @@ const DoseReductionSimulator: React.FC = () => {
         <div className="col-span-2 h-80">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={comparisonData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#444" />
               <XAxis dataKey="technique" stroke="#6b7280" />
               <YAxis stroke="#6b7280" />
               <Tooltip
-                contentStyle={{ backgroundColor: '#f9fafb', border: '1px solid #e5e7eb' }}
+                contentStyle={{ backgroundColor: '#222', border: '1px solid #444', color: '#eee' }}
               />
-              <Bar dataKey="dose" fill="#FF7A00" name="Dose (mSv)" />
-              <Bar dataKey="quality" fill="#4A90E2" name="Image Quality (%)" />
+              <Bar dataKey="dose" fill="#FF7A00" name="剂量 (mSv)" />
+              <Bar dataKey="quality" fill="#4A90E2" name="图像质量 (%)" />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -372,46 +372,46 @@ const DoseReductionSimulator: React.FC = () => {
 
       <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-bg-200 rounded-lg p-4">
-          <h4 className="font-medium text-text-100 mb-2">Strategy Benefits</h4>
+          <h4 className="font-medium text-text-100 mb-2">策略优势</h4>
           <ul className="space-y-1 text-sm text-text-200">
             {strategy === 'lowkv' && (
               <>
-                <li>• Increased iodine contrast</li>
-                <li>• Better for smaller patients</li>
-                <li>• Useful for CT angiography</li>
+                <li>• 增加碘对比度</li>
+                <li>• 适合体型较小的患者</li>
+                <li>• 非常适合CT血管造影 (CTA)</li>
               </>
             )}
             {strategy === 'iterative' && (
               <>
-                <li>• Maintains spatial resolution</li>
-                <li>• Reduces image noise</li>
-                <li>• Works for all patient sizes</li>
+                <li>• 保持空间分辨率</li>
+                <li>• 显著降低图像噪声</li>
+                <li>• 适用于所有体型的患者</li>
               </>
             )}
             {strategy === 'combined' && (
               <>
-                <li>• Maximum dose reduction</li>
-                <li>• Synergistic effects</li>
-                <li>• Flexible optimization</li>
+                <li>• 最大程度的剂量降低</li>
+                <li>• 协同效应</li>
+                <li>• 灵活的优化方案</li>
               </>
             )}
             {strategy === 'none' && (
-              <li>• Select a strategy to see benefits</li>
+              <li>• 请选择一种策略以查看其优势</li>
             )}
           </ul>
         </div>
 
         <div className="bg-bg-200 rounded-lg p-4">
-          <h4 className="font-medium text-text-100 mb-2">Considerations</h4>
+          <h4 className="font-medium text-text-100 mb-2">注意事项</h4>
           <ul className="space-y-1 text-sm text-text-200">
             {(strategy === 'lowkv' || strategy === 'combined') && kVp < 100 && (
-              <li className="text-orange-600">• May increase image noise</li>
+              <li className="text-orange-400">• 可能会增加图像噪声（尤其在大体型患者中）</li>
             )}
             {(strategy === 'iterative' || strategy === 'combined') && iterativeStrength > 70 && (
-              <li className="text-orange-600">• May affect image texture</li>
+              <li className="text-orange-400">• 过高的强度可能会改变图像纹理（"蜡状"感）</li>
             )}
             {strategy !== 'none' && (
-              <li>• Verify diagnostic quality is maintained</li>
+              <li>• 必须验证诊断质量是否得到维持</li>
             )}
           </ul>
         </div>

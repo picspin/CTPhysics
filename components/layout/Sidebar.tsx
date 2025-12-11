@@ -28,7 +28,7 @@ const Sidebar: React.FC = () => {
   const navItems: NavItem[] = [
     {
       href: '/',
-      label: 'Overview',
+      label: '概览 (Overview)',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -38,7 +38,7 @@ const Sidebar: React.FC = () => {
     },
     {
       href: '/reconstruction',
-      label: 'CT Reconstruction',
+      label: 'CT重建 (Reconstruction)',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -48,7 +48,7 @@ const Sidebar: React.FC = () => {
     },
     {
       href: '/dose',
-      label: 'Dose Measurement',
+      label: '剂量测量 (Dose)',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -58,7 +58,7 @@ const Sidebar: React.FC = () => {
     },
     {
       href: '/cardiac',
-      label: 'Cardiac CT',
+      label: '心脏CT (Cardiac)',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -68,7 +68,7 @@ const Sidebar: React.FC = () => {
     },
     {
       href: '/dual-energy',
-      label: 'Dual Energy CT',
+      label: '双能CT (Dual Energy)',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -78,7 +78,7 @@ const Sidebar: React.FC = () => {
     },
     {
       href: '/questions',
-      label: 'Review Questions',
+      label: '练习题 (Questions)',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -149,7 +149,7 @@ const Sidebar: React.FC = () => {
               </div>
               <div>
                 <h1 className="text-lg font-bold text-text-100">CT Physics</h1>
-                <p className="text-xs text-text-200">Interactive Learning</p>
+                <p className="text-xs text-text-200">交互式学习平台</p>
               </div>
             </motion.div>
           </Link>
@@ -225,8 +225,8 @@ const Sidebar: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
           >
-            <p className="font-medium text-text-100 mb-1">Pro Tip</p>
-            <p>Use keyboard shortcuts for navigation. Press ? to see all shortcuts.</p>
+            <p className="font-medium text-text-100 mb-1">小提示 (Pro Tip)</p>
+            <p>使用键盘快捷键进行导航。按 ? 查看所有快捷键。</p>
           </motion.div>
         </div>
       </motion.aside>

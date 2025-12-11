@@ -4,143 +4,130 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import PageHeader from '@/components/ui/PageHeader';
 import SectionCard from '@/components/ui/SectionCard';
-import KeyPoints from '@/components/ui/KeyPoints';
 import SimulatorContainer from '@/components/ui/SimulatorContainer';
-import TabGroup from '@/components/ui/TabGroup';
 import BackprojectionSimulator from '@/components/simulators/BackprojectionSimulator';
 import HelicalCTSimulator from '@/components/simulators/HelicalCTSimulator';
-import { PageData } from '@/types';
-import { validatePageData } from '@/utils/data-manager';
 
-// Import data
-import reconstructionData from '@/data/reconstruction.json';
-
-const ReconstructionPage: React.FC = () => {
-  // Validate and type the data
-  const pageData = validatePageData(reconstructionData) as PageData;
-
-  const [activeSection, setActiveSection] = useState(pageData.sections[0]?.id || 'backprojection');
-
-  const tabs = pageData.sections.map(section => ({
-    id: section.id,
-    label: section.title,
-    icon: section.id === 'backprojection' ? (
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-      </svg>
-    ) : section.id === 'helical-ct' ? (
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-      </svg>
-    ) : null
-  }));
-
-  const activeContent = pageData.sections.find(section => section.id === activeSection);
+export default function ReconstructionPage() {
+  const [activeTab, setActiveTab] = useState('fbp');
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-    >
+    <div className="min-h-screen bg-bg-100 pb-20">
       <PageHeader
-        title={pageData.title}
-        description={pageData.description}
+        title="图像重建 (Image Reconstruction)"
+        description="了解将探测器原始数据转换为诊断图像的数学原理。"
       />
 
-      <div className="mt-8">
-        <TabGroup
-          tabs={tabs}
-          activeTab={activeSection}
-          onChange={setActiveSection}
-        />
-      </div>
+      <main className="container mx-auto px-4 space-y-8 -mt-8 relative z-10">
 
-      <div className="mt-8">
-        {activeContent && (
-          <motion.div
-            key={activeContent.id}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.3 }}
+        {/* Navigation Tabs */}
+        <div className="flex justify-center space-x-4 mb-8 overflow-x-auto">
+          <button
+            onClick={() => setActiveTab('fbp')}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === 'fbp' ? 'bg-primary-100 text-white' : 'bg-bg-200 text-text-200 hover:bg-bg-300'}`}
           >
-            <SectionCard
-              title={activeContent.title}
-              description={activeContent.description}
-            >
-              {activeContent.content && (
-                <div className="prose prose-sm max-w-none text-text-100 mb-6">
-                  <p className="whitespace-pre-line">{activeContent.content}</p>
+            BP & FBP 模拟器
+          </button>
+          <button
+            onClick={() => setActiveTab('cbct')}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === 'cbct' ? 'bg-primary-100 text-white' : 'bg-bg-200 text-text-200 hover:bg-bg-300'}`}
+          >
+            锥束CT (CBCT)
+          </button>
+          <button
+            onClick={() => setActiveTab('helical')}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === 'helical' ? 'bg-primary-100 text-white' : 'bg-bg-200 text-text-200 hover:bg-bg-300'}`}
+          >
+            螺旋CT与螺距
+          </button>
+        </div>
+
+        {/* Content */}
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-8"
+        >
+          {activeTab === 'fbp' && (
+            <>
+              <SectionCard title="CT重建原理 (The Reconstruction Problem)">
+                <div className="prose prose-invert max-w-none text-text-200">
+                  <p>
+                    CT扫描仪从多个不同角度测量穿过人体的X射线衰减量。
+                    这些原始数据被称为<strong>正弦图 (Sinogram)</strong>（或Radon变换），必须经过处理才能生成用于诊断的横断面图像。
+                  </p>
                 </div>
-              )}
+              </SectionCard>
 
-              {activeContent.keyPoints && (
-                <KeyPoints points={activeContent.keyPoints} />
-              )}
+              <SectionCard title="反投影与滤波反投影 (BP & FBP)">
+                <div className="space-y-6">
+                  <div className="prose prose-invert max-w-none text-text-200">
+                    <p>
+                      此模拟器展示了现代重建算法的两个核心步骤。
+                      <strong>直接反投影 (Raw Backprojection)</strong> 简单地将数据沿射线路径涂抹回去，导致图像模糊（1/r 模糊）。
+                      <strong>滤波反投影 (Filtered Backprojection, FBP)</strong> 首先应用数学滤波器（如Ramp核或Shepp-Logan核）锐化数据，从而恢复正确的图像边缘和密度。
+                    </p>
+                    <ul className="list-disc list-inside mt-2 text-sm text-text-300">
+                      <li><strong>矩阵大小 (Matrix Size):</strong> 决定了重建图像的分辨率（如 512x512 为高保真模式）。</li>
+                      <li><strong>扇束角度 (Fan Angle):</strong> 模拟真实的X射线源发散几何。</li>
+                      <li><strong>探测器 (Detectors):</strong> 决定了采样精度。</li>
+                    </ul>
+                  </div>
 
-              {activeContent.simulator && (
-                <div className="mt-8">
-                  <SimulatorContainer
-                    title={`${activeContent.title} Simulator`}
-                    description="Interact with the parameters to see how they affect the results"
-                    enableLiquidEffect={true}
-                  >
-                    {activeContent.simulator.type === 'backprojection' && (
-                      <BackprojectionSimulator options={activeContent.simulator.options} />
-                    )}
-                    {activeContent.simulator.type === 'helical-ct' && (
-                      <HelicalCTSimulator />
-                    )}
+                  <SimulatorContainer title="重建模拟器 (Reconstruction Simulator)" description="比较 原始反投影 与 滤波反投影 的效果" enableLiquidEffect={true}>
+                    <BackprojectionSimulator />
                   </SimulatorContainer>
                 </div>
-              )}
+              </SectionCard>
+            </>
+          )}
+
+          {activeTab === 'cbct' && (
+            <SectionCard title="锥束CT (Cone Beam CT)">
+              <div className="space-y-6">
+                <div className="prose prose-invert max-w-none text-text-200">
+                  <p>
+                    <strong>锥束CT (CBCT)</strong> 使用锥形X射线束（而不是传统的扇形束）和平面探测器，在一次旋转中即可获取整个体积的数据。
+                  </p>
+                  <h4 className="text-lg font-semibold text-text-100 mt-4">FDK 算法 (Feldkamp-Davis-Kress)</h4>
+                  <p>
+                    FDK 是最为经典的 CBCT 重建算法，它是 FBP 算法在 3D 锥束几何下的近似推广。其主要步骤包括：
+                  </p>
+                  <ul className="list-decimal list-inside space-y-2 mt-2">
+                    <li><strong>加权 (Weighting):</strong> 对投影数据进行由几何带来的位置加权（Cosine 加权）。</li>
+                    <li><strong>滤波 (Filtering):</strong> 对每一行探测器数据应用一维 Ramp 滤波器（类似于 2D FBP）。</li>
+                    <li><strong>反投影 (Backprojection):</strong> 沿 3D 锥体几何光路将数据反投影到体素网格中。</li>
+                  </ul>
+                  <div className="bg-bg-300 p-4 rounded-lg mt-4 text-sm border-l-4 border-primary-100">
+                    <strong>注：</strong> CBCT 在远离中心平面的位置（大锥角）会产生由近似算法导致的 Feldman 伪影（Feldkamp artifacts）。
+                  </div>
+                </div>
+                {/* Future: Add a 3D visualization of Cone Beam vs Fan Beam geometry here */}
+              </div>
             </SectionCard>
-          </motion.div>
-        )}
-      </div>
+          )}
 
-      {/* Additional learning resources */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
-        className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6"
-      >
-        <div className="bg-bg-100 rounded-lg border border-border-100 p-6">
-          <h3 className="text-lg font-semibold text-text-100 mb-3">
-            Quick Reference
-          </h3>
-          <ul className="space-y-2 text-sm text-text-200">
-            <li className="flex items-start">
-              <span className="text-primary-100 mr-2">•</span>
-              <span><strong>Nyquist Theorem:</strong> Need at least π × (image width) projections for accurate reconstruction</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-primary-100 mr-2">•</span>
-              <span><strong>Pitch = 1:</strong> Contiguous helical scanning with no overlap or gaps</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-primary-100 mr-2">•</span>
-              <span><strong>Ramp Filter:</strong> Essential for removing blurring in backprojection</span>
-            </li>
-          </ul>
-        </div>
+          {activeTab === 'helical' && (
+            <SectionCard title="螺旋CT与螺距 (Helical Scan & Pitch)">
+              <div className="prose prose-invert max-w-none text-text-200 mb-6">
+                <p>
+                  在螺旋CT中，检查床连续移动的同时机架进行旋转，围绕患者扫描出螺旋路径。
+                  <strong>螺距 (Pitch)</strong> 参数控制这个螺旋的“紧密”程度。
+                </p>
+                <ul className="list-disc list-inside">
+                  <li><strong>Pitch &lt; 1:</strong> 采样重叠 (高剂量，高质量，减少运动伪影)。</li>
+                  <li><strong>Pitch &gt; 1:</strong> 采样间隙 (低剂量，快速扫描，可能降低Z轴分辨率)。</li>
+                </ul>
+              </div>
+              <SimulatorContainer title="螺旋CT模拟器 (Helical Simulator)" description="调整螺距和速度以观察螺旋路径" enableLiquidEffect={true}>
+                <HelicalCTSimulator />
+              </SimulatorContainer>
+            </SectionCard>
+          )}
 
-        <div className="bg-accent-100 bg-opacity-10 rounded-lg border border-accent-100 border-opacity-30 p-6">
-          <h3 className="text-lg font-semibold text-accent-100 mb-3">
-            Clinical Tip
-          </h3>
-          <p className="text-sm text-text-100">
-            When selecting pitch values for helical CT, consider the clinical indication.
-            Use lower pitch (0.5-0.8) for high-resolution studies like CT angiography,
-            and higher pitch (1.2-1.5) for rapid surveys or trauma protocols where
-            speed is critical.
-          </p>
-        </div>
-      </motion.div>
-    </motion.div>
+        </motion.div>
+      </main>
+    </div>
   );
-};
-
-export default ReconstructionPage;
+}
