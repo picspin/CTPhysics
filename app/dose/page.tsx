@@ -408,7 +408,7 @@ const DoseReductionSimulator: React.FC = () => {
               <li className="text-orange-400">• 可能会增加图像噪声（尤其在大体型患者中）</li>
             )}
             {(strategy === 'iterative' || strategy === 'combined') && iterativeStrength > 70 && (
-              <li className="text-orange-400">• 过高的强度可能会改变图像纹理（"蜡状"感）</li>
+              <li className="text-orange-400">• 过高的强度可能会改变图像纹理（“蜡状”感）</li>
             )}
             {strategy !== 'none' && (
               <li>• 必须验证诊断质量是否得到维持</li>

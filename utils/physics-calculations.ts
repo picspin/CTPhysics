@@ -351,7 +351,7 @@ export const addFanBeamProjectionToImage = (
   const fanAngleRad = (fanAngleDeg * Math.PI) / 180;
   const deltaBeta = fanAngleRad / (numDetectors - 1);
 
-  const widthSquare = denominator => (radius * radius) / denominator; // Optimization helper? No, just calc.
+  const widthSquare = (denominator: number) => (radius * radius) / denominator; // Optimization helper? No, just calc.
 
   // Precompute geometry
   const sx = center + radius * Math.cos(projectionAngle);

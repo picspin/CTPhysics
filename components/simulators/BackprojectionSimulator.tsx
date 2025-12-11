@@ -10,25 +10,24 @@ import {
   convolveSinogram,
   addFanBeamProjectionToImage
 } from '@/utils/physics-calculations';
-import { AnimationController } from '@/utils/animation-utils';
+// import { AnimationController } from '@/utils/animation-utils';
+
+const defaultImages = [
+  { id: 'phantom', name: 'Shepp-Logan Phantom (体模)', src: '' },
+  { id: 'abdomen', name: 'Abdomen (腹部 - 软组织)', src: '/images/abdomen_generated.png' },
+  { id: 'fracture', name: 'Bone Fracture (骨折 - 高对比)', src: '/images/fracture_generated.png' },
+  { id: 'lung', name: 'Lung (肺部 - 空气/主要)', src: '/images/lung_generated.png' },
+];
 
 const BackprojectionSimulator: React.FC = () => {
-  // --- Constants & Config ---
-  const defaultImages = [
-    { id: 'phantom', name: 'Shepp-Logan Phantom (体模)', src: '' },
-    { id: 'abdomen', name: 'Abdomen (腹部 - 软组织)', src: '/images/abdomen_generated.png' },
-    { id: 'fracture', name: 'Bone Fracture (骨折 - 高对比)', src: '/images/fracture_generated.png' },
-    { id: 'lung', name: 'Lung (肺部 - 空气/主要)', src: '/images/lung_generated.png' },
-  ];
-
   // --- State ---
   // Configuration
   const [selectedImageId, setSelectedImageId] = useState('phantom');
-  const [customImage, setCustomImage] = useState<string | null>(null);
+  const [customImage] = useState<string | null>(null);
 
   // Physics Parameters
   const [matrixSize, setMatrixSize] = useState(256); // 128, 256, 512
-  const [stepAngle, setStepAngle] = useState(1.0); // degree per projection
+  const [stepAngle] = useState(1.0); // degree per projection
   const [fanAngle, setFanAngle] = useState(60); // degrees 30-180
   const [numDetectors, setNumDetectors] = useState(256); // 128-512
   const [kernelType, setKernelType] = useState<'smooth' | 'standard' | 'sharp'>('standard');
@@ -51,8 +50,6 @@ const BackprojectionSimulator: React.FC = () => {
   // Using Float32Array for performance (Flat array)
   const rawReconBuffer = useRef<Float32Array | null>(null);
   const filteredReconBuffer = useRef<Float32Array | null>(null);
-
-  const animationController = useRef(new AnimationController());
 
   // Derived Values
   const numProjections = Math.floor(360 / stepAngle); // Full 360 scan simulation
@@ -133,7 +130,7 @@ const BackprojectionSimulator: React.FC = () => {
       }
     });
     return data;
-  }, [selectedImageId, customImage, matrixSize]);
+  }, [selectedImageId, customImage, matrixSize, loadImageToMatrix]);
 
 
   // --- Visualization Helpers ---
@@ -160,8 +157,6 @@ const BackprojectionSimulator: React.FC = () => {
       output.data[i * 4 + 2] = p;
       output.data[i * 4 + 3] = 255;
     }
-    // Draw to temporary canvas for scaling if context size differs? 
-    // Assuming context size matches matrixSize for 1:1 fidelity
     ctx.putImageData(output, 0, 0);
   };
 
@@ -204,9 +199,7 @@ const BackprojectionSimulator: React.FC = () => {
         }
       }
 
-      // Generate Sinogram (Expensive, maybe do in chunks or Loading state?)
-      // For 512x512, this is HEAVY.
-      // We'll trust the user's powerful machine or they must wait a sec.
+      // Generate Sinogram
       const sino = generateFanBeamSinogram(data, numProjections, numDetectors, fanAngle);
       sinogramRef.current = sino;
 
@@ -215,22 +208,14 @@ const BackprojectionSimulator: React.FC = () => {
       filteredSinogramRef.current = convolveSinogram(sino, kernel);
 
       // Draw Initial Sinogram (Static)
-      // Helper to draw sinogram
       if (acquisitionCanvasRef.current) {
         const ctx = acquisitionCanvasRef.current.getContext('2d');
         if (ctx) {
           // Draw full sinogram
-          // Need to flatten
           const flatSino = new Float32Array(numProjections * numDetectors);
           sino.forEach((row, r) => row.forEach((v, c) => flatSino[r * numDetectors + c] = v));
-          // Render squeezed?
-          // Simple render:
+
           const imgData = ctx.createImageData(numDetectors, numProjections);
-          // Need to scale to canvas size... 
-          // Let's just draw 1:1 to canvas size (scaled via CSS)
-          // But canvas resolution is fixed to matrixSize for consistency?
-          // No, Sinogram has different dimensions (Angles x Detectors).
-          // We should resize Acquisition Canvas to match Sinogram dims or scale.
           acquisitionCanvasRef.current.width = numDetectors;
           acquisitionCanvasRef.current.height = numProjections;
 
@@ -254,71 +239,9 @@ const BackprojectionSimulator: React.FC = () => {
   }, [selectedImageId, customImage, matrixSize, stepAngle, fanAngle, numDetectors, kernelType, generateData, numProjections]);
 
 
-  // 2. Animation Loop
-  const startSimulation = () => {
-    if (isAnimating) {
-      setIsAnimating(false);
-      animationController.current.stopAll();
-      return;
-    }
-
-    if (!imageDataRef.current.length) return;
-
-    // Reset Buffers
-    rawReconBuffer.current = new Float32Array(matrixSize * matrixSize).fill(0);
-    filteredReconBuffer.current = new Float32Array(matrixSize * matrixSize).fill(0);
-
-    setIsAnimating(true);
-
-    const batchSize = 1; // Projections per frame (increase for speed)
-    // At 60fps, 360 projections takes 6 seconds with batch=1. Good.
-
-    animationController.current.start(
-      'sim',
-      0,
-      numProjections - 1,
-      { duration: numProjections * 20, easing: 'linear' }, // approx 20ms per proj
-      (val) => {
-        const frameIndex = Math.floor(val);
-        if (frameIndex >= numProjections) return;
-
-        // Progressive Update
-        // We need to verify we haven't already processed this frame?
-        // AnimationController gives interpolated value.
-        // We should just run the loop from 'lastProcessed' to 'current'.
-        // But simplification: assumes calls are sequential enough.
-
-        // Only update if we have new integer frames
-        // Actually, safer to run loop logic or just process [floor(val)]
-        // Let's assume sequential for the visual "sweeping".
-
-        // NOTE: Re-running everything up to `val` is O(N^2) * N = O(N^3).
-        // We MUST use the accumulator.
-        // But `start` callback gets called with current time value. 
-        // It doesn't guarantee sequential single steps.
-
-        // FIX: We'll manually manage the "lastProjected" index in a Ref
-        // But we can't easily adhere to the 'val' from controller if it skips.
-        // Instead, we just Backproject the specific Index `frameIndex`.
-        // WARNING: If we skip frames (lag), we miss backprojections -> Artifacts.
-        // Solution: Loop from LastIndex+1 to CurrentIndex.
-      },
-      () => setIsAnimating(false)
-    );
-
-    // Better Approach: explicit frequent interval/loop
-    let processedIdx = -1;
-
-    const tick = () => {
-      if (!isAnimating) return; // Stale closure check?
-      // Actually this closure captures initial isAnimating=true. 
-      // Use Ref for active state? No, controller handles stop.
-    }
-    // We will stick to AnimationController but modify the callback to catch up
-  };
+  // 2. Animation Loop logic is handled by runAnimationStep and useEffect below.
 
   // Custom Animation Driver
-  // Using requestAnimationFrame directly for customized "Catch up" logic
   const animationRef = useRef<number>();
 
   const runAnimationStep = useCallback(() => {
@@ -358,7 +281,6 @@ const BackprojectionSimulator: React.FC = () => {
         }
 
         // Update Canvas (Last state)
-        // Only draw every X frames to save UI thread?
         if (rawBpCanvasRef.current && rawReconBuffer.current) {
           renderMatrix(rawBpCanvasRef.current.getContext('2d')!, rawReconBuffer.current, matrixSize, matrixSize, true);
         }
@@ -366,15 +288,7 @@ const BackprojectionSimulator: React.FC = () => {
           renderMatrix(filteredBpCanvasRef.current.getContext('2d')!, filteredReconBuffer.current, matrixSize, matrixSize, true);
         }
         if (acquisitionCanvasRef.current) {
-          // Draw cursor line
-          // ... reusing logic or simple overlay
           const ctx = acquisitionCanvasRef.current.getContext('2d')!;
-          // We need to redraw the image to clear old line? 
-          // Or just use XOR?
-          // Simple: Draw Semi-transparent rect over previous? No.
-          // Just draw a red line at y=targetIdx
-          const h = ctx.canvas.height;
-          // Our canvas height is numProjections.
           ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
           ctx.fillRect(0, targetIdx, ctx.canvas.width, 1);
         }
@@ -416,7 +330,7 @@ const BackprojectionSimulator: React.FC = () => {
               options={[...defaultImages.map(img => ({ value: img.id, label: img.name })), { value: 'custom', label: 'Custom Upload (上传)...' }]}
             />
             {selectedImageId === 'custom' && (
-              <input type="file" onChange={(e) => { /* handle */ }} className="text-sm text-text-200" />
+              <input type="file" onChange={() => { /* handle */ }} className="text-sm text-text-200" />
             )}
           </div>
 
@@ -456,7 +370,7 @@ const BackprojectionSimulator: React.FC = () => {
             <Select
               label="Recon Kernel (滤波核)"
               value={kernelType}
-              onChange={(e) => setKernelType(e.target.value as any)}
+              onChange={(e) => setKernelType(e.target.value as 'smooth' | 'standard' | 'sharp')}
               options={[
                 { value: 'smooth', label: 'Smooth (Soft Tissue) - 柔和' },
                 { value: 'standard', label: 'Standard (General) - 标准' },
@@ -490,8 +404,15 @@ const BackprojectionSimulator: React.FC = () => {
   );
 };
 
+interface DisplayWindowProps {
+  title: string;
+  label: string;
+  size: number;
+  rect?: boolean;
+}
+
 // Sub-component for windows
-const DisplayWindow = React.forwardRef<HTMLCanvasElement, any>(({ title, label, size, rect = false }, ref) => (
+const DisplayWindow = React.forwardRef<HTMLCanvasElement, DisplayWindowProps>(({ title, label, size, rect = false }, ref) => (
   <div className="space-y-2">
     <h3 className="text-sm font-medium text-text-200 text-center">{title}</h3>
     <div className="aspect-square bg-black rounded-lg border border-border-100 overflow-hidden shadow-inner relative group">
