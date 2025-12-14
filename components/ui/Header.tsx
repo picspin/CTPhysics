@@ -20,7 +20,7 @@ const Header = () => {
   };
 
   return (
-    <header className="sticky top-0 z-20 border-b border-border-100 bg-bg-100/90 backdrop-blur-md">
+    <header className="sticky top-0 z-20 border-b border-transparent bg-black/40 backdrop-blur-md">
       <div className="flex h-16 items-center justify-between px-4 md:px-6 lg:px-8">
         <div className="md:hidden">
           <Link href="/" className="text-xl font-bold text-primary-100 focus-ring">
@@ -64,7 +64,7 @@ const Header = () => {
         </div>
       </div>
       {isMenuOpen && (
-        <nav className="animate-slide-up border-t border-border-100/20 bg-bg-100/95 px-4 py-3 backdrop-blur-sm">
+        <nav className="animate-slide-up border-t border-white/10 bg-black/50 px-4 py-3 backdrop-blur-sm">
           <ul className="space-y-2">
             {navItems.map((item) => (
               <li key={item.path}>

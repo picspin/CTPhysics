@@ -18,9 +18,9 @@ const SimulatorContainer: React.FC<SimulatorContainerProps> = ({
   enableLiquidEffect = false
 }) => {
   const content = (
-    <div className="rounded-xl bg-bg-100 shadow-md h-full">
+    <div className="rounded-xl bg-white/5 backdrop-blur-md border border-white/10 shadow-md h-full">
       {title && (
-        <div className="border-b border-border/20 bg-gradient-to-r from-primary-100 to-primary-200 px-5 py-3 text-white rounded-t-xl">
+        <div className="border-b border-white/10 bg-gradient-to-r from-primary-100 to-primary-200 px-5 py-3 text-white rounded-t-xl">
           <h3 className="font-medium">{title}</h3>
           {description && <p className="text-sm text-white/80 mt-1">{description}</p>}
         </div>

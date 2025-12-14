@@ -319,7 +319,7 @@ const BackprojectionSimulator: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Parameters Panel */}
-      <div className="bg-bg-200 p-6 rounded-lg border border-border-200 shadow-sm transition-all hover:shadow-md">
+      <div className="p-6 rounded-xl border border-white/10 bg-white/5 backdrop-blur-md shadow-sm transition-all hover:shadow-md">
         <div className="flex flex-col space-y-4">
           {/* Top Row: Basic Selection */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -335,7 +335,7 @@ const BackprojectionSimulator: React.FC = () => {
           </div>
 
           {/* Advanced Physics Controls */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 p-4 bg-bg-300 rounded-md">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 p-4 bg-white/5 rounded-md border border-white/10">
             <div className="space-y-2">
               <label className="text-xs font-semibold text-text-100 uppercase">Matrix Size (矩阵大小)</label>
               <div className="flex space-x-2">

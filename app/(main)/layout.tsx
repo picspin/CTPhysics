@@ -6,7 +6,18 @@ import Header from '@/components/layout/Header';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
     return (
-        <div className="flex min-h-screen">
+        <div className="flex min-h-screen relative">
+            {/* Global hero background for main pages */}
+            <div
+                className="fixed inset-0 -z-10"
+                style={{
+                    backgroundImage: 'url(/images/ct-hero.jpg)',
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat'
+                }}
+            />
+            <div className="fixed inset-0 -z-10 bg-black/70" />
             <Sidebar />
 
             <div className="flex-1 md:ml-64 flex flex-col">
@@ -18,7 +29,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     </div>
                 </main>
 
-                <footer className="mt-auto border-t border-border-100 bg-bg-100/50 backdrop-blur-sm">
+                <footer className="mt-auto border-t border-white/10 bg-black/40 backdrop-blur-md">
                     <div className="px-4 py-6 md:px-6 lg:px-8">
                         <div className="mx-auto max-w-7xl">
                             <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
