@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import CTHeroScene from '@/components/hero/CTHeroScene';
+import dynamic from 'next/dynamic';
+const CTHeroScene = dynamic(() => import('@/components/hero/CTHeroScene'), { ssr: false });
 import LandingNav from '@/components/hero/LandingNav';
 import SatelliteButtons from '@/components/hero/SatelliteButtons';
 import { motion } from 'framer-motion';

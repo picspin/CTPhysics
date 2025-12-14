@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 
@@ -17,6 +17,15 @@ const SatelliteButtons = () => {
     // Rotation State driven by center hover
     const [isHoveringCenter, setIsHoveringCenter] = useState(false);
 
+    useEffect(() => {
+        type WithHook = Window & { __setCenterHover?: (val: boolean) => void };
+        const w = window as WithHook;
+        w.__setCenterHover = (val: boolean) => setIsHoveringCenter(val);
+        return () => {
+            delete w.__setCenterHover;
+        };
+    }, []);
+
     // Config
     const radius = 350;
     const total = modules.length;
@@ -24,45 +33,42 @@ const SatelliteButtons = () => {
     // Animation Variants
     // Container rotates clockwise
     const orbitVariants = {
-        animate: (isHovering: boolean) => ({
+        idle: { rotate: 0 },
+        orbit: {
             rotate: 360,
-            transition: {
-                duration: isHovering ? 20 : 60, // 20s/circle on hover (fast), 60s normal
-                ease: "linear",
-                repeat: Infinity,
-            }
-        })
+            transition: { duration: 1.2, ease: 'easeInOut', repeat: Infinity }
+        }
     };
 
     // Buttons must counter-rotate to stay upright
     const counterRotateVariants = {
-        animate: (isHovering: boolean) => ({
+        idle: { rotate: 0 },
+        orbit: {
             rotate: -360,
-            transition: {
-                duration: isHovering ? 20 : 60,
-                ease: "linear",
-                repeat: Infinity,
-            }
-        })
+            transition: { duration: 1.2, ease: 'easeInOut', repeat: Infinity }
+        }
     };
 
     return (
-        <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+        <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none">
 
             {/* Invisible Center Hover Trigger */}
             <div
-                className="absolute w-80 h-80 rounded-full z-20 pointer-events-auto cursor-crosshair"
-                onMouseEnter={() => setIsHoveringCenter(true)}
-                onMouseLeave={() => setIsHoveringCenter(false)}
+                data-testid="center-hover-trigger"
+                className="absolute w-80 h-80 rounded-full z-50 pointer-events-auto cursor-crosshair left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+                onMouseOver={() => setIsHoveringCenter(true)}
+                onMouseOut={() => setIsHoveringCenter(false)}
+                onClick={() => setIsHoveringCenter(true)}
                 title="Hover to accelerate orbit"
             />
 
             {/* Orbiting Container */}
             <motion.div
+                data-testid="orbit-container"
+                data-state={isHoveringCenter ? 'orbiting' : 'stopped'}
                 className="relative w-full h-full flex items-center justify-center pointer-events-none"
                 variants={orbitVariants}
-                animate="animate"
-                custom={isHoveringCenter}
+                animate={isHoveringCenter ? 'orbit' : 'idle'}
             >
                 {modules.map((mod, i) => {
                     const angle = (i / total) * Math.PI * 2 - (Math.PI / 2); // Start top
@@ -78,8 +84,7 @@ const SatelliteButtons = () => {
                             {/* Counter-Rotation Wrapper */}
                             <motion.div
                                 variants={counterRotateVariants}
-                                animate="animate"
-                                custom={isHoveringCenter}
+                                animate={isHoveringCenter ? 'orbit' : 'idle'}
                             >
                                 <Link href={mod.href}>
                                     <motion.div
