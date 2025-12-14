@@ -3,27 +3,30 @@
 @tailwind utilities;
 
 :root {
-  /* 主色调 - 更加鲜明的橙色系 */
+  /* 主色调 - 更加鲜明的橙色系 (Neon Orange) */
   --primary-100: #FF7A00;
   --primary-200: #E56C00;
   --primary-300: #B35300;
   
-  /* 强调色 - 科技感蓝色 */
-  --accent-100: #3B82F6;
-  --accent-200: #1D4ED8;
-  --accent-300: #1E40AF;
+  /* 强调色 - 科技感蓝色 (Neon Blue) */
+  --accent-100: #00D2FF;
+  --accent-200: #00A6CC;
+  --accent-300: #007A99;
   
-  /* 文本颜色 */
-  --text-100: #1F2937;
-  --text-200: #4B5563;
-  --text-300: #9CA3AF;
+  /* 文本颜色 (Dark Mode Default) */
+  --text-100: #F3F4F6; /* Gray-100 */
+  --text-200: #D1D5DB; /* Gray-300 */
+  --text-300: #9CA3AF; /* Gray-400 */
   
-  /* 背景颜色 */
-  --bg-100: #FFFFFF;
-  --bg-200: #F9FAFB;
-  --bg-300: #F3F4F6;
-  --bg-400: #E5E7EB;
-  
+  /* 背景颜色 (Dark Mode Default) */
+  --bg-100: #111827; /* Gray-900 (Panel BG) */
+  --bg-200: #050505; /* Black (Main BG) */
+  --bg-300: #1F2937; /* Gray-800 */
+  --bg-400: #374151; /* Gray-700 */
+
+  /* 边框颜色 */
+  --border-100: #374151;
+  --border-200: #4B5563;
   
   /* 圆角变量 */
   --radius-sm: 0.25rem;

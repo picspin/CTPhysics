@@ -1,7 +1,5 @@
 import React from 'react';
 import './globals.css';
-import Sidebar from '@/components/layout/Sidebar';
-import Header from '@/components/layout/Header';
 import { Inter } from 'next/font/google';
 
 const inter = Inter({
@@ -25,8 +23,7 @@ export const metadata = {
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  // maximum-scale and user-scalable are removed for accessibility compliance
 };
 
 export default function RootLayout({
@@ -36,43 +33,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-CN" className={`${inter.variable} font-sans`}>
-      <body className="antialiased bg-bg-200 text-text-100">
-        <div className="flex min-h-screen">
-          <Sidebar />
-
-          <div className="flex-1 md:ml-64 flex flex-col">
-            <Header />
-
-            <main className="flex-1 px-4 py-6 md:px-6 lg:px-8">
-              <div className="mx-auto max-w-7xl">
-                {children}
-              </div>
-            </main>
-
-            <footer className="mt-auto border-t border-border-100 bg-bg-100/50 backdrop-blur-sm">
-              <div className="px-4 py-6 md:px-6 lg:px-8">
-                <div className="mx-auto max-w-7xl">
-                  <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-                    <div className="text-sm text-text-200">
-                      © {new Date().getFullYear()} CT物理原理交互式学习平台 (CT Physics Platform)
-                    </div>
-                    <div className="flex items-center space-x-6 text-sm">
-                      <a href="/privacy" className="text-text-200 hover:text-primary-100 transition-colors">
-                        隐私政策 (Privacy)
-                      </a>
-                      <a href="/terms" className="text-text-200 hover:text-primary-100 transition-colors">
-                        使用条款 (Terms)
-                      </a>
-                      <a href="/about" className="text-text-200 hover:text-primary-100 transition-colors">
-                        关于 (About)
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </footer>
-          </div>
-        </div>
+      <body className="antialiased bg-black text-text-100 dark:bg-black dark:text-white">
+        {children}
 
         {/* Global keyboard shortcut handler */}
         <script

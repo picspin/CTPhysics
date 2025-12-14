@@ -129,27 +129,28 @@ const Sidebar: React.FC = () => {
         animate={{ x: isOpen || isDesktop ? 0 : -280 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
         className={`
-          fixed top-0 left-0 h-full w-64 bg-bg-100 border-r border-border-100 z-40
+          fixed top-0 left-0 h-full w-64 border-r border-white/10 z-40
           flex flex-col overflow-y-auto
+          bg-black/40 backdrop-blur-xl
           ${!isOpen && 'hidden md:flex'}
         `}
       >
         {/* Logo/Header */}
-        <div className="p-6 border-b border-border-100">
+        <div className="p-6 border-b border-white/10">
           <Link href="/" onClick={() => setIsOpen(false)}>
             <motion.div
               className="flex items-center space-x-3"
               whileHover={{ scale: 1.02 }}
             >
-              <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center shadow-lg shadow-primary-100/20">
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                     d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
                 </svg>
               </div>
               <div>
-                <h1 className="text-lg font-bold text-text-100">CT Physics</h1>
-                <p className="text-xs text-text-200">交互式学习平台</p>
+                <h1 className="text-lg font-bold text-gray-100">CT Physics</h1>
+                <p className="text-xs text-gray-400">交互式学习平台</p>
               </div>
             </motion.div>
           </Link>
@@ -168,7 +169,7 @@ const Sidebar: React.FC = () => {
                       {active ? (
                         <LiquidGlass intensity="low" className="rounded-lg overflow-hidden">
                           <motion.div
-                            className="flex items-center justify-between px-4 py-3 text-primary-100"
+                            className="flex items-center justify-between px-4 py-3 text-white bg-primary-100/20"
                             whileHover={{ x: 4 }}
                             whileTap={{ scale: 0.98 }}
                           >
@@ -182,7 +183,7 @@ const Sidebar: React.FC = () => {
                               <span className="font-medium">{item.label}</span>
                             </div>
                             {item.badge && (
-                              <span className="px-2 py-0.5 text-xs bg-primary-100 text-white rounded-full z-10 relative">
+                              <span className="px-2 py-0.5 text-xs bg-primary-100 text-white rounded-full z-10 relative shadow-sm">
                                 {item.badge}
                               </span>
                             )}
@@ -190,20 +191,17 @@ const Sidebar: React.FC = () => {
                         </LiquidGlass>
                       ) : (
                         <motion.div
-                          className="flex items-center justify-between px-4 py-3 rounded-lg text-text-200 hover:text-text-100 transition-colors relative overflow-hidden group"
+                          className="flex items-center justify-between px-4 py-3 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-all relative overflow-hidden group"
                           whileHover={{ x: 4 }}
                           whileTap={{ scale: 0.98 }}
                         >
-                          {/* Hover background effect */}
-                          <div className="absolute inset-0 bg-bg-200 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-
                           <div className="flex items-center space-x-3 z-10 relative">
                             <span>{item.icon}</span>
                             <span className="font-medium">{item.label}</span>
                           </div>
 
                           {item.badge && (
-                            <span className="px-2 py-0.5 text-xs bg-bg-300 text-text-200 rounded-full z-10 relative">
+                            <span className="px-2 py-0.5 text-xs bg-gray-800 text-gray-300 rounded-full z-10 relative group-hover:bg-gray-700 transition-colors">
                               {item.badge}
                             </span>
                           )}
@@ -218,14 +216,14 @@ const Sidebar: React.FC = () => {
         </nav>
 
         {/* Footer */}
-        <div className="p-4 border-t border-border-100">
+        <div className="p-4 border-t border-white/10">
           <motion.div
-            className="p-3 bg-bg-200 rounded-lg text-sm text-text-200"
+            className="p-3 bg-white/5 rounded-lg text-sm text-gray-400 border border-white/5"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
           >
-            <p className="font-medium text-text-100 mb-1">小提示 (Pro Tip)</p>
+            <p className="font-medium text-gray-200 mb-1">小提示 (Pro Tip)</p>
             <p>使用键盘快捷键进行导航。按 ? 查看所有快捷键。</p>
           </motion.div>
         </div>
