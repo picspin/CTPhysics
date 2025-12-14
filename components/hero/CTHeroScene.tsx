@@ -287,7 +287,7 @@ const CTHeroScene = () => {
                 {/* Electric Flow */}
                 <ElectricFlow />
 
-                <EffectComposer disableNormalPass>
+                <EffectComposer enableNormalPass={false}>
                     <Bloom luminanceThreshold={0.1} luminanceSmoothing={0.9} height={300} intensity={2.0} />
                 </EffectComposer>
 
