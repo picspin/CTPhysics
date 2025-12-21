@@ -12,7 +12,7 @@ export default function ReconstructionPage() {
   const [activeTab, setActiveTab] = useState('fbp');
 
   return (
-    <div className="min-h-screen bg-bg-100 pb-20">
+    <div className="min-h-screen pb-20">
       <PageHeader
         title="图像重建 (Image Reconstruction)"
         description="了解将探测器原始数据转换为诊断图像的数学原理。"
@@ -75,7 +75,7 @@ export default function ReconstructionPage() {
                     </ul>
                   </div>
 
-                  <SimulatorContainer title="重建模拟器 (Reconstruction Simulator)" description="比较 原始反投影 与 滤波反投影 的效果" enableLiquidEffect={true}>
+                  <SimulatorContainer title="重建模拟器 (Reconstruction Simulator)" description="比较 原始反投影 与 滤波反投影 的效果" enableLiquidEffect={false}>
                     <BackprojectionSimulator />
                   </SimulatorContainer>
                 </div>
@@ -118,9 +118,10 @@ export default function ReconstructionPage() {
                 <ul className="list-disc list-inside">
                   <li><strong>Pitch &lt; 1:</strong> 采样重叠 (高剂量，高质量，减少运动伪影)。</li>
                   <li><strong>Pitch &gt; 1:</strong> 采样间隙 (低剂量，快速扫描，可能降低Z轴分辨率)。</li>
+                  <li><strong>Pitch = 1:</strong> 连续取样。</li>
                 </ul>
               </div>
-              <SimulatorContainer title="螺旋CT模拟器 (Helical Simulator)" description="调整螺距和速度以观察螺旋路径" enableLiquidEffect={true}>
+              <SimulatorContainer title="螺旋CT模拟器 (Helical Simulator)" description="调整螺距和速度以观察螺旋路径" enableLiquidEffect={false}>
                 <HelicalCTSimulator />
               </SimulatorContainer>
             </SectionCard>
