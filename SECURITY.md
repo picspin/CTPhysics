@@ -1,21 +1,35 @@
 # Security Policy
 
-## Supported Versions
-
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
-
-| Version | Supported          |
-| ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
-
 ## Reporting a Vulnerability
+- Please do NOT open a public GitHub issue for security vulnerabilities.
+- Instead, email a detailed report to: security@picspin.dev
+  - Include steps to reproduce, affected versions/commits, environment, and potential impact.
+  - If applicable, provide a minimal proof-of-concept.
+- Alternatively, use GitHub Security Advisories (Private) to contact maintainers.
+- We aim to acknowledge within 72 hours and provide a remediation timeline after triage.
 
-Use this section to tell people how to report a vulnerability.
+## Supported Versions
+- Actively supported for security fixes:
+  - Latest master branch
+  - Most recent stable release
+- We may backport critical fixes to the previous minor version at maintainers’ discretion.
 
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+## Disclosure Policy
+- We follow responsible disclosure:
+  - Coordinate privately until a fix is available.
+  - Publish advisories and changelog notes after remediation.
+  - Credit reporters if desired.
+
+## Secret Scanning & Push Protection
+- The repository enables GitHub Secret Scanning and (recommended) Push Protection.
+- Do not commit secrets. Use .env.local for local development only.
+- Rotate any leaked credentials immediately; report the incident via the process above.
+
+## Dependency Hygiene
+- Use Dependabot/Renovate to keep dependencies updated.
+- Address known CVEs promptly; upgrade or patch when feasible.
+
+## Hardening Notes
+- Prefer explicit type-safety; validate inputs for interactive modules.
+- Avoid sending sensitive data to third-party services (including observability).
+- Review PRs for potential data exposure or misuse.
