@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CTPhysics Architecture</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --bg: #f8f9fa;
+      --surface: #ffffff;
+      --border: rgba(0,0,0,0.08);
+      --text: #1a1a2e;
+      --text-dim: #6b7280;
+      --accent-teal: #0d9488;
+      --accent-teal-dim: rgba(13,148,136,0.1);
+      --accent-amber: #d97706;
+      --accent-amber-dim: rgba(217,119,6,0.1);
+      --accent-rose: #be123c;
+      --accent-rose-dim: rgba(190,18,60,0.1);
+      --accent-blue: #0369a1;
+      --accent-blue-dim: rgba(3,105,161,0.1);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f1419;
+        --surface: #1a1f2e;
+        --border: rgba(255,255,255,0.08);
+        --text: #e7e9ea;
+        --text-dim: #8b98a5;
+        --accent-teal-dim: rgba(13,148,136,0.15);
+        --accent-amber-dim: rgba(217,119,6,0.15);
+        --accent-rose-dim: rgba(190,18,60,0.15);
+        --accent-blue-dim: rgba(3,105,161,0.15);
+      }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'IBM Plex Sans', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    h1 {
+      font-size: 2rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.02em;
+    }
+    .subtitle {
+      color: var(--text-dim);
+      font-size: 1rem;
+    }
+    .mermaid-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .zoom-controls {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      justify-content: flex-end;
+    }
+    .zoom-controls button {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.375rem 0.75rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.75rem;
+      transition: all 0.15s ease;
+    }
+    .zoom-controls button:hover {
+      background: var(--accent-teal-dim);
+      border-color: var(--accent-teal);
+    }
+    .mermaid {
+      display: flex;
+      justify-content: center;
+      overflow: auto;
+    }
+    footer {
+      text-align: center;
+      margin-top: 2rem;
+      color: var(--text-dim);
+      font-size: 0.875rem;
+    }
+    footer a {
+      color: var(--accent-teal);
+      text-decoration: none;
+    }
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>CTPhysics Architecture</h1>
+      <p class="subtitle">Interactive CT Imaging Physics Learning Platform</p>
+    </header>
+    
+    <div class="mermaid-wrap">
+      <div class="zoom-controls">
+        <button onclick="zoomIn()">+</button>
+        <button onclick="zoomOut()">−</button>
+        <button onclick="resetZoom()">Reset</button>
+      </div>
+      <div class="mermaid" id="architecture"></div>
+    </div>
+
+    <footer>
+      <p>Built with <a href="https://mermaid.js.org/">Mermaid</a> • <a href="https://github.com/picspin/CTPhysics">View on GitHub</a></p>
+    </footer>
+  </div>
+
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      themeVariables: {
+        primaryColor: '#0d9488',
+        primaryTextColor: '#fff',
+        primaryBorderColor: '#0f766e',
+        lineColor: '#6b7280',
+        secondaryColor: '#d97706',
+        tertiaryColor: '#f3f4f6',
+        background: 'transparent',
+        mainBkg: '#0d9488',
+        secondBkg: '#d97706',
+        nodeBorder: '#0f766e',
+        clusterBkg: '#f8f9fa',
+        clusterBorder: '#e5e7eb',
+        titleColor: '#1a1a2e',
+        edgeLabelBackground: '#ffffff',
+      },
+      flowchart: {
+        useMaxWidth: true,
+        htmlLabels: true,
+        curve: 'basis',
+        padding: 20,
+      }
+    });
+
+    const diagram = `
+graph TD
+    subgraph Client["Frontend (React/Next.js)"]
+        UI["UI Components<br/>Tailwind + Radix"]
+        Pages["Pages/Modules<br/>Sampling, Reconstruction<br/>Dose, Noise, MTF/NPS"]
+        Viz["Visualization Layer<br/>Canvas/WebGL/D3"]
+        State["State Management<br/>React Context/Zustand"]
+    end
+    
+    subgraph Core["Core Layer"]
+        Physics["Physics Library<br/>Pure Functions<br/>MTF, NPS, NEQ"]
+        Utils["Utilities<br/>i18n, Storage"]
+    end
+    
+    subgraph Data["Data & Testing"]
+        Fixtures["Test Fixtures<br/>Deterministic Data"]
+        E2E["E2E Tests<br/>Playwright"]
+        Unit["Unit Tests<br/>Vitest"]
+    end
+    
+    subgraph Ops["CI/CD & Ops"]
+        CI["GitHub Actions<br/>Lint → Test → Build"]
+        Deploy["Vercel<br/>Preview/Production"]
+        Sentry["Sentry<br/>Observability"]
+    end
+    
+    UI --> Viz
+    Pages --> UI
+    Pages --> State
+    State --> Physics
+    Viz --> Physics
+    Physics --> Fixtures
+    Fixtures --> Unit
+    Fixtures --> E2E
+    Unit --> CI
+    E2E --> CI
+    CI --> Deploy
+    Deploy --> Sentry
+    
+    classDef primary fill:#0d9488,stroke:#0f766e,color:#fff;
+    classDef secondary fill:#d97706,stroke:#b45309,color:#fff;
+    classDef tertiary fill:#f3f4f6,stroke:#e5e7eb,color:#374151;
+    classDef accent fill:#be123c,stroke:#9f1239,color:#fff;
+    
+    class Client,Pages,UI,Viz primary;
+    class Core,Physics,Utils secondary;
+    class Data,Fixtures,Unit,E2E tertiary;
+    class Ops,CI,Deploy,Sentry accent;
+    `;
+
+    document.getElementById('architecture').innerHTML = mermaid.render('arch-graph', diagram);
+
+    let scale = 1;
+    const container = document.querySelector('.mermaid');
+
+    function zoomIn() {
+      scale = Math.min(scale + 0.2, 3);
+      applyZoom();
+    }
+    function zoomOut() {
+      scale = Math.max(scale - 0.2, 0.3);
+      applyZoom();
+    }
+    function resetZoom() {
+      scale = 1;
+      applyZoom();
+    }
+    function applyZoom() {
+      container.style.transform = \`scale(\${scale})\`;
+      container.style.transformOrigin = 'top left';
+    }
+
+    container.addEventListener('wheel', (e) => {
+      if (e.ctrlKey) {
+        e.preventDefault();
+        if (e.deltaY < 0) zoomIn();
+        else zoomOut();
+      }
+    });
+  </script>
+</body>
+</html>
