@@ -21,7 +21,10 @@ import {
 } from 'recharts';
 import { calculatePCCTSpectrum, calculatePCCTMetrics, getMaterialAttenuation, generatePCCTSinogramData, PCCTParams, getKEdgeCurveData } from '@/utils/pcct-physics';
 
+import { useLanguage } from '@/context/LanguageContext';
+
 const PCCTSimulator: React.FC = () => {
+  const { t } = useLanguage();
   const [params, setParams] = useState<PCCTParams>({
     kVp: 120,
     photonFlux: 5, // Mcps/mm2
@@ -298,7 +301,7 @@ const PCCTSimulator: React.FC = () => {
 
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-300">患者体型 (BMI)</span>
+                <span className="text-gray-300">{t('overview')}</span>
                 <span className="text-emerald-400 font-bold">{params.bmi} kg/m²</span>
               </div>
               <Slider
@@ -353,7 +356,7 @@ const PCCTSimulator: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-300">造影剂造影元素</label>
+              <label className="text-sm font-medium text-gray-300">{t('pcct_contrast_agent_label')}</label>
               <Select
                 value={params.contrastAgent}
                 onChange={(e) => setParams((prev) => ({ ...prev, contrastAgent: e.target.value as 'iodine' | 'gadolinium' | 'bismuth' }))}
@@ -366,7 +369,7 @@ const PCCTSimulator: React.FC = () => {
             </div>
 
             <div className="flex items-center justify-between pt-2">
-              <span className="text-sm text-gray-300">演示电子噪声 (低能阈值)</span>
+              <span className="text-sm text-gray-300">{t('pcct_noise_option')}</span>
               <input
                 type="checkbox"
                 checked={params.enableElectronicNoise}

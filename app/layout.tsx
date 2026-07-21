@@ -35,6 +35,8 @@ export default function RootLayout({
   return (
     <html lang="zh-CN" className={`${inter.variable} font-sans`}>
       <body className="antialiased bg-black text-text-100 dark:bg-black dark:text-white">
+        <script dangerouslySetInnerHTML={{ __html: "try { const style = localStorage.getItem('pref-theme-style') || 'glass'; document.documentElement.classList.add('theme-' + style); } catch(e) {}" }} />
+
         <LanguageProvider>
           {children}
         </LanguageProvider>

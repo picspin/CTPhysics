@@ -238,3 +238,51 @@
 .gradient-border::before {
   z-index: 0;
 }
+
+/* ==========================================================================
+   主题与风格控制 (Theme Styles - Liquid Glass vs Minimal Stark)
+   ========================================================================== */
+
+/* Liquid Glass 主题（默认）的微调与发光 */
+.theme-glass .glass-card {
+  background: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important;
+}
+
+/* 极简高对比度 Stark 主题覆盖 */
+.theme-minimal {
+  background-color: #000000 !important;
+}
+
+.theme-minimal body {
+  background-color: #000000 !important;
+  background-image: none !important;
+}
+
+/* 将玻璃卡片转化为高反差深灰黑扁平卡片，去除模糊提高渲染性能 */
+.theme-minimal .glass-card,
+.theme-minimal .bg-white\/5,
+.theme-minimal .bg-white\/10 {
+  background-color: #0c0c0f !important;
+  background-image: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-color: #27272a !important; /* zinc-800 border */
+  box-shadow: none !important;
+}
+
+/* 去除所有的流体背景动画显示 */
+.theme-minimal .liquid-glass-bg,
+.theme-minimal .liquid-glass-effect,
+.theme-minimal .glass-glow {
+  display: none !important;
+  opacity: 0 !important;
+}
+
+.theme-minimal .border-white\/10,
+.theme-minimal .border-white\/5 {
+  border-color: #27272a !important;
+}

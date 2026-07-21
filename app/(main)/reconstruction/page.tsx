@@ -9,14 +9,17 @@ import BackprojectionSimulator from '@/components/simulators/BackprojectionSimul
 import HelicalCTSimulator from '@/components/simulators/HelicalCTSimulator';
 import CBCTSimulator from '@/components/simulators/CBCTSimulator';
 
+import { useLanguage } from '@/context/LanguageContext';
+
 export default function ReconstructionPage() {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('fbp');
 
   return (
     <div className="min-h-screen pb-20">
       <PageHeader
-        title="图像重建 (Image Reconstruction)"
-        description="了解将探测器原始数据转换为诊断图像的数学原理。"
+        title={t('recon_title')}
+        description={t('recon_desc')}
       />
 
       <main className="container mx-auto px-4 space-y-8 -mt-8 relative z-10">
@@ -27,19 +30,19 @@ export default function ReconstructionPage() {
             onClick={() => setActiveTab('fbp')}
             className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === 'fbp' ? 'bg-primary-100 text-white' : 'bg-bg-200 text-text-200 hover:bg-bg-300'}`}
           >
-            BP & FBP 模拟器
+            {t('recon_tab_fbp')}
           </button>
           <button
             onClick={() => setActiveTab('cbct')}
             className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === 'cbct' ? 'bg-primary-100 text-white' : 'bg-bg-200 text-text-200 hover:bg-bg-300'}`}
           >
-            锥束CT (CBCT)
+            {t('recon_tab_cbct')}
           </button>
           <button
             onClick={() => setActiveTab('helical')}
             className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === 'helical' ? 'bg-primary-100 text-white' : 'bg-bg-200 text-text-200 hover:bg-bg-300'}`}
           >
-            螺旋CT与螺距
+            {t('recon_tab_helical')}
           </button>
         </div>
 
@@ -52,7 +55,7 @@ export default function ReconstructionPage() {
         >
           {activeTab === 'fbp' && (
             <>
-              <SectionCard title="CT重建原理 (The Reconstruction Problem)">
+              <SectionCard title={t('recon_problem_title')}>
                 <div className="prose prose-invert max-w-none text-text-200">
                   <p>
                     CT扫描仪从多个不同角度测量穿过人体的X射线衰减量。
@@ -61,7 +64,7 @@ export default function ReconstructionPage() {
                 </div>
               </SectionCard>
 
-              <SectionCard title="反投影与滤波反投影 (BP & FBP)">
+              <SectionCard title={t('recon_fbp_title')}>
                 <div className="space-y-6">
                   <div className="prose prose-invert max-w-none text-text-200">
                     <p>
@@ -76,7 +79,7 @@ export default function ReconstructionPage() {
                     </ul>
                   </div>
 
-                  <SimulatorContainer title="重建模拟器 (Reconstruction Simulator)" description="比较 原始反投影 与 滤波反投影 的效果" enableLiquidEffect={false}>
+                  <SimulatorContainer title={t('recon_sim_title')} description={t('recon_sim_desc')} enableLiquidEffect={false}>
                     <BackprojectionSimulator />
                   </SimulatorContainer>
                 </div>
@@ -88,7 +91,7 @@ export default function ReconstructionPage() {
                 <div className="space-y-6">
                   <div className="prose prose-invert max-w-none text-text-200">
                     <p>
-                      <strong>锥束CT (CBCT)</strong> 使用锥形X射线束（而不是传统的扇形束）和平面探测器，在一次旋转中即可获取整个体积的数据。
+                      <strong>{t('recon_tab_cbct')}</strong> 使用锥形X射线束（而不是传统的扇形束）和平面探测器，在一次旋转中即可获取整个体积的数据。
                       空间分辨率取决于探测器像元尺寸与几何放大率，牙科CBCT可达0.1mm级别。
                     </p>
                     <h4 className="text-lg font-semibold text-text-100 mt-4">FDK 算法 (Feldkamp-Davis-Kress)</h4>
@@ -114,7 +117,7 @@ export default function ReconstructionPage() {
           )}
 
           {activeTab === 'helical' && (
-            <SectionCard title="螺旋CT与螺距 (Helical Scan & Pitch)">
+            <SectionCard title="{t('recon_tab_helical')} (Helical Scan & Pitch)">
               <div className="prose prose-invert max-w-none text-text-200 mb-6">
                 <p>
                   在螺旋CT中，检查床连续移动的同时机架进行旋转，围绕患者扫描出螺旋路径。

@@ -13,7 +13,7 @@ const Header: React.FC = () => {
   const [progress, setProgress] = useState(0);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
-  const [theme, setThemeState] = useState<'dark' | 'light' | 'system'>('dark');
+  const [themeStyle, setThemeStyle] = useState<'glass' | 'minimal'>('glass');
 
   // Page titles mapping with translation
   const pageTitles: Record<string, string> = {
@@ -30,10 +30,10 @@ const Header: React.FC = () => {
   const currentTitle = titleKey ? t(titleKey) : 'CT Physics';
 
   useEffect(() => {
-    // Sync Theme on load
-    const savedTheme = localStorage.getItem('pref-theme') as 'dark' | 'light' | 'system' || 'dark';
-    setThemeState(savedTheme);
-    applyTheme(savedTheme);
+    // Sync Theme Style on load
+    const savedStyle = localStorage.getItem('pref-theme-style') as 'glass' | 'minimal' || 'glass';
+    setThemeStyle(savedStyle);
+    applyThemeStyle(savedStyle);
 
     const handleScroll = () => {
       const isScrolled = window.scrollY > 10;
@@ -51,30 +51,21 @@ const Header: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const applyTheme = (newTheme: 'dark' | 'light' | 'system') => {
+  const applyThemeStyle = (style: 'glass' | 'minimal') => {
     const root = document.documentElement;
-    if (newTheme === 'dark') {
-      root.classList.add('dark');
-      root.style.colorScheme = 'dark';
-    } else if (newTheme === 'light') {
-      root.classList.remove('dark');
-      root.style.colorScheme = 'light';
+    if (style === 'minimal') {
+      root.classList.remove('theme-glass');
+      root.classList.add('theme-minimal');
     } else {
-      const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (systemDark) {
-        root.classList.add('dark');
-        root.style.colorScheme = 'dark';
-      } else {
-        root.classList.remove('dark');
-        root.style.colorScheme = 'light';
-      }
+      root.classList.remove('theme-minimal');
+      root.classList.add('theme-glass');
     }
   };
 
-  const changeTheme = (newTheme: 'dark' | 'light' | 'system') => {
-    setThemeState(newTheme);
-    localStorage.setItem('pref-theme', newTheme);
-    applyTheme(newTheme);
+  const changeThemeStyle = (style: 'glass' | 'minimal') => {
+    setThemeStyle(style);
+    localStorage.setItem('pref-theme-style', style);
+    applyThemeStyle(style);
   };
 
   return (
@@ -230,18 +221,18 @@ const Header: React.FC = () => {
                 {/* Theme Settings */}
                 <div className="space-y-2">
                   <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">{t('theme')}</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {(['dark', 'light', 'system'] as const).map((tMode) => (
+                  <div className="grid grid-cols-2 gap-2">
+                    {(['glass', 'minimal'] as const).map((tMode) => (
                       <button
                         key={tMode}
-                        onClick={() => changeTheme(tMode)}
+                        onClick={() => changeThemeStyle(tMode)}
                         className={`py-2 px-3 rounded-lg text-xs font-medium border capitalize transition-all ${
-                          theme === tMode
+                          themeStyle === tMode
                             ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
                             : 'bg-zinc-800/40 border-transparent text-zinc-300 hover:bg-zinc-800'
                         }`}
                       >
-                        {t(tMode)}
+                        {t('theme_' + tMode)}
                       </button>
                     ))}
                   </div>
