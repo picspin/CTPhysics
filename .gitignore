@@ -6,7 +6,6 @@
 /.next/*
 /.agent
 /.agent/*
-/.github/*
 
 # 测试与临时残留
 /test-results/
@@ -25,4 +24,3 @@ pnpm-debug.log*
 
 # 系统文件
 .DS_Store
-EOF
