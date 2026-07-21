@@ -3,7 +3,8 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
   testDir: './e2e',
   use: {
-    channel: 'msedge',
+    // Use default Chromium bundled with playwright
+    headless: true,
   },
   webServer: {
     command: 'npm run dev',

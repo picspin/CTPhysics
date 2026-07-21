@@ -1,5 +1,6 @@
 import React from 'react';
 import './globals.css';
+import { LanguageProvider } from '@/context/LanguageContext';
 import { Inter } from 'next/font/google';
 
 const inter = Inter({
@@ -34,7 +35,9 @@ export default function RootLayout({
   return (
     <html lang="zh-CN" className={`${inter.variable} font-sans`}>
       <body className="antialiased bg-black text-text-100 dark:bg-black dark:text-white">
-        {children}
+        <LanguageProvider>
+          {children}
+        </LanguageProvider>
 
         {/* Global keyboard shortcut handler */}
         <script

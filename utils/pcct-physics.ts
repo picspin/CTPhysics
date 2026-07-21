@@ -214,3 +214,30 @@ export const generatePCCTSinogramData = (
 
   return sinogram;
 };
+
+/**
+ * Generates attenuation data points for a set of materials across an energy spectrum (10 to 120 keV)
+ */
+export interface AttenuationPoint {
+  energy: number;
+  iodine: number;
+  gadolinium: number;
+  bismuth: number;
+  calcium: number;
+  water: number;
+}
+
+export const getKEdgeCurveData = (): AttenuationPoint[] => {
+  const data: AttenuationPoint[] = [];
+  for (let e = 10; e <= 120; e += 2) {
+    data.push({
+      energy: e,
+      iodine: getMaterialAttenuation('iodine', e, 5),
+      gadolinium: getMaterialAttenuation('gadolinium', e, 5),
+      bismuth: getMaterialAttenuation('bismuth', e, 5),
+      calcium: getMaterialAttenuation('calcium', e, 5),
+      water: getMaterialAttenuation('water', e, 5),
+    });
+  }
+  return data;
+};

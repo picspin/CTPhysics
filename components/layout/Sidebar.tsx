@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useLanguage } from '@/context/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import LiquidGlass from '../ui/LiquidGlass';
 
@@ -15,6 +16,7 @@ interface NavItem {
 
 const Sidebar: React.FC = () => {
   const pathname = usePathname();
+  const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(true);
 
@@ -28,7 +30,7 @@ const Sidebar: React.FC = () => {
   const navItems: NavItem[] = [
     {
       href: '/',
-      label: '概览 (Overview)',
+      label: t('overview'),
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -38,7 +40,7 @@ const Sidebar: React.FC = () => {
     },
     {
       href: '/reconstruction',
-      label: 'CT重建 (Reconstruction)',
+      label: t('reconstruction'),
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -48,7 +50,7 @@ const Sidebar: React.FC = () => {
     },
     {
       href: '/dose',
-      label: '剂量测量 (Dose)',
+      label: t('dose'),
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -58,7 +60,7 @@ const Sidebar: React.FC = () => {
     },
     {
       href: '/cardiac',
-      label: '心脏CT (Cardiac)',
+      label: t('cardiac'),
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -68,7 +70,7 @@ const Sidebar: React.FC = () => {
     },
     {
       href: '/dual-energy',
-      label: '双能CT (Dual Energy)',
+      label: t('dual_energy'),
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -77,18 +79,8 @@ const Sidebar: React.FC = () => {
       )
     },
     {
-      href: '/cbct',
-      label: '锥形束CT (CBCT)',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-            d="M12 4v16m8-8H4M12 12m8 0a8 8 0 11-16 0 8 8 0 0116 0" />
-        </svg>
-      )
-    },
-    {
       href: '/pcct',
-      label: '光子计数CT (PCCT)',
+      label: t('pcct'),
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -98,7 +90,7 @@ const Sidebar: React.FC = () => {
     },
     {
       href: '/questions',
-      label: '练习题 (Questions)',
+      label: t('practice'),
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}

@@ -1,7 +1,7 @@
 # Test info
 
-- Name: Landing page hero and orbit interactions >> center hover accelerates satellite orbit
-- Location: /home/hilbert/clawd/agents/mills/CTPhysics/e2e/landing.spec.ts:12:7
+- Name: Landing page hero and orbit interactions >> renders hero background image
+- Location: /home/hilbert/clawd/agents/mills/CTPhysics/e2e/landing.spec.ts:4:7
 
 # Error details
 
@@ -10,7 +10,7 @@ Error: page.goto: net::ERR_ABORTED; maybe frame was detached?
 Call log:
   - navigating to "http://localhost:3000/", waiting until "load"
 
-    at /home/hilbert/clawd/agents/mills/CTPhysics/e2e/landing.spec.ts:13:16
+    at /home/hilbert/clawd/agents/mills/CTPhysics/e2e/landing.spec.ts:5:16
 ```
 
 # Test source
@@ -20,7 +20,8 @@ Call log:
    2 |
    3 | test.describe('Landing page hero and orbit interactions', () => {
    4 |   test('renders hero background image', async ({ page }) => {
-   5 |     await page.goto('http://localhost:3000/');
+>  5 |     await page.goto('http://localhost:3000/');
+     |                ^ Error: page.goto: net::ERR_ABORTED; maybe frame was detached?
    6 |     const bg = page.getByTestId('hero-background');
    7 |     await expect(bg).toBeVisible();
    8 |     const style = await bg.evaluate((el) => getComputedStyle(el).backgroundImage);
@@ -28,8 +29,7 @@ Call log:
   10 |   });
   11 |
   12 |   test('center hover accelerates satellite orbit', async ({ page }) => {
-> 13 |     await page.goto('http://localhost:3000/');
-     |                ^ Error: page.goto: net::ERR_ABORTED; maybe frame was detached?
+  13 |     await page.goto('http://localhost:3000/');
   14 |     const orbit = page.getByTestId('orbit-container');
   15 |
   16 |     const hasHook = await page.evaluate(() => Boolean((window as Window & { __setCenterHover?: (val: boolean) => void }).__setCenterHover));

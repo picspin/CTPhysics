@@ -7,6 +7,7 @@ import SectionCard from '@/components/ui/SectionCard';
 import SimulatorContainer from '@/components/ui/SimulatorContainer';
 import BackprojectionSimulator from '@/components/simulators/BackprojectionSimulator';
 import HelicalCTSimulator from '@/components/simulators/HelicalCTSimulator';
+import CBCTSimulator from '@/components/simulators/CBCTSimulator';
 
 export default function ReconstructionPage() {
   const [activeTab, setActiveTab] = useState('fbp');
@@ -81,31 +82,35 @@ export default function ReconstructionPage() {
                 </div>
               </SectionCard>
             </>
-          )}
-
-          {activeTab === 'cbct' && (
-            <SectionCard title="锥束CT (Cone Beam CT)">
-              <div className="space-y-6">
-                <div className="prose prose-invert max-w-none text-text-200">
-                  <p>
-                    <strong>锥束CT (CBCT)</strong> 使用锥形X射线束（而不是传统的扇形束）和平面探测器，在一次旋转中即可获取整个体积的数据。
-                  </p>
-                  <h4 className="text-lg font-semibold text-text-100 mt-4">FDK 算法 (Feldkamp-Davis-Kress)</h4>
-                  <p>
-                    FDK 是最为经典的 CBCT 重建算法，它是 FBP 算法在 3D 锥束几何下的近似推广。其主要步骤包括：
-                  </p>
-                  <ul className="list-decimal list-inside space-y-2 mt-2">
-                    <li><strong>加权 (Weighting):</strong> 对投影数据进行由几何带来的位置加权（Cosine 加权）。</li>
-                    <li><strong>滤波 (Filtering):</strong> 对每一行探测器数据应用一维 Ramp 滤波器（类似于 2D FBP）。</li>
-                    <li><strong>反投影 (Backprojection):</strong> 沿 3D 锥体几何光路将数据反投影到体素网格中。</li>
-                  </ul>
-                  <div className="bg-bg-300 p-4 rounded-lg mt-4 text-sm border-l-4 border-primary-100">
-                    <strong>注：</strong> CBCT 在远离中心平面的位置（大锥角）会产生由近似算法导致的 Feldman 伪影（Feldkamp artifacts）。
+          )}          {activeTab === 'cbct' && (
+            <>
+              <SectionCard title="锥束CT (Cone Beam CT) 物理原理">
+                <div className="space-y-6">
+                  <div className="prose prose-invert max-w-none text-text-200">
+                    <p>
+                      <strong>锥束CT (CBCT)</strong> 使用锥形X射线束（而不是传统的扇形束）和平面探测器，在一次旋转中即可获取整个体积的数据。
+                      空间分辨率取决于探测器像元尺寸与几何放大率，牙科CBCT可达0.1mm级别。
+                    </p>
+                    <h4 className="text-lg font-semibold text-text-100 mt-4">FDK 算法 (Feldkamp-Davis-Kress)</h4>
+                    <p>
+                      FDK 是最为经典的 CBCT 重建算法，它是 FBP 算法在 3D 锥束几何下的近似推广。其主要步骤包括：
+                    </p>
+                    <ul className="list-decimal list-inside space-y-2 mt-2">
+                      <li><strong>加权 (Weighting):</strong> 对投影数据进行由几何带来的位置加权（Cosine 加权）。</li>
+                      <li><strong>滤波 (Filtering):</strong> 对每一行探测器数据应用一维 Ramp 滤波器（类似于 2D FBP）。</li>
+                      <li><strong>反投影 (Backprojection):</strong> 沿 3D 锥体几何光路将数据反投影到体素网格中。</li>
+                    </ul>
+                    <div className="bg-bg-300 p-4 rounded-lg mt-4 text-sm border-l-4 border-primary-100">
+                      <strong>注：</strong> CBCT 在远离中心平面的位置（大锥角）会产生由近似算法导致的 Feldman 伪影（Feldkamp artifacts）。圆锥角增大时，由于拉东数据不完备性，会导致偏轴体素产生严重的锥束伪影。
+                    </div>
                   </div>
                 </div>
-                {/* Future: Add a 3D visualization of Cone Beam vs Fan Beam geometry here */}
-              </div>
-            </SectionCard>
+              </SectionCard>
+
+              <SectionCard title="锥束CT物理模拟">
+                <CBCTSimulator />
+              </SectionCard>
+            </>
           )}
 
           {activeTab === 'helical' && (

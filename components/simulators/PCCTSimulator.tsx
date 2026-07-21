@@ -14,9 +14,12 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  ReferenceLine
+  ReferenceLine,
+  BarChart,
+  Bar,
+  Cell
 } from 'recharts';
-import { calculatePCCTSpectrum, calculatePCCTMetrics, getMaterialAttenuation, generatePCCTSinogramData, PCCTParams } from '@/utils/pcct-physics';
+import { calculatePCCTSpectrum, calculatePCCTMetrics, getMaterialAttenuation, generatePCCTSinogramData, PCCTParams, getKEdgeCurveData } from '@/utils/pcct-physics';
 
 const PCCTSimulator: React.FC = () => {
   const [params, setParams] = useState<PCCTParams>({
@@ -40,7 +43,8 @@ const PCCTSimulator: React.FC = () => {
   const eidCanvasRef = useRef<HTMLCanvasElement>(null);
   const pcctCanvasRef = useRef<HTMLCanvasElement>(null);
   const sinogramCanvasRef = useRef<HTMLCanvasElement>(null);
-  const [selectedBin, setSelectedBin] = useState<number>(2); // Default to Mid Bin (Bin 2)
+  const [selectedBin, setSelectedBin] = useState<number>(2);
+  const [vmiEnergy, setVmiEnergy] = useState<number>(70); // 40, 60, 70, 100 keV
 
   const metrics = calculatePCCTMetrics(params);
   
@@ -105,6 +109,13 @@ const PCCTSimulator: React.FC = () => {
         noiseLevel += (pileUpFraction / 250);
       }
 
+      // VMI physics scaling factor based on selected keV
+      const vmiScale = vmiEnergy === 40 ? 1.7 : vmiEnergy === 60 ? 1.2 : vmiEnergy === 70 ? 1.0 : 0.6;
+      // Metal streak artifact severity decays with energy
+      const metalStreakSeverity = vmiEnergy === 40 ? 0.30 : vmiEnergy === 60 ? 0.14 : vmiEnergy === 70 ? 0.08 : 0.01;
+      // Blooming decays with energy
+      const bloomingEnergyScale = vmiEnergy === 40 ? 1.6 : vmiEnergy === 60 ? 1.2 : vmiEnergy === 70 ? 1.0 : 0.55;
+
       for (let y = 0; y < h; y++) {
         const ny = (y - h / 2) / (h / 2);
         for (let x = 0; x < w; x++) {
@@ -132,15 +143,16 @@ const PCCTSimulator: React.FC = () => {
             if (isMetal) {
               baseVal = 0.95;
             } else if (isCalcium) {
-              baseVal = 0.4 + (params.calciumDensity / 200);
+              baseVal = (0.4 + (params.calciumDensity / 200)) * vmiScale;
             } else if (isLumen) {
-              const energyAvg = (params.threshold1 + params.threshold2) / 2;
-              const attVal = getMaterialAttenuation(params.contrastAgent, energyAvg, params.contrastConcentration);
-              baseVal = 0.25 + Math.min(0.65, attVal * 0.2);
+              // Apply monoenergetic attenuation at specific VMI keV
+              const attVal = getMaterialAttenuation(params.contrastAgent, vmiEnergy, params.contrastConcentration);
+              baseVal = 0.25 + Math.min(0.65, attVal * 0.2) * vmiScale;
             }
 
             if (isMetal) {
-              const streak = Math.sin(angle * 12) * 0.12;
+              // Streak artifacts centered around metal (decays at higher keV)
+              const streak = Math.sin(angle * 12) * metalStreakSeverity;
               baseVal = Math.min(1.0, Math.max(0, baseVal + streak));
             }
           }
@@ -152,9 +164,9 @@ const PCCTSimulator: React.FC = () => {
             const isLumen = distToLumen < 0.35 && !isCalcium;
 
             if (params.activeMaterialChannel === 'iodine') {
-              baseVal = isLumen ? (params.contrastConcentration / 10) * 0.8 : 0.05;
+              baseVal = isLumen ? (params.contrastConcentration / 10) * 0.8 * vmiScale : 0.05;
             } else if (params.activeMaterialChannel === 'calcium') {
-              baseVal = isCalcium ? (params.calciumDensity / 100) * 0.8 : 0.05;
+              baseVal = isCalcium ? (params.calciumDensity / 100) * 0.8 * vmiScale : 0.05;
             } else if (params.activeMaterialChannel === 'residual') {
               baseVal = (r2 < 0.6) ? 0.08 + (Math.random() - 0.5) * 0.04 : 0.02;
             }
@@ -164,7 +176,8 @@ const PCCTSimulator: React.FC = () => {
           if (type === 'EID') {
             const distToPlaque = Math.hypot(nx - 0.15, ny + 0.15);
             if (distToPlaque < 0.25) {
-              const bloomingScale = metrics.eidBlooming / 100;
+              // EID has massive blooming due to lower resolution
+              const bloomingScale = (metrics.eidBlooming / 100) * bloomingEnergyScale;
               pixelVal += (0.15 * bloomingScale * (1.0 - distToPlaque / 0.25));
             }
             if (Math.abs(Math.sqrt(r2) - 0.4) < 0.08) {
@@ -173,7 +186,8 @@ const PCCTSimulator: React.FC = () => {
           } else {
             const distToPlaque = Math.hypot(nx - 0.15, ny + 0.15);
             if (distToPlaque < 0.16) {
-              const bloomingScale = metrics.pcctBlooming / 100;
+              // PCCT has minimal blooming, further suppressed at high keV
+              const bloomingScale = (metrics.pcctBlooming / 100) * bloomingEnergyScale;
               pixelVal += (0.05 * bloomingScale * (1.0 - distToPlaque / 0.16));
             }
           }
@@ -193,12 +207,12 @@ const PCCTSimulator: React.FC = () => {
             let b = 50;
 
             if (isCalcium) {
-              r = Math.round((0.5 + params.calciumDensity / 200 + randomNoise) * 255);
+              r = Math.round((0.5 + params.calciumDensity / 200 + randomNoise) * vmiScale * 255);
               g = 30;
               b = 30;
             } else if (isLumen) {
               r = 30;
-              g = Math.round((0.4 + params.contrastConcentration / 15 + randomNoise) * 255);
+              g = Math.round((0.4 + params.contrastConcentration / 15 + randomNoise) * vmiScale * 255);
               b = 40;
             } else if (r2 < 0.6) {
               r = 40;
@@ -258,7 +272,7 @@ const PCCTSimulator: React.FC = () => {
         ctx.fillText(`Sinogram (Bin ${selectedBin})`, 10, 20);
       }
     }
-  }, [params, metrics, activeTab, pileUpFraction, selectedBin]);
+  }, [params, metrics, activeTab, pileUpFraction, selectedBin, vmiEnergy]);
 
   return (
     <SimulatorContainer title="光子计数 CT (PCCT) 物理孪生模拟器">
@@ -591,28 +605,130 @@ const PCCTSimulator: React.FC = () => {
           )}
 
           {activeTab === 'decomposition' && (
-            <Card className="p-4 space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-base font-bold text-emerald-400">能谱物质分解 (Material Decomposition)</h3>
-                <div className="flex space-x-1 p-1 bg-white/5 rounded-lg border border-white/10">
-                  {['composite', 'iodine', 'calcium', 'residual'].map((ch) => (
-                    <button
-                      key={ch}
-                      onClick={() => setParams((prev) => ({ ...prev, activeMaterialChannel: ch as 'composite' | 'iodine' | 'calcium' | 'residual' }))}
-                      className={`px-3 py-1 text-xs rounded-md transition-all capitalize ${params.activeMaterialChannel === ch ? 'bg-emerald-500 text-white' : 'text-gray-400 hover:text-white'}`}
-                    >
-                      {ch}
-                    </button>
-                  ))}
+            <div className="space-y-6">
+              {/* Material Separation Controls */}
+              <Card className="p-4 space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-base font-bold text-emerald-400">能谱物质分解 (Material Decomposition)</h3>
+                  <div className="flex space-x-1 p-1 bg-white/5 rounded-lg border border-white/10">
+                    {['composite', 'iodine', 'calcium', 'residual'].map((ch) => (
+                      <button
+                        key={ch}
+                        onClick={() => setParams((prev) => ({ ...prev, activeMaterialChannel: ch as 'composite' | 'iodine' | 'calcium' | 'residual' }))}
+                        className={`px-3 py-1 text-xs rounded-md transition-all capitalize ${params.activeMaterialChannel === ch ? 'bg-emerald-500 text-white' : 'text-gray-400 hover:text-white'}`}
+                      >
+                        {ch}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-              <p className="text-xs text-gray-400">
-                {params.activeMaterialChannel === 'composite' && '复合色彩视图：红色代表钙化斑块 (骨骼成分)，绿色代表碘造影剂 (血管腔)，蓝色代表背景软组织。'}
-                {params.activeMaterialChannel === 'iodine' && '纯碘密度图 (Iodine Map)：彻底分离钙化，仅显示冠脉血池。'}
-                {params.activeMaterialChannel === 'calcium' && '纯钙密度图 (Calcium Map)：清晰展现冠脉壁上的硬化斑块形态。'}
-                {params.activeMaterialChannel === 'residual' && '残差与伪影分布图：显示基线物质分解模型无法解释的系统非理想噪声分量。'}
-              </p>
-            </Card>
+                <p className="text-xs text-gray-400">
+                  {params.activeMaterialChannel === 'composite' && '复合色彩视图：红色代表钙化斑块 (骨骼成分)，绿色代表碘造影剂 (血管腔)，蓝色代表背景软组织。'}
+                  {params.activeMaterialChannel === 'iodine' && '纯碘密度图 (Iodine Map)：彻底分离钙化，仅显示冠脉血池。'}
+                  {params.activeMaterialChannel === 'calcium' && '纯钙密度图 (Calcium Map)：清晰展现冠脉壁上的硬化斑块形态。'}
+                  {params.activeMaterialChannel === 'residual' && '残差与伪影分布图：显示基线物质分解模型无法解释的系统非理想噪声分量。'}
+                </p>
+              </Card>
+
+              {/* VMI Energy Switch controls and dynamic HU rendering */}
+              <Card className="p-4 space-y-4">
+                <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2">
+                  <div>
+                    <h3 className="text-base font-bold text-emerald-400">VMI 虚拟单色能成像 (Virtual Monoenergetic Images)</h3>
+                    <p className="text-xs text-gray-400">观察低 keV 血管增强与高 keV 抑制金属/硬化伪影的工程权衡</p>
+                  </div>
+                  <div className="flex space-x-2 bg-white/5 p-1 rounded-lg border border-white/10 self-start">
+                    {[40, 60, 70, 100].map((energy) => (
+                      <button
+                        key={energy}
+                        onClick={() => setVmiEnergy(energy)}
+                        className={`px-3 py-1 text-xs rounded-md transition-all font-bold ${vmiEnergy === energy ? 'bg-emerald-500 text-white' : 'text-gray-400 hover:text-white'}`}
+                      >
+                        {energy} keV
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                  <div className="space-y-2 text-xs text-gray-300">
+                    <p className="font-bold text-emerald-400">能谱物理效应表现：</p>
+                    {vmiEnergy === 40 && (
+                      <p className="text-red-400">• 低能 40 keV：造影剂（碘/钆）的衰减极高，血管腔获得显著的对比度增强。但高 Z 物质会引起极其严重的硬化条纹伪影（Streaking Artifact）与钙化 Blooming 边缘膨胀。</p>
+                    )}
+                    {vmiEnergy === 60 && (
+                      <p className="text-amber-400">• 60 keV：在管腔对比度与伪影之间取得折中，这是临床能谱血管造影的常用高对比能级。</p>
+                    )}
+                    {vmiEnergy === 70 && (
+                      <p className="text-gray-300">• 70 keV：标准模拟参考能级，接近常规 120 kVp 多色混合射线重建图像的软组织反差表现。</p>
+                    )}
+                    {vmiEnergy === 100 && (
+                      <p className="text-sky-400">• 高能 100 keV：光子穿透力极强，X射线硬化伪影（Beam Hardening）被彻底消除。支架管腔通畅度极佳，Blooming 彻底消失，但碘造影剂对比度被大幅削弱（血管反差变淡）。</p>
+                    )}
+                    
+                    {/* Visual energy scale rendering details */}
+                    <div className="p-3 bg-black/40 rounded border border-white/5 space-y-1">
+                      <p className="text-[10px] text-gray-400">当前 VMI 物理因子：</p>
+                      <div className="flex justify-between"><span>血管腔强度倍率:</span> <span className="text-emerald-400 font-mono">{(vmiEnergy === 40 ? 1.7 : vmiEnergy === 60 ? 1.2 : vmiEnergy === 70 ? 1.0 : 0.6).toFixed(1)}x</span></div>
+                      <div className="flex justify-between"><span>硬化伪影严重度:</span> <span className="text-red-400 font-mono">{(vmiEnergy === 40 ? 100 : vmiEnergy === 60 ? 47 : vmiEnergy === 70 ? 27 : 3).toFixed(0)}%</span></div>
+                      <div className="flex justify-between"><span>硬斑块 Blooming 膨胀率:</span> <span className="text-amber-400 font-mono">{(vmiEnergy === 40 ? 160 : vmiEnergy === 60 ? 120 : vmiEnergy === 70 ? 100 : 55).toFixed(0)}%</span></div>
+                    </div>
+                  </div>
+
+                  {/* Histogram Chart showing HU values */}
+                  <div className="h-44 bg-black/20 p-2 rounded-lg border border-white/5">
+                    <p className="text-[10px] font-bold text-center text-emerald-400 mb-1">各组织与支架 HU 衰减值对比图</p>
+                    <ResponsiveContainer width="100%" height="90%">
+                      <BarChart
+                        data={[
+                          { name: '碘造影剂', value: Math.round((vmiEnergy === 40 ? 680 : vmiEnergy === 60 ? 420 : vmiEnergy === 70 ? 350 : 180) * (params.contrastConcentration / 6)) },
+                          { name: '钙化斑块', value: Math.round((vmiEnergy === 40 ? 590 : vmiEnergy === 60 ? 460 : vmiEnergy === 70 ? 380 : 250) * (params.calciumDensity / 50)) },
+                          { name: '软组织', value: Math.round((vmiEnergy === 40 ? 90 : vmiEnergy === 60 ? 65 : vmiEnergy === 70 ? 50 : 40)) },
+                          { name: '支架金属', value: Math.round(vmiEnergy === 40 ? 1200 : vmiEnergy === 60 ? 980 : vmiEnergy === 70 ? 850 : 650) }
+                        ]}
+                        margin={{ top: 5, right: 5, left: -25, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="#222" />
+                        <XAxis dataKey="name" stroke="#888" fontSize={9} tickLine={false} />
+                        <YAxis stroke="#888" fontSize={9} />
+                        <Tooltip contentStyle={{ backgroundColor: '#111', borderColor: '#333', color: '#fff', fontSize: 10 }} />
+                        <Bar dataKey="value" fill="#10b981" radius={[4, 4, 0, 0]}>
+                          {[0, 1, 2, 3].map((entry, index) => {
+                            const colors = ['#34d399', '#fbbf24', '#a78bfa', '#f43f5e'];
+                            return <Cell key={`cell-${index}`} fill={colors[index]} />;
+                          })}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </Card>
+
+              {/* K-edge teaching and mass attenuation curves */}
+              <Card className="p-4 space-y-4">
+                <h3 className="text-base font-bold text-emerald-400">重元素 K-edge 教学与吸收光谱突跃对比</h3>
+                <p className="text-xs text-gray-400">展示特定元素在 K-edge 临界能量点发生的光电吸收骤增，能谱 CT 正是基于此原理进行特异性造影成像</p>
+                <div className="h-64 bg-black/40 p-2 rounded-lg border border-white/5">
+                  <ResponsiveContainer width="100%" height="90%">
+                    <LineChart data={getKEdgeCurveData()} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#222" />
+                      <XAxis dataKey="energy" stroke="#666" fontSize={9} label={{ value: '能量 (keV)', position: 'insideBottomRight', offset: -5 }} />
+                      <YAxis stroke="#666" fontSize={9} label={{ value: '质量衰减系数', angle: -90, position: 'insideLeft', offset: 10 }} />
+                      <Tooltip contentStyle={{ backgroundColor: '#111', borderColor: '#333', color: '#fff', fontSize: 10 }} />
+                      <Legend wrapperStyle={{ fontSize: 9 }} />
+                      <Line type="monotone" dataKey="iodine" name="碘 (Iodine - K: 33 keV)" stroke="#34d399" strokeWidth={1.5} dot={false} />
+                      <Line type="monotone" dataKey="gadolinium" name="钆 (Gadolinium - K: 50 keV)" stroke="#fbbf24" strokeWidth={1.5} dot={false} />
+                      <Line type="monotone" dataKey="bismuth" name="铋 (Bismuth - K: 90 keV)" stroke="#f43f5e" strokeWidth={1.5} dot={false} />
+                      <Line type="monotone" dataKey="calcium" name="钙 (Calcium - 骨骼)" stroke="#a78bfa" strokeWidth={1} dot={false} strokeDasharray="4 4" />
+                      <Line type="monotone" dataKey="water" name="水" stroke="#38bdf8" strokeWidth={1} dot={false} strokeDasharray="2 2" />
+                      <ReferenceLine x={33} stroke="#34d399" strokeDasharray="3 3" label={{ value: 'I K-edge (33 keV)', fill: '#34d399', fontSize: 8, position: 'top' }} />
+                      <ReferenceLine x={50} stroke="#fbbf24" strokeDasharray="3 3" label={{ value: 'Gd K-edge (50 keV)', fill: '#fbbf24', fontSize: 8, position: 'top' }} />
+                      <ReferenceLine x={90} stroke="#f43f5e" strokeDasharray="3 3" label={{ value: 'Bi K-edge (90 keV)', fill: '#f43f5e', fontSize: 8, position: 'top' }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </Card>
+            </div>
           )}
         </div>
       </div>

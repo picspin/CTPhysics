@@ -6,10 +6,10 @@ test.describe('PCCT (Photon-Counting CT) page and simulator interactions', () =>
   });
 
   test('renders page layout and core concept list', async ({ page }) => {
-    await expect(page.locator('h1')).toContainText('光子计数CT (PCCT) 物理孪生模拟');
+    await expect(page.locator('h1').last()).toContainText('光子计数CT (PCCT) 物理孪生模拟');
     
     // Check KeyPoints section
-    const keyPoints = page.locator('ul > li');
+    const keyPoints = page.locator('div.mt-6 ul > li');
     await expect(keyPoints).toHaveCount(4);
     await expect(keyPoints.first()).toContainText('半导体直接转换探测器');
   });

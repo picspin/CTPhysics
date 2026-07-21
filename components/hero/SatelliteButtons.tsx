@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 
 const modules = [
     { title: 'Reconstruction', href: '/reconstruction', desc: 'FBP, Helical & Kernels', color: 'shadow-cyan-500/50 border-cyan-400/30' },
-    { title: 'CBCT', href: '/cbct', desc: '3D FDK Reconstruction', color: 'shadow-sky-500/50 border-sky-400/30' },
+    { title: 'Reconstruction', href: '/reconstruction', desc: '3D FDK Reconstruction', color: 'shadow-sky-500/50 border-sky-400/30' },
     { title: 'PCCT', href: '/pcct', desc: 'Direct Conversion Spec', color: 'shadow-emerald-500/50 border-emerald-400/30' },
     { title: 'Dose & Safety', href: '/dose', desc: 'CTDI, DLP & ALARA', color: 'shadow-red-500/50 border-red-400/30' },
     { title: 'Cardiac CT', href: '/cardiac', desc: 'ECG Gating & 4D', color: 'shadow-pink-500/50 border-pink-400/30' },

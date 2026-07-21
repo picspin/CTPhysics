@@ -1,7 +1,7 @@
 # Test info
 
-- Name: Landing page hero and orbit interactions >> center hover accelerates satellite orbit
-- Location: /home/hilbert/clawd/agents/mills/CTPhysics/e2e/landing.spec.ts:12:7
+- Name: Landing page hero and orbit interactions >> flow fiber style is subtle
+- Location: /home/hilbert/clawd/agents/mills/CTPhysics/e2e/landing.spec.ts:25:7
 
 # Error details
 
@@ -10,7 +10,7 @@ Error: page.goto: net::ERR_ABORTED; maybe frame was detached?
 Call log:
   - navigating to "http://localhost:3000/", waiting until "load"
 
-    at /home/hilbert/clawd/agents/mills/CTPhysics/e2e/landing.spec.ts:13:16
+    at /home/hilbert/clawd/agents/mills/CTPhysics/e2e/landing.spec.ts:26:16
 ```
 
 # Test source
@@ -28,8 +28,7 @@ Call log:
   10 |   });
   11 |
   12 |   test('center hover accelerates satellite orbit', async ({ page }) => {
-> 13 |     await page.goto('http://localhost:3000/');
-     |                ^ Error: page.goto: net::ERR_ABORTED; maybe frame was detached?
+  13 |     await page.goto('http://localhost:3000/');
   14 |     const orbit = page.getByTestId('orbit-container');
   15 |
   16 |     const hasHook = await page.evaluate(() => Boolean((window as Window & { __setCenterHover?: (val: boolean) => void }).__setCenterHover));
@@ -42,7 +41,8 @@ Call log:
   23 |   });
   24 |
   25 |   test('flow fiber style is subtle', async ({ page }) => {
-  26 |     await page.goto('http://localhost:3000/');
+> 26 |     await page.goto('http://localhost:3000/');
+     |                ^ Error: page.goto: net::ERR_ABORTED; maybe frame was detached?
   27 |     const bg = page.getByTestId('hero-background');
   28 |     await expect(bg).toHaveAttribute('data-flow-style', 'particle-s-curve');
   29 |   });

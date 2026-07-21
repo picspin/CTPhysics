@@ -104,7 +104,7 @@ const ParticleFlow = ({ count = 12000, speed = 0.7 }: { count?: number; speed?: 
                 uTime: { value: 0 },
                 uColorDim: { value: new THREE.Color(0xffaa00) },
                 uColorBright: { value: new THREE.Color(0xffd700) },
-                uSize: { value: 2.2 },
+                uSize: { value: 5.0 },
             },
             vertexShader: `
                 attribute float aProgress;
@@ -113,9 +113,22 @@ const ParticleFlow = ({ count = 12000, speed = 0.7 }: { count?: number; speed?: 
                 varying float vDepth;
                 void main(){
                     vProgress = aProgress;
-                    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                    
+                    // Jet effect: particles speed up and compress as they pass through the center (0.4 to 0.6)
+                    // We dynamically alter the coordinate system of the raw position to bundle particles towards y=0, z=0
+                    vec3 warpPos = position;
+                    float distFromCenter = abs(vProgress - 0.5);
+                    
+                    // Bundle particles inwards inside the scanner center (representing flowing through scanner bore)
+                    float bundleFactor = 1.0 - 0.45 * exp(-pow(distFromCenter/0.12, 2.0));
+                    warpPos.y *= bundleFactor;
+                    warpPos.z *= bundleFactor;
+                    
+                    vec4 mvPosition = modelViewMatrix * vec4(warpPos, 1.0);
                     vDepth = mvPosition.z;
-                    float centerScale = 1.0 + 0.8 * exp(-pow((vProgress - 0.5)/0.18, 2.0));
+                    
+                    // Make particles larger and brighter at the center (jet spray highlight)
+                    float centerScale = 1.0 + 1.8 * exp(-pow((vProgress - 0.5)/0.15, 2.0));
                     float size = uSize * (1.0 / max(0.001, -mvPosition.z)) * centerScale;
                     gl_PointSize = size;
                     gl_Position = projectionMatrix * mvPosition;
@@ -157,7 +170,7 @@ const ParticleFlow = ({ count = 12000, speed = 0.7 }: { count?: number; speed?: 
 
 const CTHeroScene = () => {
     // Fixed speed, interaction is now handled by Satellite Orbit acceleration
-    const speedFixed = 0.8;
+    const speedFixed = 2.2;
 
     return (
         <div
