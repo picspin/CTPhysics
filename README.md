@@ -12,7 +12,7 @@ CTPhysics 是一个用于学习与演示计算机断层扫描（CT）成像物�
   - 若链接更新，请在此处同步维护。
 
 ## 功能特性
-- 交互式模块：采样与滤波、卷积核（重建滤波器）对图像的影响、剂量与噪声的权衡等
+- 交互式模块：采样与滤波、重建滤波核对图像的影响、剂量与噪声权衡、三维锥形束重建 (CBCT FDK 算法偏轴伪影模拟)、以及光子计数CT (PCCT 直接转换半导体探测器、零电子噪声、脉冲堆积谱畸变、多通道物质分解与 K-edge 临界指标跃变)
 - 可视化解释：图表/曲线/示意图，直观展示物理量与图像质量指标的关系
 - 多语言支持：中/英文内容（可拓展 i18n）
 - 教学实验：本地保存实验参数（可选），便于复现实验
@@ -107,7 +107,7 @@ CTPhysics is an interactive learning and demonstration platform for CT (Computed
 - Production / demo: https://www.ct-physics.xyz
 
 ## Features
-- Interactive modules: sampling and filtering, reconstruction kernels, dose vs. noise trade-offs
+- Interactive modules: sampling and filtering, reconstruction kernels, dose vs. noise trade-offs, Cone-Beam CT (CBCT 3D FDK reconstruction off-axis artifact simulation), and Photon-Counting CT (PCCT direct conversion, zero electronic noise, pulse pile-up spectrum distortion, material decomposition, and K-edge jump effect)
 - Visual explanations: charts/curves/diagrams for relationships between physical quantities and image quality metrics
 - Multilingual: CN/EN content (i18n-ready)
 - Teaching labs: locally persisted parameters (optional) for reproducible experiments
