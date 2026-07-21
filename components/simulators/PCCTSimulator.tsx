@@ -4,9 +4,18 @@ import React, { useState, useEffect, useRef } from 'react';
 import SimulatorContainer from '@/components/ui/SimulatorContainer';
 import { Select } from '@/components/ui/Select';
 import { Slider } from '@/components/ui/Slider';
-
 import { Card } from '@/components/ui/Card';
-import { calculatePCCTMetrics, getMaterialAttenuation, PCCTParams } from '@/utils/pcct-physics';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from 'recharts';
+import { calculatePCCTSpectrum, calculatePCCTMetrics, getMaterialAttenuation, PCCTParams } from '@/utils/pcct-physics';
 
 const PCCTSimulator: React.FC = () => {
   const [params, setParams] = useState<PCCTParams>({
@@ -36,6 +45,40 @@ const PCCTSimulator: React.FC = () => {
   const pulseDeadTime = 0.05;
   const pulseRate = params.photonFlux * pulseDeadTime;
   const pileUpFraction = Math.round((1 - Math.exp(-pulseRate)) * 100);
+  const rawSpectrum = calculatePCCTSpectrum(params.kVp);
+
+  // Generate energy spectrum chart data
+  const chartData = rawSpectrum.map((pt) => {
+    const energy = pt.energy;
+    const idealIntensity = pt.intensity;
+
+    // Pulse pile-up causes spectrum shifting towards higher energy
+    // and overall count reduction
+    
+    
+
+    // Find the ideal intensity at corresponding shifted location
+    // We approximate it by scaling the ideal spectrum shape
+    const scaleFactor = Math.exp(-params.photonFlux * 0.04);
+    let distortedIntensity = idealIntensity * scaleFactor;
+
+    // Charge sharing adds a low-energy hump/scatter contribution
+    if (energy < 40) {
+      const chargeSharingHump = Math.max(0, (40 - energy) * params.photonFlux * 1.5);
+      distortedIntensity += chargeSharingHump;
+    }
+
+    // Electronic noise adds high-frequency scatter at ultra low energy
+    if (params.enableElectronicNoise && energy < 25) {
+      distortedIntensity += 80;
+    }
+
+    return {
+      energy,
+      'Ideal Spectrum (理想能谱)': Math.round(idealIntensity),
+      'Distorted (堆积+电荷共享畸变谱)': Math.round(distortedIntensity),
+    };
+  });
 
   useEffect(() => {
     const drawCTSlice = (canvas: HTMLCanvasElement | null, type: 'EID' | 'PCCT') => {
@@ -417,6 +460,24 @@ const PCCTSimulator: React.FC = () => {
                   <p className="text-base font-bold text-gray-200">~6.2 keV</p>
                   <p className="text-[9px] text-gray-500">物理谱宽的拓宽畸变</p>
                 </div>
+              </div>
+
+              {/* Energy Spectrum Distortion Chart */}
+              <div className="h-64 mt-4 bg-black/40 p-2 rounded-lg border border-white/5">
+                <p className="text-xs font-bold text-emerald-400 mb-2 text-center">
+                  X射线入射能谱畸变模拟 (理想 vs 非理想探测响应)
+                </p>
+                <ResponsiveContainer width="100%" height="90%">
+                  <LineChart data={chartData} margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#222" />
+                    <XAxis dataKey="energy" stroke="#666" fontSize={10} label={{ value: '能量 (keV)', position: 'insideBottomRight', offset: -5 }} />
+                    <YAxis stroke="#666" fontSize={10} label={{ value: '光子数 (Counts)', angle: -90, position: 'insideLeft', offset: 10 }} />
+                    <Tooltip contentStyle={{ backgroundColor: '#111', borderColor: '#333', color: '#fff' }} />
+                    <Legend wrapperStyle={{ fontSize: 10 }} />
+                    <Line type="monotone" dataKey="Ideal Spectrum (理想能谱)" stroke="#34d399" strokeWidth={1.5} dot={false} activeDot={{ r: 4 }} />
+                    <Line type="monotone" dataKey="Distorted (堆积+电荷共享畸变谱)" stroke="#f43f5e" strokeWidth={1.5} dot={false} strokeDasharray="5 5" />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
             </Card>
           )}
