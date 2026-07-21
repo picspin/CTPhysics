@@ -33,7 +33,9 @@ export type SimulatorType =
   | 'cardiac-gating'
   | 'dual-energy'
   | 'radiation-dose'
-  | 'xray-attenuation';
+  | 'xray-attenuation'
+  | 'cbct'
+  | 'pcct';
 
 // Backprojection Simulator types
 export interface BackprojectionOptions {
@@ -234,4 +236,9 @@ export interface Annotation {
   y: number;
   label: string;
   type: 'point' | 'area' | 'line';
+}
+// CBCT Simulator types
+export interface CBCTOptions {
+  coneAngles: number[];
+  detectorPixelSizes: number[];
 }

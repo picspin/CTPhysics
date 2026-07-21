@@ -7,10 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
-    "@playwright/test": "^1.52.0",
     "@react-three/drei": "^9.88.0",
     "@react-three/fiber": "^8.15.0",
     "@react-three/postprocessing": "^2.16.2",
@@ -32,11 +33,14 @@
     "@types/node": "^20.0.0",
     "@types/react": "18.3.27",
     "@types/react-dom": "18.3.7",
+    "@vitest/coverage-v8": "^4.1.10",
     "autoprefixer": "^10.4.21",
     "eslint": "8.57.1",
     "eslint-config-next": "14.2.33",
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^4.1.10",
+    "@playwright/test": "^1.52.0"
   }
 }

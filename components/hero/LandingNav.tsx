@@ -5,6 +5,8 @@ import Link from 'next/link';
 
 const navItems = [
     { label: 'CT Reconst', href: '/reconstruction' },
+    { label: 'CBCT', href: '/cbct' },
+    { label: 'PCCT', href: '/pcct' },
     { label: 'Dose Safe', href: '/dose' },
     { label: 'Cardiac CT', href: '/cardiac' },
     { label: 'Spectral', href: '/dual-energy' },
