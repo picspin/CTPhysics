@@ -123,3 +123,94 @@ export const calculatePCCTMetrics = (params: PCCTParams) => {
     decompositionCnr: Number((decompositionCnr * (params.photonFlux > 15 ? 0.6 : 1.0)).toFixed(1)),
   };
 };
+
+/**
+ * Generates a simulated Sinogram for a specific Energy Bin
+ */
+export const generatePCCTSinogramData = (
+  params: PCCTParams,
+  binIndex: number, // 1, 2, or 3
+  projections: number = 64,
+  detectors: number = 64
+): number[][] => {
+  const sinogram: number[][] = Array.from({ length: projections }, () => new Array(detectors).fill(0));
+  
+  // Energy selection based on Bin
+  let avgEnergy = 40;
+  if (binIndex === 1) avgEnergy = (20 + params.threshold1) / 2;
+  else if (binIndex === 2) avgEnergy = (params.threshold1 + params.threshold2) / 2;
+  else avgEnergy = (params.threshold2 + 120) / 2;
+
+  // Attenuation coefficient for contrast agent and bone/calcium
+  const attContrast = getMaterialAttenuation(params.contrastAgent, avgEnergy, params.contrastConcentration);
+  const attCalcium = getMaterialAttenuation('calcium', avgEnergy, params.calciumDensity / 5);
+  const attWater = getMaterialAttenuation('water', avgEnergy, 5);
+
+  const pulseDeadTime = 0.05;
+  const rate = params.photonFlux * pulseDeadTime;
+  const pileUpFactor = Math.exp(-rate);
+
+  for (let p = 0; p < projections; p++) {
+    const angle = (p / projections) * Math.PI;
+    const cosA = Math.cos(angle);
+    const sinA = Math.sin(angle);
+
+    for (let d = 0; d < detectors; d++) {
+      const u = (d - detectors / 2) / (detectors / 2); // detector position [-1, 1]
+
+      let thicknessWater = 0;
+      let thicknessContrast = 0;
+      let thicknessCalcium = 0;
+
+      // Simulated object: main circle (water-like body)
+      if (Math.abs(u) < 0.6) {
+        thicknessWater = 2 * Math.sqrt(0.36 - u * u);
+        
+        // Add off-center contrast lumen trace in sinogram (moving as a sine wave)
+        const contrastCenter = 0.15 * cosA;
+        if (Math.abs(u - contrastCenter) < 0.18) {
+          thicknessContrast = 2 * Math.sqrt(0.0324 - Math.pow(u - contrastCenter, 2));
+        }
+
+        // Add calcified plaque trace
+        const calciumCenter = -0.15 * sinA;
+        if (Math.abs(u - calciumCenter) < 0.1) {
+          thicknessCalcium = 2 * Math.sqrt(0.01 - Math.pow(u - calciumCenter, 2));
+        }
+      }
+
+      // Compute total line-integral attenuation
+      let lineIntegral = thicknessWater * attWater + 
+                         thicknessContrast * attContrast + 
+                         thicknessCalcium * attCalcium;
+
+      // Translate attenuation to transmitted photon counts
+      let incidentPhotons = 1000 * (1 / (1 + params.bmi * 0.01));
+      
+      // Energy bin partitioning
+      if (binIndex === 1) incidentPhotons *= 0.5;
+      else if (binIndex === 2) incidentPhotons *= 0.3;
+      else incidentPhotons *= 0.2;
+
+      let transmitted = incidentPhotons * Math.exp(-lineIntegral);
+
+      // Non-ideal effects distortion
+      if (binIndex === 1 && params.enableElectronicNoise && params.threshold1 < 20) {
+        transmitted += 120; // electronic noise leakage count
+      }
+      
+      // Pulse pile-up losses
+      transmitted *= pileUpFactor;
+
+      // Compute negative log to get sinogram projection value
+      let projValue = -Math.log(Math.max(1, transmitted) / incidentPhotons);
+      projValue = Math.min(1.0, Math.max(0, projValue * 0.4));
+
+      // Quantum noise (Poisson noise simulation)
+      const noiseAmp = 0.05 * (1 + params.bmi * 0.02) / (Math.sqrt(Math.max(10, transmitted)));
+      sinogram[p][d] = Math.min(1.0, Math.max(0, projValue + (Math.random() - 0.5) * noiseAmp));
+    }
+  }
+
+  return sinogram;
+};

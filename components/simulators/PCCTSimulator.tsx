@@ -13,9 +13,10 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer
+  ResponsiveContainer,
+  ReferenceLine
 } from 'recharts';
-import { calculatePCCTSpectrum, calculatePCCTMetrics, getMaterialAttenuation, PCCTParams } from '@/utils/pcct-physics';
+import { calculatePCCTSpectrum, calculatePCCTMetrics, getMaterialAttenuation, generatePCCTSinogramData, PCCTParams } from '@/utils/pcct-physics';
 
 const PCCTSimulator: React.FC = () => {
   const [params, setParams] = useState<PCCTParams>({
@@ -38,6 +39,8 @@ const PCCTSimulator: React.FC = () => {
   
   const eidCanvasRef = useRef<HTMLCanvasElement>(null);
   const pcctCanvasRef = useRef<HTMLCanvasElement>(null);
+  const sinogramCanvasRef = useRef<HTMLCanvasElement>(null);
+  const [selectedBin, setSelectedBin] = useState<number>(2); // Default to Mid Bin (Bin 2)
 
   const metrics = calculatePCCTMetrics(params);
   
@@ -226,7 +229,36 @@ const PCCTSimulator: React.FC = () => {
 
     drawCTSlice(eidCanvasRef.current, 'EID');
     drawCTSlice(pcctCanvasRef.current, 'PCCT');
-  }, [params, metrics, activeTab, pileUpFraction]);
+
+    // Draw PCCT Sinogram (Projection Layer)
+    const sinoCanvas = sinogramCanvasRef.current;
+    if (sinoCanvas) {
+      const ctx = sinoCanvas.getContext('2d');
+      if (ctx) {
+        const w = sinoCanvas.width;
+        const h = sinoCanvas.height;
+        const sinoData = generatePCCTSinogramData(params, selectedBin, h, w);
+        const imgData = ctx.createImageData(w, h);
+        
+        for (let y = 0; y < h; y++) {
+          for (let x = 0; x < w; x++) {
+            const val = sinoData[y][x];
+            const pixelVal = Math.round((1.0 - val) * 255);
+            const idx = (y * w + x) * 4;
+            imgData.data[idx] = pixelVal;
+            imgData.data[idx + 1] = pixelVal;
+            imgData.data[idx + 2] = pixelVal;
+            imgData.data[idx + 3] = 255;
+          }
+        }
+        ctx.putImageData(imgData, 0, 0);
+
+        ctx.fillStyle = '#34d399';
+        ctx.font = '10px sans-serif';
+        ctx.fillText(`Sinogram (Bin ${selectedBin})`, 10, 20);
+      }
+    }
+  }, [params, metrics, activeTab, pileUpFraction, selectedBin]);
 
   return (
     <SimulatorContainer title="光子计数 CT (PCCT) 物理孪生模拟器">
@@ -357,32 +389,58 @@ const PCCTSimulator: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="flex flex-col items-center">
                 <canvas
                   ref={eidCanvasRef}
-                  width={200}
-                  height={200}
+                  width={150}
+                  height={150}
                   className="w-full aspect-square bg-slate-950 rounded border border-purple-500/20 shadow-inner"
                 />
                 <div className="mt-2 text-xs text-purple-300 space-y-1 w-full p-2 bg-purple-950/20 rounded border border-purple-500/10">
-                  <p>• 电子噪声：~18 HU (无法消除)</p>
-                  <p>• 钙化膨胀 (Blooming) 指标：{metrics.eidBlooming}%</p>
-                  <p>• 支架内通畅显示率：{metrics.eidStentLumen}%</p>
+                  <p>• 电子噪声：~18 HU (EID限制)</p>
+                  <p>• 钙化膨胀 (Blooming)：{metrics.eidBlooming}%</p>
+                  <p>• 支架评估通畅率：{metrics.eidStentLumen}%</p>
                 </div>
               </div>
 
               <div className="flex flex-col items-center">
                 <canvas
                   ref={pcctCanvasRef}
-                  width={200}
-                  height={200}
+                  width={150}
+                  height={150}
                   className="w-full aspect-square bg-slate-950 rounded border border-emerald-500/20 shadow-inner"
                 />
                 <div className="mt-2 text-xs text-emerald-300 space-y-1 w-full p-2 bg-emerald-950/20 rounded border border-emerald-500/10">
-                  <p>• 电子噪声：{metrics.pcctElectronicNoise} HU (零电子噪声)</p>
-                  <p>• 钙化膨胀 (Blooming) 指标：{metrics.pcctBlooming}%</p>
-                  <p>• 支架内通畅显示率：{metrics.pcctStentLumen}%</p>
+                  <p>• 电子噪声：{metrics.pcctElectronicNoise} HU (零噪声)</p>
+                  <p>• 钙化膨胀 (Blooming)：{metrics.pcctBlooming}%</p>
+                  <p>• 支架评估通畅率：{metrics.pcctStentLumen}%</p>
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center">
+                <canvas
+                  ref={sinogramCanvasRef}
+                  width={150}
+                  height={150}
+                  className="w-full aspect-square bg-slate-950 rounded border border-sky-500/20 shadow-inner"
+                />
+                <div className="mt-2 text-xs text-sky-300 w-full p-2 bg-sky-950/20 rounded border border-sky-500/10 space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span>• 能级通道:</span>
+                    <div className="flex space-x-1 bg-white/5 p-0.5 rounded">
+                      {[1, 2, 3].map((bin) => (
+                        <button
+                          key={bin}
+                          onClick={() => setSelectedBin(bin)}
+                          className={`px-1.5 py-0.5 text-[10px] rounded ${selectedBin === bin ? 'bg-sky-500 text-white' : 'text-gray-400'}`}
+                        >
+                          Bin{bin}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-gray-400">选择不同 Bin 可观察高低能量下物质投影的衰减反差变化。</p>
                 </div>
               </div>
             </div>
@@ -462,6 +520,55 @@ const PCCTSimulator: React.FC = () => {
                 </div>
               </div>
 
+              {/* Direct vs Indirect Conversion Physics Illustration */}
+              <div className="mt-4 p-3 bg-slate-950 rounded border border-white/10">
+                <h4 className="text-xs font-bold text-emerald-400 mb-2 text-center">
+                  物理层直接转换 (Direct) vs 间接转换 (Indirect / EID) 机制对比
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Indirect */}
+                  <div className="p-2 bg-black/40 rounded flex flex-col items-center">
+                    <p className="text-[10px] font-bold text-purple-300 mb-1">间接转换 (EID / 闪烁体)</p>
+                    <svg className="w-full h-24" viewBox="0 0 200 80">
+                      {/* X-ray */}
+                      <path d="M 50,0 Q 45,10 55,20 T 45,40" stroke="#f43f5e" fill="none" strokeWidth="1.5" strokeDasharray="3 3" />
+                      {/* Scintillator layer */}
+                      <rect x="20" y="40" width="60" height="20" fill="#6b21a8" opacity="0.3" stroke="#a855f7" strokeWidth="1" />
+                      <text x="50" y="52" fill="#d8b4fe" fontSize="8" textAnchor="middle">闪烁体 (可见光散)</text>
+                      {/* Light diffusion */}
+                      <circle cx="50" cy="50" r="10" fill="#fef08a" opacity="0.3" />
+                      {/* Photodiode */}
+                      <rect x="20" y="60" width="60" height="10" fill="#3b0764" stroke="#a855f7" strokeWidth="1" />
+                      {/* Septa separator */}
+                      <line x1="20" y1="40" x2="20" y2="70" stroke="#f43f5e" strokeWidth="2" />
+                      <line x1="80" y1="40" x2="80" y2="70" stroke="#f43f5e" strokeWidth="2" />
+                      <text x="50" y="77" fill="#c084fc" fontSize="7" textAnchor="middle">像素元 (存在几何死区)</text>
+                    </svg>
+                  </div>
+                  {/* Direct */}
+                  <div className="p-2 bg-black/40 rounded flex flex-col items-center">
+                    <p className="text-[10px] font-bold text-emerald-300 mb-1">直接转换 (PCCT / 半导体)</p>
+                    <svg className="w-full h-24" viewBox="0 0 200 80">
+                      {/* X-ray */}
+                      <path d="M 50,0 Q 45,10 55,20 T 45,40" stroke="#10b981" fill="none" strokeWidth="1.5" />
+                      {/* Semiconductor substrate */}
+                      <rect x="20" y="40" width="60" height="20" fill="#065f46" opacity="0.3" stroke="#10b981" strokeWidth="1" />
+                      <text x="50" y="52" fill="#a7f3d0" fontSize="8" textAnchor="middle">CdTe / CZT 介质</text>
+                      {/* Electric drift line */}
+                      <line x1="50" y1="45" x2="50" y2="60" stroke="#34d399" strokeWidth="1.5" markerEnd="url(#arrow)" />
+                      {/* Electrodes */}
+                      <rect x="20" y="60" width="60" height="10" fill="#022c22" stroke="#10b981" strokeWidth="1" />
+                      {/* Tiny electrode pixel units (high density) */}
+                      <rect x="25" y="60" width="10" height="3" fill="#34d399" />
+                      <rect x="40" y="60" width="10" height="3" fill="#34d399" />
+                      <rect x="55" y="60" width="10" height="3" fill="#34d399" />
+                      <rect x="70" y="60" width="10" height="3" fill="#34d399" />
+                      <text x="50" y="77" fill="#6ee7b7" fontSize="7" textAnchor="middle">微像素 (几何剂量效率极高)</text>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
               {/* Energy Spectrum Distortion Chart */}
               <div className="h-64 mt-4 bg-black/40 p-2 rounded-lg border border-white/5">
                 <p className="text-xs font-bold text-emerald-400 mb-2 text-center">
@@ -476,6 +583,7 @@ const PCCTSimulator: React.FC = () => {
                     <Legend wrapperStyle={{ fontSize: 10 }} />
                     <Line type="monotone" dataKey="Ideal Spectrum (理想能谱)" stroke="#34d399" strokeWidth={1.5} dot={false} activeDot={{ r: 4 }} />
                     <Line type="monotone" dataKey="Distorted (堆积+电荷共享畸变谱)" stroke="#f43f5e" strokeWidth={1.5} dot={false} strokeDasharray="5 5" />
+                    <ReferenceLine x={params.contrastAgent === 'iodine' ? 33 : params.contrastAgent === 'gadolinium' ? 50 : 90} stroke="#fbbf24" strokeDasharray="3 3" label={{ value: 'K-edge', fill: '#fbbf24', fontSize: 9, position: 'top' }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>

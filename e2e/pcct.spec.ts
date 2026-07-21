@@ -17,7 +17,7 @@ test.describe('PCCT (Photon-Counting CT) page and simulator interactions', () =>
   test('renders parallel simulator slices', async ({ page }) => {
     // EID vs PCCT Canvas renderers
     const canvases = page.locator('canvas');
-    await expect(canvases).toHaveCount(2);
+    await expect(canvases).toHaveCount(3);
   });
 
   test('switches tabs and checks panels', async ({ page }) => {
