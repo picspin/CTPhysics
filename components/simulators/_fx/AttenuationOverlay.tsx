@@ -1,8 +1,8 @@
 import * as THREE from 'three';
+import { Tissue } from '@/types';
 import {
   calculateLinearAttenuationCoefficient,
   calculateHounsfieldUnit,
-  Tissue,
 } from '@/utils/physics-calculations';
 
 /**
@@ -24,12 +24,12 @@ import {
 // Tissue definitions matching the simulator's phantom cross-section.
 // Density in g/cm³, zeff is approximate effective atomic number.
 const TISSUES = {
-  air: { id: 'air', density: 0.001, zeff: 7.6 },
-  fat: { id: 'fat', density: 0.92, zeff: 6.0 },
-  soft: { id: 'soft', density: 1.06, zeff: 7.4 },
-  lung: { id: 'lung', density: 0.25, zeff: 7.4 },
-  marrow: { id: 'marrow', density: 1.0, zeff: 7.4 },
-  bone: { id: 'bone', density: 1.85, zeff: 13.8 },
+  air: { id: 'air', name: 'Air', density: 0.001, zeff: 7.6 },
+  fat: { id: 'fat', name: 'Fat', density: 0.92, zeff: 6.0 },
+  soft: { id: 'soft', name: 'Soft Tissue', density: 1.06, zeff: 7.4 },
+  lung: { id: 'lung', name: 'Lung', density: 0.25, zeff: 7.4 },
+  marrow: { id: 'marrow', name: 'Bone Marrow', density: 1.0, zeff: 7.4 },
+  bone: { id: 'bone', name: 'Cortical Bone', density: 1.85, zeff: 13.8 },
 } as const satisfies Record<string, Tissue>;
 
 const RES = 128;
