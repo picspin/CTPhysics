@@ -10,6 +10,8 @@ import { Card } from '@/components/ui/Card';
 import { createProceduralEnvironment } from '@/utils/three/proceduralEnvironment';
 import { createMedicalLightingRig } from '@/utils/three/sceneLighting';
 import { createScannerMaterials } from '@/utils/three/scannerMaterials';
+import { createParametricPhantomMesh } from '@/utils/three/parametricPhantom';
+import { createAttenuationOverlay } from './_fx/AttenuationOverlay';
 
 const HelicalCTSimulator: React.FC = () => {
   // --- State ---
@@ -42,6 +44,8 @@ const HelicalCTSimulator: React.FC = () => {
     env: ReturnType<typeof createProceduralEnvironment>;
     lighting: ReturnType<typeof createMedicalLightingRig>;
     materials: ReturnType<typeof createScannerMaterials>;
+    phantom: THREE.Group;
+    attenuation: ReturnType<typeof createAttenuationOverlay>;
   }>();
 
   // --- Helper: Log ---
@@ -177,18 +181,109 @@ const HelicalCTSimulator: React.FC = () => {
     chassis.receiveShadow = true;
     tableGroup.add(chassis);
 
-    // Phantom (placeholder cylinder; replaced by SDF body in Phase 3).
-    const phGeo = new THREE.CylinderGeometry(0.5, 0.5, 1.5, 32);
-    const phantom = new THREE.Mesh(phGeo, materials.skinPhantom);
+    // Phantom (parametric body — head/chest/abdomen/pelvis/legs as
+    // stretched spheres). Reads as a continuous human silhouette at
+    // simulator viewing distance without paying the marching-cubes cost.
+    const phantom = createParametricPhantomMesh({
+      tier: 'standard',
+      material: materials.skinPhantom,
+    });
+    // Position so the torso center sits on the bed top (y = 0).
+    phantom.position.y = 0.05;
     phantom.castShadow = true;
-    phantom.receiveShadow = true;
-    phantom.rotation.x = Math.PI / 2;
-    phantom.position.y = 0.3;
+    phantom.traverse((obj) => {
+      const m = obj as THREE.Mesh;
+      if (m.isMesh) {
+        m.castShadow = true;
+        m.receiveShadow = true;
+      }
+    });
     tableGroup.add(phantom);
 
     tableGroup.position.y = -0.5;
     tableGroup.position.z = 4;
     scene.add(tableGroup);
+
+    // Attenuation overlay — exploded-view slice plane that visualizes the
+    // HU field at the current kV. Moved OUTSIDE the gantry to the front-
+    // right of the bore (positive Z toward camera, positive X to the right)
+    // so it stays clearly visible from the default orbit camera angle
+    // (5, 3, 6) instead of being hidden behind the bore / detector.
+    //
+    // The plane is horizontal (rotation.x = -PI/2) so it reads as a
+    // floating diagnostic slice, with a thin leader line back to the
+    // phantom's chest.
+    const initialKv = params.kv;
+    const attenuation = createAttenuationOverlay(initialKv, {
+      width: 1.4,
+      depth: 1.4,
+    });
+    // Position is in WORLD space. We place the slice in front of and
+    // slightly above the gantry bore so it sits in the viewport's
+    // foreground without intersecting the bore, the bed, or the phantom.
+    // The plane is horizontal (rotation.x = -PI/2) so it reads as a
+    // floating diagnostic slice.
+    attenuation.mesh.position.set(2.5, 1.4, 4.5);
+    attenuation.mesh.rotation.set(-Math.PI / 2, 0, 0);
+
+    // Leader line: from slice center to chest center. Chest in world
+    // space: tableGroup.z=4 + phantom.rotation.x=PI/2 mapping local y→z,
+    // plus phantom.position.y=0.05 and tableGroup y=-0.5 → chest ≈
+    // (0,-0.45,5). We connect slice to chest with a 2-point line that
+    // stays in front of the bore in the foreground.
+    const leaderPoints: THREE.Vector3[] = [
+      new THREE.Vector3(2.5, 1.4, 4.5),     // slice center
+      new THREE.Vector3(0, -0.45, 5.0),     // chest center
+    ];
+    const leaderGeo = new THREE.BufferGeometry().setFromPoints(leaderPoints);
+    const leaderMat = new THREE.LineBasicMaterial({
+      color: 0xffaa66,
+      transparent: true,
+      opacity: 0.6,
+    });
+    const leaderLine = new THREE.Line(leaderGeo, leaderMat);
+    leaderLine.name = 'AttenuationLeader';
+
+    // Sprite label — uses CanvasTexture (no new deps) to draw a small
+    // "Slice @ kV=120" tag floating above the slice plane.
+    function makeLabelSprite(text: string): THREE.Sprite {
+      const c = document.createElement('canvas');
+      c.width = 256;
+      c.height = 64;
+      const ctx = c.getContext('2d')!;
+      ctx.fillStyle = 'rgba(10, 13, 18, 0.85)';
+      ctx.fillRect(0, 0, c.width, c.height);
+      ctx.strokeStyle = '#ffaa66';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(1, 1, c.width - 2, c.height - 2);
+      ctx.fillStyle = '#ffaa66';
+      ctx.font = 'bold 28px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, c.width / 2, c.height / 2);
+      const tex = new THREE.CanvasTexture(c);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      const mat = new THREE.SpriteMaterial({
+        map: tex,
+        transparent: true,
+        depthWrite: false,
+      });
+      const sprite = new THREE.Sprite(mat);
+      sprite.scale.set(1.4, 0.35, 1);
+      sprite.userData.dispose = () => {
+        tex.dispose();
+        mat.dispose();
+      };
+      return sprite;
+    }
+    const label = makeLabelSprite(`Slice @ ${initialKv} kV`);
+    label.position.set(2.5, 2.2, 4.5);
+
+    // Mount overlay + leader + label to the scene directly (NOT tableGroup)
+    // so the slice stays put during scanning — it's a UI/exploded view.
+    scene.add(attenuation.mesh);
+    scene.add(leaderLine);
+    scene.add(label);
 
     // 4. Helix Visualization
     // Create a spiral line
@@ -229,6 +324,8 @@ const HelicalCTSimulator: React.FC = () => {
       env,
       lighting,
       materials,
+      phantom,
+      attenuation,
     };
 
     const currentContainer = containerRef.current;
@@ -237,6 +334,13 @@ const HelicalCTSimulator: React.FC = () => {
     return () => {
       env.dispose();
       lighting.dispose();
+      attenuation.dispose();
+      // Dispose exploded-view leader line + label (CanvasTexture/Sprite).
+      leaderGeo.dispose();
+      leaderMat.dispose();
+      if (typeof label.userData.dispose === 'function') {
+        label.userData.dispose();
+      }
       // Dispose shared materials.
       for (const m of Object.values(materials)) {
         m.dispose();
@@ -246,6 +350,9 @@ const HelicalCTSimulator: React.FC = () => {
       }
       renderer.dispose();
     };
+    // params.kv is read once for the initial attenuation bake; later
+    // changes are handled by the param-change effect below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // --- Update Helix based on Pitch ---
@@ -402,6 +509,9 @@ const HelicalCTSimulator: React.FC = () => {
 
     if (sceneRef.current) {
       sceneRef.current.laser.visible = params.scanning;
+      // Re-bake the attenuation overlay when kV changes — the slice plane
+      // shows the same anatomy but its coloring shifts as energy changes.
+      sceneRef.current.attenuation.updateAttenuationTexture(params.kv);
     }
   }, [params, drawPhantom]);
 
