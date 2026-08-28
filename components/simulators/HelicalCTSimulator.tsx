@@ -12,6 +12,8 @@ import { createMedicalLightingRig } from '@/utils/three/sceneLighting';
 import { createScannerMaterials } from '@/utils/three/scannerMaterials';
 import { createParametricPhantomMesh } from '@/utils/three/parametricPhantom';
 import { createAttenuationOverlay } from './_fx/AttenuationOverlay';
+import { createPostFX } from '@/utils/three/postFX';
+import { createXRayBeam } from '@/utils/three/xrayBeam';
 
 const HelicalCTSimulator: React.FC = () => {
   // --- State ---
@@ -46,6 +48,8 @@ const HelicalCTSimulator: React.FC = () => {
     materials: ReturnType<typeof createScannerMaterials>;
     phantom: THREE.Group;
     attenuation: ReturnType<typeof createAttenuationOverlay>;
+    postFX: ReturnType<typeof createPostFX>;
+    xrayBeam: ReturnType<typeof createXRayBeam>;
   }>();
 
   // --- Helper: Log ---
@@ -82,6 +86,16 @@ const HelicalCTSimulator: React.FC = () => {
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
+
+    // PostFX chain (Phase 2): Bloom + SSAO + SMAA + Vignette. Created
+    // before sceneRef assignment so it's available on first render.
+    const postFX = createPostFX(renderer, scene, camera, {
+      bloomIntensity: 0.6,
+      bloomThreshold: 0.85,
+      ssaoEnabled: true,
+      ssaoRadius: 0.5,
+      vignetteDarkness: 0.45,
+    });
 
     // PBR materials (shared across meshes in the scene).
     const materials = createScannerMaterials();
@@ -304,13 +318,30 @@ const HelicalCTSimulator: React.FC = () => {
     scene.add(helixLine);
 
 
-    // Laser
-    const laserGeo = new THREE.PlaneGeometry(0.05, 5);
-    const laserMat = new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide, transparent: true, opacity: 0.5 });
-    const laser = new THREE.Mesh(laserGeo, laserMat);
-    laser.rotation.z = Math.PI / 2;
-    laser.visible = false;
-    scene.add(laser);
+    // Laser — Phase 2: replaced the red PlaneGeometry sheet with a true
+    // cone beam (ConeGeometry + custom ShaderMaterial, additive). Origin
+    // is the world position of the tube housing window; target is the
+    // detector face. Both positions live inside gantryGroup which rotates
+    // each frame, so we capture references and re-align in the animate
+    // loop (see lookAtWorld below).
+    //
+    // We use the tube's LOCAL position (0, 2, 0) inside gantryGroup; we
+    // sample world positions with `.getWorldPosition()` per frame so the
+    // beam rotates with the gantry.
+    const tubeLocalPos = tube.position.clone();
+    const detLocalPos = det.position.clone();
+
+    // Initial world positions (gantryGroup hasn't rotated yet).
+    const initialTubeWorld = tubeLocalPos.clone();
+    const initialDetWorld = detLocalPos.clone();
+
+    const xrayBeam = createXRayBeam(initialTubeWorld, initialDetWorld);
+    xrayBeam.setEnabled(false);
+    scene.add(xrayBeam.mesh);
+
+    // Keep a stable alias so downstream code (param effect) can still
+    // toggle visibility through a familiar name.
+    const laser = xrayBeam.mesh;
 
     sceneRef.current = {
       scene,
@@ -326,12 +357,29 @@ const HelicalCTSimulator: React.FC = () => {
       materials,
       phantom,
       attenuation,
+      postFX,
+      xrayBeam,
     };
 
     const currentContainer = containerRef.current;
 
+    // Resize handler — pipes window resize events through to both the
+    // WebGL renderer and the postFX composer (which keeps its internal
+    // render targets in sync).
+    const onResize = () => {
+      if (!currentContainer) return;
+      const w = currentContainer.clientWidth;
+      const h = currentContainer.clientHeight;
+      renderer.setSize(w, h);
+      postFX.resize(w, h, window.devicePixelRatio);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    };
+    window.addEventListener('resize', onResize);
+
     // Cleanup
     return () => {
+      window.removeEventListener('resize', onResize);
       env.dispose();
       lighting.dispose();
       attenuation.dispose();
@@ -341,6 +389,9 @@ const HelicalCTSimulator: React.FC = () => {
       if (typeof label.userData.dispose === 'function') {
         label.userData.dispose();
       }
+      // Phase 2: dispose postFX chain + X-ray beam.
+      xrayBeam.dispose();
+      postFX.dispose();
       // Dispose shared materials.
       for (const m of Object.values(materials)) {
         m.dispose();
@@ -467,11 +518,26 @@ const HelicalCTSimulator: React.FC = () => {
 
   // --- Animation Loop ---
   useEffect(() => {
+    // Track elapsed time so the beam's shader uTime uniform can pulse.
+    let elapsed = 0;
+    const start = performance.now();
+    const tmpTube = new THREE.Vector3();
+    const tmpDet = new THREE.Vector3();
+    const localTube = new THREE.Vector3(0, 2, 0);
+    const localDet = new THREE.Vector3(0, -2, 0);
+
     const animate = () => {
       requestRef.current = requestAnimationFrame(animate);
+      elapsed = (performance.now() - start) / 1000;
 
       if (sceneRef.current) {
-        const { renderer, scene, camera, gantryGroup, tableGroup, controls } = sceneRef.current;
+        const {
+          gantryGroup,
+          tableGroup,
+          controls,
+          postFX,
+          xrayBeam,
+        } = sceneRef.current;
         controls.update();
 
         if (params.scanning) {
@@ -487,7 +553,19 @@ const HelicalCTSimulator: React.FC = () => {
           }
         }
 
-        renderer.render(scene, camera);
+        // Phase 2: re-aim the XR cone beam each frame so it tracks the
+        // rotating gantry. Tube + detector both live at fixed LOCAL
+        // positions inside gantryGroup — we transform those locals
+        // through gantryGroup.matrixWorld to get the current world
+        // endpoints.
+        gantryGroup.updateMatrixWorld();
+        tmpTube.copy(localTube).applyMatrix4(gantryGroup.matrixWorld);
+        tmpDet.copy(localDet).applyMatrix4(gantryGroup.matrixWorld);
+        xrayBeam.lookAt(tmpTube, tmpDet);
+        xrayBeam.update(elapsed);
+
+        // Phase 2: render through the postFX composer.
+        postFX.composer.render();
       }
 
       // Draw 2D continuously if scanning or just once if static (handled by effect below)
@@ -508,7 +586,10 @@ const HelicalCTSimulator: React.FC = () => {
     setDose(parseFloat(newDose.toFixed(1)));
 
     if (sceneRef.current) {
+      // Phase 2: laser alias points at the XR cone beam mesh now.
       sceneRef.current.laser.visible = params.scanning;
+      sceneRef.current.xrayBeam.setEnabled(params.scanning);
+      sceneRef.current.xrayBeam.setEnergy(params.kv);
       // Re-bake the attenuation overlay when kV changes — the slice plane
       // shows the same anatomy but its coloring shifts as energy changes.
       sceneRef.current.attenuation.updateAttenuationTexture(params.kv);
