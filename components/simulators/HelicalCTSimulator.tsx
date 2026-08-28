@@ -7,6 +7,9 @@ import { Button } from '@/components/ui/Button';
 import { Slider } from '@/components/ui/Slider';
 import { Select } from '@/components/ui/Select';
 import { Card } from '@/components/ui/Card';
+import { createProceduralEnvironment } from '@/utils/three/proceduralEnvironment';
+import { createMedicalLightingRig } from '@/utils/three/sceneLighting';
+import { createScannerMaterials } from '@/utils/three/scannerMaterials';
 
 const HelicalCTSimulator: React.FC = () => {
   // --- State ---
@@ -36,6 +39,9 @@ const HelicalCTSimulator: React.FC = () => {
     helixLine: THREE.Line;
     laser: THREE.Mesh;
     controls: OrbitControls;
+    env: ReturnType<typeof createProceduralEnvironment>;
+    lighting: ReturnType<typeof createMedicalLightingRig>;
+    materials: ReturnType<typeof createScannerMaterials>;
   }>();
 
   // --- Helper: Log ---
@@ -52,8 +58,8 @@ const HelicalCTSimulator: React.FC = () => {
 
     // Scene Setup
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x111111);
-    scene.fog = new THREE.Fog(0x111111, 5, 15);
+    scene.background = new THREE.Color(0x0a0d12);
+    scene.fog = new THREE.Fog(0x0a0d12, 8, 22);
 
     const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 100);
     camera.position.set(5, 3, 6);
@@ -61,60 +67,121 @@ const HelicalCTSimulator: React.FC = () => {
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(window.devicePixelRatio);
+    // PBR-correct tone mapping (lifted from anatomy viewer).
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.02;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     containerRef.current.appendChild(renderer.domElement);
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
 
-    // Lighting
-    const ambient = new THREE.AmbientLight(0x404040, 2);
-    scene.add(ambient);
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1);
-    dirLight.position.set(5, 10, 7);
-    scene.add(dirLight);
+    // PBR materials (shared across meshes in the scene).
+    const materials = createScannerMaterials();
+
+    // Procedural environment for IBL — needed by metalness / clearcoat /
+    // transmission / sheen channels to render correctly.
+    const env = createProceduralEnvironment(renderer);
+    scene.environment = env.texture;
+
+    // Three-point + hemisphere lighting rig.
+    const lighting = createMedicalLightingRig();
+    lighting.configureKeyShadow();
+    scene.add(lighting.group);
 
     // Models
-    // 1. Gantry Housing
-    const coverGeo = new THREE.TorusGeometry(3.2, 1.2, 16, 50);
-    const coverMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.4 });
-    const housing = new THREE.Mesh(coverGeo, coverMat);
+    // 1. Gantry Housing — polished chrome (PBR). The ring is the outer
+    // torus; the inside surface (bore) is also chrome but with higher
+    // roughness so it doesn't read as a mirror.
+    const coverGeo = new THREE.TorusGeometry(3.2, 1.2, 32, 64);
+    const housing = new THREE.Mesh(coverGeo, materials.gantryChrome);
+    housing.castShadow = true;
+    housing.receiveShadow = true;
     scene.add(housing);
+
+    // Inner bore ring (slightly smaller torus inside the housing) —
+    // brushed-steel feel.
+    const boreGeo = new THREE.TorusGeometry(2.4, 0.85, 24, 48);
+    const bore = new THREE.Mesh(boreGeo, materials.gantryBore);
+    bore.castShadow = true;
+    bore.receiveShadow = true;
+    scene.add(bore);
 
     // Floor
     const floorGeo = new THREE.PlaneGeometry(20, 20);
-    const floorMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8 });
-    const floor = new THREE.Mesh(floorGeo, floorMat);
+    const floor = new THREE.Mesh(floorGeo, materials.floor);
     floor.rotation.x = -Math.PI / 2;
     floor.position.y = -3;
+    floor.receiveShadow = true;
     scene.add(floor);
 
-    // 2. Rotating Gantry
+    // 2. Rotating Gantry (inner ring + tube + detector assembly).
     const gantryGroup = new THREE.Group();
-    const ringGeo = new THREE.TorusGeometry(2.5, 0.2, 16, 100);
-    const ringMat = new THREE.MeshBasicMaterial({ color: 0x333333 });
-    const ring = new THREE.Mesh(ringGeo, ringMat);
+    const ringGeo = new THREE.TorusGeometry(2.5, 0.2, 24, 100);
+    const ring = new THREE.Mesh(ringGeo, materials.gantryBore);
+    ring.castShadow = true;
     gantryGroup.add(ring);
 
-    const tube = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.8, 0.6), new THREE.MeshStandardMaterial({ color: 0xffaa00 }));
+    const tube = new THREE.Mesh(
+      new THREE.BoxGeometry(0.6, 0.8, 0.6),
+      materials.tubeHousing,
+    );
+    tube.castShadow = true;
     tube.position.y = 2.0;
     gantryGroup.add(tube);
 
-    const det = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.3, 0.8), new THREE.MeshStandardMaterial({ color: 0x0088ff }));
+    // X-ray tube window (glass + slight warm emissive) attached to tube
+    // housing face. Small disc, oriented to point inward toward bore.
+    const tubeGlass = new THREE.Mesh(
+      new THREE.CircleGeometry(0.18, 32),
+      materials.tubeGlass,
+    );
+    tubeGlass.position.set(0, 0, 0.31);
+    tube.add(tubeGlass);
+
+    const det = new THREE.Mesh(
+      new THREE.BoxGeometry(1.2, 0.3, 0.8),
+      materials.detectorHousing,
+    );
+    det.castShadow = true;
     det.position.y = -2.0;
     gantryGroup.add(det);
+
+    // Detector scintillator face — matte dark panel on the inside of the
+    // detector housing. Reads as a flat dark plate facing the bore.
+    const detPanel = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.1, 0.7),
+      materials.detectorPanel,
+    );
+    detPanel.position.set(0, 0, 0.41);
+    det.add(detPanel);
+
     scene.add(gantryGroup);
 
     // 3. Table & Phantom
     const tableGroup = new THREE.Group();
     const bedGeo = new THREE.BoxGeometry(1.2, 0.1, 8);
-    const bedMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
-    const bed = new THREE.Mesh(bedGeo, bedMat);
+    const bed = new THREE.Mesh(bedGeo, materials.tableVinyl);
+    bed.castShadow = true;
+    bed.receiveShadow = true;
     tableGroup.add(bed);
 
+    // Table chassis (the structural rail beneath the vinyl).
+    const chassisGeo = new THREE.BoxGeometry(0.8, 0.18, 7.6);
+    const chassis = new THREE.Mesh(chassisGeo, materials.tableChassis);
+    chassis.position.y = -0.14;
+    chassis.castShadow = true;
+    chassis.receiveShadow = true;
+    tableGroup.add(chassis);
+
+    // Phantom (placeholder cylinder; replaced by SDF body in Phase 3).
     const phGeo = new THREE.CylinderGeometry(0.5, 0.5, 1.5, 32);
-    const phMat = new THREE.MeshStandardMaterial({ color: 0xdddddd });
-    const phantom = new THREE.Mesh(phGeo, phMat);
+    const phantom = new THREE.Mesh(phGeo, materials.skinPhantom);
+    phantom.castShadow = true;
+    phantom.receiveShadow = true;
     phantom.rotation.x = Math.PI / 2;
     phantom.position.y = 0.3;
     tableGroup.add(phantom);
@@ -150,12 +217,30 @@ const HelicalCTSimulator: React.FC = () => {
     laser.visible = false;
     scene.add(laser);
 
-    sceneRef.current = { scene, camera, renderer, gantryGroup, tableGroup, helixLine, laser, controls };
+    sceneRef.current = {
+      scene,
+      camera,
+      renderer,
+      gantryGroup,
+      tableGroup,
+      helixLine,
+      laser,
+      controls,
+      env,
+      lighting,
+      materials,
+    };
 
     const currentContainer = containerRef.current;
 
     // Cleanup
     return () => {
+      env.dispose();
+      lighting.dispose();
+      // Dispose shared materials.
+      for (const m of Object.values(materials)) {
+        m.dispose();
+      }
       if (currentContainer) {
         currentContainer.removeChild(renderer.domElement);
       }
