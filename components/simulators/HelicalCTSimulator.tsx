@@ -48,6 +48,7 @@ const HelicalCTSimulator: React.FC = () => {
     materials: ReturnType<typeof createScannerMaterials>;
     phantom: THREE.Group;
     attenuation: ReturnType<typeof createAttenuationOverlay>;
+    attenuationLabel: THREE.Sprite;
     postFX: ReturnType<typeof createPostFX>;
     xrayBeam: ReturnType<typeof createXRayBeam>;
   }>();
@@ -265,16 +266,6 @@ const HelicalCTSimulator: React.FC = () => {
       c.width = 256;
       c.height = 64;
       const ctx = c.getContext('2d')!;
-      ctx.fillStyle = 'rgba(10, 13, 18, 0.85)';
-      ctx.fillRect(0, 0, c.width, c.height);
-      ctx.strokeStyle = '#ffaa66';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(1, 1, c.width - 2, c.height - 2);
-      ctx.fillStyle = '#ffaa66';
-      ctx.font = 'bold 28px monospace';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(text, c.width / 2, c.height / 2);
       const tex = new THREE.CanvasTexture(c);
       tex.colorSpace = THREE.SRGBColorSpace;
       const mat = new THREE.SpriteMaterial({
@@ -282,8 +273,24 @@ const HelicalCTSimulator: React.FC = () => {
         transparent: true,
         depthWrite: false,
       });
+      function draw(current: string): void {
+        ctx.fillStyle = 'rgba(10, 13, 18, 0.85)';
+        ctx.fillRect(0, 0, c.width, c.height);
+        ctx.strokeStyle = '#ffaa66';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(1, 1, c.width - 2, c.height - 2);
+        ctx.fillStyle = '#ffaa66';
+        ctx.font = 'bold 28px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(current, c.width / 2, c.height / 2);
+        tex.needsUpdate = true;
+      }
+      draw(text);
       const sprite = new THREE.Sprite(mat);
       sprite.scale.set(1.4, 0.35, 1);
+      // setText re-bakes the canvas so the label can track kv slider changes.
+      sprite.userData.setText = (next: string) => draw(next);
       sprite.userData.dispose = () => {
         tex.dispose();
         mat.dispose();
@@ -357,6 +364,7 @@ const HelicalCTSimulator: React.FC = () => {
       materials,
       phantom,
       attenuation,
+      attenuationLabel: label,
       postFX,
       xrayBeam,
     };
@@ -593,6 +601,12 @@ const HelicalCTSimulator: React.FC = () => {
       // Re-bake the attenuation overlay when kV changes — the slice plane
       // shows the same anatomy but its coloring shifts as energy changes.
       sceneRef.current.attenuation.updateAttenuationTexture(params.kv);
+      // Re-render the floating "Slice @ kV" label so it tracks the slider.
+      const setLabel = sceneRef.current.attenuationLabel.userData
+        .setText as (s: string) => void;
+      if (typeof setLabel === 'function') {
+        setLabel(`Slice @ ${params.kv} kV`);
+      }
     }
   }, [params, drawPhantom]);
 
