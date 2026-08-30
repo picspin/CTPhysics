@@ -70,11 +70,14 @@ const HelicalCTSimulator: React.FC = () => {
     scene.fog = new THREE.Fog(0x0a0d12, 8, 22);
 
     const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 100);
-    camera.position.set(5, 3, 6);
+    // Pulled back and raised so the full gantry + table + phantom fit
+    // inside the viewport (previous (5, 3, 6) cropped the patient to the
+    // bottom edge). Target is set below after OrbitControls is created.
+    camera.position.set(6, 4.5, 8);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(width, height);
-    renderer.setPixelRatio(window.devicePixelRatio);
     // PBR-correct tone mapping (lifted from anatomy viewer).
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.02;
@@ -86,6 +89,11 @@ const HelicalCTSimulator: React.FC = () => {
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
+    // Scene centroid: the bore sits at (0,0,0) but the table extends along
+    // +Z to ~+6. Aim the orbit pivot at the table mid-point so dragging
+    // keeps both the gantry and the patient in frame.
+    controls.target.set(0, 0.5, 3);
+    controls.update();
 
     // PostFX chain (Phase 2): Bloom + SSAO + SMAA + Vignette. Created
     // before sceneRef assignment so it's available on first render.
@@ -363,23 +371,57 @@ const HelicalCTSimulator: React.FC = () => {
 
     const currentContainer = containerRef.current;
 
-    // Resize handler — pipes window resize events through to both the
-    // WebGL renderer and the postFX composer (which keeps its internal
-    // render targets in sync).
-    const onResize = () => {
+    // Resize handler — pipes resize events through to both the WebGL
+    // renderer and the postFX composer. Listens to BOTH window resize
+    // and parent re-layout (e.g. sidebar toggle, font-load reflow) via
+    // ResizeObserver; window-only would miss late layout shifts.
+    //
+    // NOTE: we run the FIRST applySize inside requestAnimationFrame so
+    // that the parent has finished its flex/grid layout pass. Reading
+    // clientWidth synchronously here can return pre-layout values (e.g.
+    // 1002 px before the flex column settles to 501 px), which would
+    // persist as a stale inline canvas style and overflow the parent.
+    const applySize = () => {
       if (!currentContainer) return;
-      const w = currentContainer.clientWidth;
-      const h = currentContainer.clientHeight;
+      // Re-resolve the container on every tick — React StrictMode may
+      // re-mount the parent div while the effect closure still holds a
+      // stale reference, which would prevent the observer from firing.
+      const live = containerRef.current ?? currentContainer;
+      const w = live.clientWidth;
+      const h = live.clientHeight;
+      if (w === 0 || h === 0) return;
+      const dpr = Math.min(window.devicePixelRatio, 2);
+      renderer.setPixelRatio(dpr);
+      // updateStyle = true (default) so the canvas inline style is
+      // always refreshed. Without this, a 1002 px initial measurement
+      // persists as `style="width:1002px"` even after the parent flex
+      // column settles to 501 px and overflows the canvas.
       renderer.setSize(w, h);
-      postFX.resize(w, h, window.devicePixelRatio);
+      postFX.resize(w, h, dpr);
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
     };
-    window.addEventListener('resize', onResize);
+    applySize();
+    requestAnimationFrame(() => applySize());
+    const ro = new ResizeObserver(applySize);
+    ro.observe(currentContainer);
+    window.addEventListener('resize', applySize);
+    // Safety-net poll for the first 3 s — ResizeObserver doesn't always
+    // fire when a flex/grid parent resizes due to sibling reflow rather
+    // than its own intrinsic size change. Re-applying size cheaply on a
+    // short interval catches the stale 1002 px → 501 px case until
+    // layout has truly settled.
+    let polls = 0;
+    const pollId = window.setInterval(() => {
+      applySize();
+      if (++polls >= 12) window.clearInterval(pollId);
+    }, 250);
 
     // Cleanup
     return () => {
-      window.removeEventListener('resize', onResize);
+      window.clearInterval(pollId);
+      ro.disconnect();
+      window.removeEventListener('resize', applySize);
       env.dispose();
       lighting.dispose();
       attenuation.dispose();
