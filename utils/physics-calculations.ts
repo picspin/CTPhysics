@@ -40,11 +40,34 @@ export const simulateBeamHardening = (
 };
 
 // Dose calculations
-export const calculateCTDI = (
-  mAs: number,
-  kVp: number,
-  pitch: number = 1
-): number => {
+//
+// IMPORTANT: this signature was previously positional (mAs, kVp, pitch) and
+// the dose page called it with the args SWAPPED, producing nonsense CTDI
+// values everywhere. We deliberately switched to a NAMED-OPTIONS object so
+// the same mistake cannot recur — there is no longer any positional
+// ambiguity for the compiler to enforce.
+//
+// Reference for the simplified relationship:
+//   CTDIvol ≈ 0.01 * mAs * (kVp/120)^2.5 / pitch   (mGy)
+//
+// This is an illustrative polynomial fit, NOT a vendor-calibrated value.
+// For real protocol planning, use the manufacturer's CTDIw / pitch tables
+// or AAPM Report 96 phantom measurements.
+export interface CTDIInput {
+  mAs: number;
+  kVp: number;
+  pitch?: number; // default 1.0
+}
+export const calculateCTDI = (input: CTDIInput): number => {
+  const mAs = input.mAs;
+  const kVp = input.kVp;
+  const pitch = input.pitch ?? 1.0;
+  if (!Number.isFinite(mAs) || !Number.isFinite(kVp) || !Number.isFinite(pitch)) {
+    throw new Error('calculateCTDI: mAs, kVp, pitch must be finite numbers');
+  }
+  if (pitch <= 0) {
+    throw new Error('calculateCTDI: pitch must be > 0');
+  }
   // Simplified CTDI calculation
   const baseCTDI = 0.01 * mAs * (kVp / 120) ** 2.5;
   return baseCTDI / pitch;
@@ -69,7 +92,9 @@ export const performDoseCalculation = (
   scanLength: number,
   kFactor?: number
 ): DoseCalculation => {
-  const ctdi = params.ctdi || calculateCTDI(params.mAs, params.kVp, params.pitch);
+  const ctdi = params.ctdi !== undefined
+    ? params.ctdi
+    : calculateCTDI({ mAs: params.mAs, kVp: params.kVp, pitch: params.pitch });
   const dlp = calculateDLP(ctdi, scanLength);
   const effectiveDose = calculateEffectiveDose(dlp, kFactor);
 

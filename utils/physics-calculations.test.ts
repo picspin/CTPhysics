@@ -78,10 +78,42 @@ describe('physics-calculations', () => {
       const kVp = 120;
       const pitch = 1.0;
       // baseCTDI = 0.01 * 200 * (120/120)^2.5 = 2.0
-      expect(calculateCTDI(mAs, kVp, pitch)).toBeCloseTo(2.0, 5);
+      expect(calculateCTDI({ mAs, kVp, pitch })).toBeCloseTo(2.0, 5);
 
       // test with pitch 2
-      expect(calculateCTDI(mAs, kVp, 2.0)).toBeCloseTo(1.0, 5);
+      expect(calculateCTDI({ mAs, kVp, pitch: 2.0 })).toBeCloseTo(1.0, 5);
+    });
+
+    // Regression test for the dose-page bug where calculateCTDI was
+    // called positionally as (kVp, mAs, pitch). The polynomial
+    //   f(a,b) = 0.01 * a * (b/120)^2.5
+    // is asymmetric in (a,b): the first arg enters linearly, the second
+    // as an exponent. Swapping (mAs, kVp) for a (mAs=100, kVp=140)
+    // call drops the value from ~1.47 to ~0.93. We pin both values
+    // below — if anyone reverts the signature to positional AND
+    // re-introduces the swap at the call site, the produced value
+    // will land in the swapped range and trip the assertions.
+    it('regression: CTDI mAs-vs-kVp asymmetry pins the correct arg order', () => {
+      // baseCTDI = 0.01 * 100 * (140/120)^2.5 ≈ 1.47 mGy
+      const correct = calculateCTDI({ mAs: 100, kVp: 140, pitch: 1.0 });
+      expect(correct).toBeCloseTo(1.47, 2);
+
+      // The OLD swapped call calculateCTDI(kVp=100, mAs=140) would
+      // have produced 0.01 * 140 * (100/120)^2.5 ≈ 0.89.
+      const wouldBeBuggyValue = calculateCTDI({ mAs: 140, kVp: 100, pitch: 1.0 });
+      expect(wouldBeBuggyValue).toBeCloseTo(0.89, 1);
+
+      // The two differ by ~37%; that's the regression net.
+      expect(correct).not.toBeCloseTo(wouldBeBuggyValue, 1);
+      // And the difference is more than 0.1 mGy (well above tolerance).
+      expect(Math.abs(correct - wouldBeBuggyValue)).toBeGreaterThan(0.1);
+    });
+
+    it('calculateCTDI rejects non-finite or non-positive-pitch inputs', () => {
+      expect(() => calculateCTDI({ mAs: NaN, kVp: 120 })).toThrow();
+      expect(() => calculateCTDI({ mAs: 100, kVp: Infinity })).toThrow();
+      expect(() => calculateCTDI({ mAs: 100, kVp: 120, pitch: 0 })).toThrow();
+      expect(() => calculateCTDI({ mAs: 100, kVp: 120, pitch: -1 })).toThrow();
     });
 
     it('calculates DLP correctly', () => {

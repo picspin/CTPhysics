@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import SimulatorContainer from '@/components/ui/SimulatorContainer';
 import { Select } from '@/components/ui/Select';
 import { Slider } from '@/components/ui/Slider';
@@ -22,6 +24,8 @@ import {
 import { calculatePCCTSpectrum, calculatePCCTMetrics, getMaterialAttenuation, generatePCCTSinogramData, PCCTParams, getKEdgeCurveData } from '@/utils/pcct-physics';
 
 import { useLanguage } from '@/context/LanguageContext';
+import { createDetectorMaterials, disposeDetectorMaterials } from '@/utils/three/detectorMaterials';
+import { createPCDDetector, DetectorViewMode, PCDDetectorStats } from './_fx/PCDDetector';
 
 const PCCTSimulator: React.FC = () => {
   const { t } = useLanguage();
@@ -41,13 +45,45 @@ const PCCTSimulator: React.FC = () => {
     contrastAgent: 'iodine',
   });
 
-  const [activeTab, setActiveTab] = useState<'acquisition' | 'detector' | 'decomposition'>('acquisition');
+  const [activeTab, setActiveTab] = useState<'acquisition' | 'detector' | '3dview' | 'decomposition'>('acquisition');
   
   const eidCanvasRef = useRef<HTMLCanvasElement>(null);
   const pcctCanvasRef = useRef<HTMLCanvasElement>(null);
   const sinogramCanvasRef = useRef<HTMLCanvasElement>(null);
   const [selectedBin, setSelectedBin] = useState<number>(2);
   const [vmiEnergy, setVmiEnergy] = useState<number>(70); // 40, 60, 70, 100 keV
+
+  // --- 3D scene refs (Phase 6) ---
+  const det3dContainerRef = useRef<HTMLDivElement | null>(null);
+  const det3dSceneRef = useRef<{
+    scene: THREE.Scene;
+    camera: THREE.PerspectiveCamera;
+    renderer: THREE.WebGLRenderer;
+    controls: OrbitControls;
+    detector: ReturnType<typeof createPCDDetector>;
+    materials: ReturnType<typeof createDetectorMaterials>;
+  }>();
+  const det3dFrameRef = useRef<number>();
+  // The animation loop reads params through a ref so that moving a
+  // slider does not tear down and restart the loop on every keystroke.
+  const paramsRef = useRef<PCCTParams>(params);
+  const [detectorView, setDetectorView] = useState<DetectorViewMode>('both');
+  // Mirrors detectorView so the init effect can apply the current mode
+  // to a freshly built scene without listing it as a dependency.
+  const detectorViewRef = useRef<DetectorViewMode>('both');
+  // Which container generation the scene is attached to. Bumped whenever
+  // the 3D tab is (re)mounted, so the init effect rebuilds against the
+  // freshly mounted div rather than a detached one.
+  const [det3dMountKey, setDet3dMountKey] = useState(0);
+  const [detStats, setDetStats] = useState<PCDDetectorStats>({
+    bin1: 0,
+    bin2: 0,
+    bin3: 0,
+    subThreshold: 0,
+    pileUp: 0,
+    eidIntegral: 0,
+    eidPhotons: 0,
+  });
 
   const metrics = calculatePCCTMetrics(params);
   
@@ -277,6 +313,163 @@ const PCCTSimulator: React.FC = () => {
     }
   }, [params, metrics, activeTab, pileUpFraction, selectedBin, vmiEnergy]);
 
+  // =================================================================
+  // PHASE 6 — 3D detector-perspective scene (EID vs PCD)
+  // =================================================================
+  //
+  // The scene lives inside the "3D 视图" tab, so its container div only
+  // exists while that tab is selected. We therefore key the init effect
+  // on a mount counter that the tab's callback ref bumps — the effect
+  // runs against a div that is actually in the document, and tears the
+  // renderer down again when the user leaves the tab.
+
+  // Keep the animation loop's view of params current without restarting
+  // the loop (which would reset the elapsed-time origin every frame a
+  // slider moves).
+  useEffect(() => {
+    paramsRef.current = params;
+  }, [params]);
+
+  // The 3D container mounts/unmounts with the tab. A callback ref lets
+  // us notice the mount and trigger the init effect.
+  const attachDet3dContainer = React.useCallback((node: HTMLDivElement | null) => {
+    det3dContainerRef.current = node;
+    if (node) setDet3dMountKey((k) => k + 1);
+  }, []);
+
+  // --- Init effect: build renderer/scene/camera when the tab mounts ---
+  useEffect(() => {
+    if (activeTab !== '3dview') return;
+    const container = det3dContainerRef.current;
+    if (!container) return;
+
+    const width = container.clientWidth || 600;
+    const height = container.clientHeight || 460;
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x05080d);
+
+    const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 100);
+    camera.position.set(0, 2.6, 6.4);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(width, height);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.0;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    container.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.target.set(0, -0.2, 0);
+    controls.update();
+
+    // A modest two-light rig is enough — this scene is small, no IBL
+    // needed. The only high-metalness materials are the electrode and
+    // the septa, which read fine under ambient + key without an
+    // environment map.
+    const ambient = new THREE.AmbientLight(0xffffff, 0.55);
+    scene.add(ambient);
+    const key = new THREE.DirectionalLight(0xffe6c8, 1.4);
+    key.position.set(4, 5, 3);
+    scene.add(key);
+    const fill = new THREE.DirectionalLight(0xa6c8ff, 0.6);
+    fill.position.set(-4, 2, -2);
+    scene.add(fill);
+
+    // Subtle floor for orientation
+    const floorGeo = new THREE.PlaneGeometry(16, 10);
+    const floorMat = new THREE.MeshStandardMaterial({ color: 0x0c1014, roughness: 0.9 });
+    const floor = new THREE.Mesh(floorGeo, floorMat);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = -2.0;
+    scene.add(floor);
+
+    // Detector materials + scene
+    const detMaterials = createDetectorMaterials();
+    const detector = createPCDDetector(detMaterials);
+    scene.add(detector.group);
+    detector.setViewMode(detectorViewRef.current);
+
+    det3dSceneRef.current = {
+      scene,
+      camera,
+      renderer,
+      controls,
+      detector,
+      materials: detMaterials,
+    };
+
+    // Render one frame immediately so the panel is never blank while the
+    // animation effect is still spinning up.
+    detector.update(paramsRef.current, 0);
+    renderer.render(scene, camera);
+
+    const onResize = () => {
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      if (w === 0 || h === 0) return;
+      renderer.setSize(w, h);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    };
+    window.addEventListener('resize', onResize);
+
+    return () => {
+      window.removeEventListener('resize', onResize);
+      detector.dispose();
+      disposeDetectorMaterials(detMaterials);
+      floorGeo.dispose();
+      floorMat.dispose();
+      if (container.contains(renderer.domElement)) {
+        container.removeChild(renderer.domElement);
+      }
+      controls.dispose();
+      renderer.dispose();
+      det3dSceneRef.current = undefined;
+    };
+    // detectorView is applied via a ref + its own effect so that changing
+    // the toggle does not rebuild the whole renderer.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, det3dMountKey]);
+
+  // --- Apply the EID/PCD/both toggle to the live scene ---
+  useEffect(() => {
+    detectorViewRef.current = detectorView;
+    det3dSceneRef.current?.detector.setViewMode(detectorView);
+  }, [detectorView]);
+
+  // --- Animation loop: only runs while the 3D tab is active ---
+  useEffect(() => {
+    if (activeTab !== '3dview') return;
+    if (!det3dSceneRef.current) return;
+
+    const start = performance.now();
+    let lastStatsPush = 0;
+    const animate = () => {
+      det3dFrameRef.current = requestAnimationFrame(animate);
+      const sceneObj = det3dSceneRef.current;
+      if (!sceneObj) return;
+      const elapsed = (performance.now() - start) / 1000;
+      sceneObj.controls.update();
+      sceneObj.detector.update(paramsRef.current, elapsed);
+      sceneObj.renderer.render(sceneObj.scene, sceneObj.camera);
+
+      // Push counters to React at ~4 Hz — often enough to feel live,
+      // rare enough not to re-render the tree every frame.
+      if (elapsed - lastStatsPush > 0.25) {
+        lastStatsPush = elapsed;
+        setDetStats(sceneObj.detector.getStats());
+      }
+    };
+    det3dFrameRef.current = requestAnimationFrame(animate);
+    return () => {
+      if (det3dFrameRef.current) cancelAnimationFrame(det3dFrameRef.current);
+    };
+  }, [activeTab, det3dMountKey]);
+
   return (
     <SimulatorContainer title="光子计数 CT (PCCT) 物理孪生模拟器">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -396,6 +589,12 @@ const PCCTSimulator: React.FC = () => {
                   className={`px-3 py-1 text-xs rounded-md transition-all ${activeTab === 'detector' ? 'bg-emerald-500 text-white' : 'text-gray-400 hover:text-white'}`}
                 >
                   探测器层
+                </button>
+                <button
+                  onClick={() => setActiveTab('3dview')}
+                  className={`px-3 py-1 text-xs rounded-md transition-all ${activeTab === '3dview' ? 'bg-emerald-500 text-white' : 'text-gray-400 hover:text-white'}`}
+                >
+                  {t('pcct_tab_3d')}
                 </button>
                 <button
                   onClick={() => setActiveTab('decomposition')}
@@ -603,6 +802,141 @@ const PCCTSimulator: React.FC = () => {
                     <ReferenceLine x={params.contrastAgent === 'iodine' ? 33 : params.contrastAgent === 'gadolinium' ? 50 : 90} stroke="#fbbf24" strokeDasharray="3 3" label={{ value: 'K-edge', fill: '#fbbf24', fontSize: 9, position: 'top' }} />
                   </LineChart>
                 </ResponsiveContainer>
+              </div>
+            </Card>
+          )}
+
+          {activeTab === '3dview' && (
+            <Card className="p-4 space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-base font-bold text-emerald-400">3D 探测器层结构 (EID vs PCD)</h3>
+                <span className="text-[10px] text-gray-500 font-mono">
+                  {t('pcct_3d_hint')}
+                </span>
+              </div>
+
+              {/* EID / PCD / side-by-side view toggle */}
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-gray-500">对比视图:</span>
+                <div className="flex space-x-1 p-1 bg-white/5 rounded-lg border border-white/10">
+                  {([
+                    { mode: 'both' as const, label: '并排对比 (Both)', color: 'bg-emerald-500' },
+                    { mode: 'eid' as const, label: 'EID 间接转换', color: 'bg-purple-500' },
+                    { mode: 'pcd' as const, label: 'PCD 直接转换', color: 'bg-emerald-500' },
+                  ]).map(({ mode, label, color }) => (
+                    <button
+                      key={mode}
+                      onClick={() => setDetectorView(mode)}
+                      className={`px-3 py-1 text-xs rounded-md transition-all ${detectorView === mode ? `${color} text-white` : 'text-gray-400 hover:text-white'}`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div className="lg:col-span-2">
+                  <div
+                    ref={attachDet3dContainer}
+                    className="w-full h-[460px] bg-slate-950 rounded border border-emerald-500/20 shadow-inner relative overflow-hidden"
+                  >
+                    <div className="absolute top-2 left-2 font-mono text-[10px] text-emerald-400/70 z-10 pointer-events-none">
+                      {t('pcct_3d_caption')}
+                    </div>
+                    <div className="absolute bottom-2 right-2 font-mono text-[10px] text-gray-500 z-10 pointer-events-none">
+                      Flux: {params.photonFlux} Mcps/mm² | Noise: {params.enableElectronicNoise ? 'ON' : 'OFF'}
+                    </div>
+                  </div>
+
+                  {/* Live readout comparison — the numeric half of the
+                      same contrast the 3D scene shows geometrically. */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                    <div className="p-3 bg-purple-950/20 rounded border border-purple-500/20 space-y-1">
+                      <p className="text-[10px] font-bold text-purple-300">EID 读出：单一积分值</p>
+                      <div className="flex justify-between text-[10px] text-gray-300">
+                        <span>累计积分信号</span>
+                        <span className="font-mono text-purple-300">{Math.round(detStats.eidIntegral)} a.u.</span>
+                      </div>
+                      <div className="flex justify-between text-[10px] text-gray-300">
+                        <span>参与积分的光子数</span>
+                        <span className="font-mono text-purple-300">{detStats.eidPhotons}</span>
+                      </div>
+                      <p className="text-[9px] text-gray-500">
+                        无论入射光子能量高低，全部并入同一个数字 — 能谱信息在读出瞬间即被丢弃。
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-emerald-950/20 rounded border border-emerald-500/20 space-y-1">
+                      <p className="text-[10px] font-bold text-emerald-300">PCD 读出：按脉冲高度分桶计数</p>
+                      <div className="grid grid-cols-3 gap-1 text-[10px]">
+                        <div>
+                          <span className="text-gray-500">Bin1</span>
+                          <p className="font-mono text-[#66ff99]">{detStats.bin1}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Bin2</span>
+                          <p className="font-mono text-[#ffd166]">{detStats.bin2}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Bin3</span>
+                          <p className="font-mono text-[#ff8866]">{detStats.bin3}</p>
+                        </div>
+                      </div>
+                      <div className="flex justify-between text-[10px] text-gray-300 pt-1 border-t border-white/5">
+                        <span>低于阈值1 丢失 (电荷共享)</span>
+                        <span className="font-mono text-red-400">{detStats.subThreshold}</span>
+                      </div>
+                      <div className="flex justify-between text-[10px] text-gray-300">
+                        <span>脉冲堆积合并事件</span>
+                        <span className="font-mono text-amber-400">{detStats.pileUp}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="p-3 bg-white/5 rounded border border-purple-500/20 space-y-2">
+                    <p className="text-xs font-bold text-purple-300">{t('pcct_3d_eid_title')}</p>
+                    <ul className="text-[10px] text-gray-400 space-y-1">
+                      <li>• {t('pcct_3d_eid_l1')}</li>
+                      <li>• {t('pcct_3d_eid_l2')}</li>
+                      <li>• {t('pcct_3d_eid_l3')}</li>
+                      <li>• {t('pcct_3d_eid_l4')}</li>
+                    </ul>
+                  </div>
+
+                  <div className="p-3 bg-white/5 rounded border border-emerald-500/20 space-y-2">
+                    <p className="text-xs font-bold text-emerald-300">{t('pcct_3d_pcd_title')}</p>
+                    <ul className="text-[10px] text-gray-400 space-y-1">
+                      <li>• {t('pcct_3d_pcd_l1')}</li>
+                      <li>• {t('pcct_3d_pcd_l2')}</li>
+                      <li>• {t('pcct_3d_pcd_l3')}</li>
+                      <li>• {t('pcct_3d_pcd_l4')}</li>
+                    </ul>
+                  </div>
+
+                  <div className="p-3 bg-white/5 rounded border border-amber-500/20 space-y-2">
+                    <p className="text-xs font-bold text-amber-300">{t('pcct_3d_nonideal_title')}</p>
+                    <p className="text-[10px] text-gray-400">
+                      <span className="text-red-400">Charge sharing</span>: {t('pcct_3d_share_desc')}
+                    </p>
+                    <p className="text-[10px] text-gray-400">
+                      <span className="text-amber-400">Pulse pile-up</span>: {t('pcct_3d_pileup_desc')}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-[10px]">
+                    <div className="p-2 bg-black/30 rounded border border-white/5">
+                      <p className="text-gray-500">{t('pcct_pileup')}</p>
+                      <p className="text-base font-bold text-amber-400">{pileUpFraction}%</p>
+                    </div>
+                    <div className="p-2 bg-black/30 rounded border border-white/5">
+                      <p className="text-gray-500">{t('pcct_charge')}</p>
+                      <p className="text-base font-bold text-red-400">~{Math.min(50, Math.round(params.photonFlux * 1.8))}%</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </Card>
           )}
