@@ -22,7 +22,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             <div className="fixed inset-0 -z-10 bg-black/70" />
             <Sidebar />
 
-            <div className="flex-1 md:ml-64 flex flex-col">
+            <div className="flex-1 min-w-0 md:ml-64 flex flex-col">
                 <Header />
 
                 <main className="flex-1 px-4 py-6 md:px-6 lg:px-8">
