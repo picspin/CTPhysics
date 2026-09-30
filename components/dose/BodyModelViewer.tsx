@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { useLanguage } from '@/context/LanguageContext';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
@@ -64,6 +65,7 @@ export const BodyModelViewer: React.FC<BodyModelViewerProps> = ({
   regionDoseMSv,
   className,
 }) => {
+  const { t } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
   const pointerDownRef = useRef<{ x: number; y: number } | null>(null);
   const [, setHoveredRegion] = useState<BodyRegionId | null>(null);
@@ -334,16 +336,16 @@ export const BodyModelViewer: React.FC<BodyModelViewerProps> = ({
     // See utils/dose-physics.ts and its regression test.
     const baseSkin = new THREE.Color(0xd49a6c);
     for (const [rid, mesh] of Object.entries(body.regions)) {
-      const t = doseColorScalar(regionDoseMSv[rid as BodyRegionId] ?? 0);
+      const doseT = doseColorScalar(regionDoseMSv[rid as BodyRegionId] ?? 0);
       // Cool→warm ramp: blue (low) → cyan → green → yellow → red (high),
       // via hue 0.6 → 0.0. Blended with base skin so the model still
       // reads as a body rather than a pure heatmap. Blend strength also
-      // rises with t, so high-dose regions read as saturated rather than
+      // rises with doseT, so high-dose regions read as saturated rather than
       // being washed back toward skin tone.
-      const tint = new THREE.Color().setHSL(0.6 - 0.6 * t, 0.55, 0.5);
+      const tint = new THREE.Color().setHSL(0.6 - 0.6 * doseT, 0.55, 0.5);
       const blended = new THREE.Color()
         .copy(baseSkin)
-        .lerp(tint, 0.35 + 0.45 * t);
+        .lerp(tint, 0.35 + 0.45 * doseT);
       // Selection brightens the region on top of its dose colour.
       if (selectedRegion === rid) {
         blended.multiplyScalar(1.35);
@@ -364,9 +366,9 @@ export const BodyModelViewer: React.FC<BodyModelViewerProps> = ({
         className="absolute top-0 left-0 right-0 z-10 px-4 py-2 text-xs font-mono text-[var(--sim-accent)] pointer-events-none bg-gradient-to-b from-black/70 to-transparent"
         style={{ paddingTop: PADDING_TOP_PX / 4 }}
       >
-        <div className="text-sm">交互式人体模型 · Interactive 3D Body</div>
+        <div className="text-sm">{t('body_title')}</div>
         <div className="text-[10px] text-text-200 opacity-80 mt-0.5">
-          拖拽旋转 · 滚轮缩放 · 点击区域查看剂量
+          {t('body_controls')}
         </div>
       </div>
       {/* Absolute dose colour legend. Essential now the ramp is anchored
@@ -374,7 +376,7 @@ export const BodyModelViewer: React.FC<BodyModelViewerProps> = ({
           it, the colours are unreadable as quantities. */}
       <div className="absolute top-14 right-3 z-10 pointer-events-none">
         <div className="text-[9px] font-mono text-text-200 mb-1 text-right">
-          Effective dose (mSv)
+          {t('body_legend_title')}
         </div>
         <div className="flex items-center gap-1.5">
           <span className="text-[9px] font-mono text-gray-400">
@@ -393,7 +395,7 @@ export const BodyModelViewer: React.FC<BodyModelViewerProps> = ({
           </span>
         </div>
         <div className="text-[8px] font-mono text-gray-500 mt-0.5 text-right">
-          log scale · absolute
+          {t('body_legend_scale')}
         </div>
       </div>
 
@@ -401,7 +403,7 @@ export const BodyModelViewer: React.FC<BodyModelViewerProps> = ({
         className="absolute bottom-0 left-0 right-0 z-10 px-3 py-1 text-[10px] font-mono text-gray-400 pointer-events-none bg-gradient-to-t from-black/60 to-transparent"
         style={{ paddingBottom: PADDING_BOTTOM_PX / 4 }}
       >
-        Drag to orbit · Scroll to zoom · Click a region to inspect its dose
+        {t('body_footer')}
       </div>
     </div>
   );

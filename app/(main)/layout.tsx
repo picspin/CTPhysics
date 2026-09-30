@@ -3,8 +3,10 @@
 import React from 'react';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
+    const { t } = useLanguage();
     return (
         <div className="flex min-h-screen relative">
             {/* Global hero background for main pages */}
@@ -34,17 +36,17 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                         <div className="mx-auto max-w-7xl">
                             <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
                                 <div className="text-sm text-text-200">
-                                    © {new Date().getFullYear()} CT物理原理交互式学习平台 (CT Physics Platform)
+                                    {t('footer_copyright', { year: new Date().getFullYear() })}
                                 </div>
                                 <div className="flex items-center space-x-6 text-sm">
                                     <a href="/privacy" className="text-text-200 hover:text-primary-100 transition-colors">
-                                        隐私政策 (Privacy)
+                                        {t('footer_privacy')}
                                     </a>
                                     <a href="/terms" className="text-text-200 hover:text-primary-100 transition-colors">
-                                        使用条款 (Terms)
+                                        {t('footer_terms')}
                                     </a>
                                     <a href="/about" className="text-text-200 hover:text-primary-100 transition-colors">
-                                        关于 (About)
+                                        {t('footer_about')}
                                     </a>
                                 </div>
                             </div>

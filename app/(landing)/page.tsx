@@ -6,8 +6,10 @@ const CTHeroScene = dynamic(() => import('@/components/hero/CTHeroScene'), { ssr
 import LandingNav from '@/components/hero/LandingNav';
 import SatelliteButtons from '@/components/hero/SatelliteButtons';
 import { motion } from 'framer-motion';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function LandingPage() {
+    const { t } = useLanguage();
     return (
         <main className="relative min-h-screen w-full overflow-hidden text-white bg-black">
             <LandingNav />
@@ -28,7 +30,7 @@ export default function LandingPage() {
                     transition={{ duration: 1 }}
                     className="text-4xl md:text-6xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white to-white/10"
                 >
-                    CT PHYSICS
+                    {t('brand_name')}
                 </motion.h1>
                 <motion.p
                     initial={{ opacity: 0 }}
@@ -36,7 +38,7 @@ export default function LandingPage() {
                     transition={{ delay: 0.5, duration: 1 }}
                     className="mt-2 text-sm md:text-lg text-blue-200 font-light tracking-widest uppercase"
                 >
-                    Next Gen Imaging Simulation
+                    {t('land_subtitle')}
                 </motion.p>
             </div>
 

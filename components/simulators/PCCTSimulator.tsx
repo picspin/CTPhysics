@@ -23,12 +23,25 @@ import {
 } from 'recharts';
 import { calculatePCCTSpectrum, calculatePCCTMetrics, getMaterialAttenuation, generatePCCTSinogramData, PCCTParams, getKEdgeCurveData } from '@/utils/pcct-physics';
 
-import { useLanguage } from '@/context/LanguageContext';
+import { useLanguage, type MessageKey } from '@/context/LanguageContext';
 import { createDetectorMaterials, disposeDetectorMaterials } from '@/utils/three/detectorMaterials';
 import { createPCDDetector, DetectorViewMode, PCDDetectorStats } from './_fx/PCDDetector';
 
+const AGENT_KEY = {
+  iodine: 'pcct_agent_iodine',
+  gadolinium: 'pcct_agent_gadolinium',
+  bismuth: 'pcct_agent_bismuth',
+} as const satisfies Record<PCCTParams['contrastAgent'], MessageKey>;
+
+const CHANNEL_KEY = {
+  composite: 'pcct_ch_composite',
+  iodine: 'pcct_ch_iodine',
+  calcium: 'pcct_ch_calcium',
+  residual: 'pcct_ch_residual',
+} as const satisfies Record<PCCTParams['activeMaterialChannel'], MessageKey>;
+
 const PCCTSimulator: React.FC = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [params, setParams] = useState<PCCTParams>({
     kVp: 120,
     photonFlux: 5, // Mcps/mm2
@@ -71,6 +84,9 @@ const PCCTSimulator: React.FC = () => {
   // Mirrors detectorView so the init effect can apply the current mode
   // to a freshly built scene without listing it as a dependency.
   const detectorViewRef = useRef<DetectorViewMode>('both');
+  // Latest `t` for the (mount-only) 3D init effect.
+  const tRef = useRef(t);
+  tRef.current = t;
   // Which container generation the scene is attached to. Bumped whenever
   // the 3D tab is (re)mounted, so the init effect rebuilds against the
   // freshly mounted div rather than a detached one.
@@ -121,8 +137,8 @@ const PCCTSimulator: React.FC = () => {
 
     return {
       energy,
-      'Ideal Spectrum (理想能谱)': Math.round(idealIntensity),
-      'Distorted (堆积+电荷共享畸变谱)': Math.round(distortedIntensity),
+      ideal: Math.round(idealIntensity),
+      distorted: Math.round(distortedIntensity),
     };
   });
 
@@ -277,7 +293,7 @@ const PCCTSimulator: React.FC = () => {
 
       ctx.fillStyle = type === 'PCCT' ? '#34d399' : '#a78bfa';
       ctx.font = 'bold 11px sans-serif';
-      ctx.fillText(type === 'PCCT' ? '光子计数 CT (PCCT)' : '传统积分 CT (EID)', 10, 20);
+      ctx.fillText(type === 'PCCT' ? t('pcct_pcd_label') : t('pcct_eid_label'), 10, 20);
     };
 
     drawCTSlice(eidCanvasRef.current, 'EID');
@@ -308,16 +324,18 @@ const PCCTSimulator: React.FC = () => {
 
         ctx.fillStyle = '#34d399';
         ctx.font = '10px sans-serif';
-        ctx.fillText(`Sinogram (Bin ${selectedBin})`, 10, 20);
+        ctx.fillText(t('pcct_sinogram_label', { bin: selectedBin }), 10, 20);
       }
     }
-  }, [params, metrics, activeTab, pileUpFraction, selectedBin, vmiEnergy]);
+  // `language` is a dependency so the labels baked into the canvases re-render on toggle.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params, metrics, activeTab, pileUpFraction, selectedBin, vmiEnergy, language]);
 
   // =================================================================
   // PHASE 6 — 3D detector-perspective scene (EID vs PCD)
   // =================================================================
   //
-  // The scene lives inside the "3D 视图" tab, so its container div only
+  // The scene lives inside the 3D-view tab, so its container div only
   // exists while that tab is selected. We therefore key the init effect
   // on a mount counter that the tab's callback ref bumps — the effect
   // runs against a div that is actually in the document, and tears the
@@ -389,7 +407,14 @@ const PCCTSimulator: React.FC = () => {
 
     // Detector materials + scene
     const detMaterials = createDetectorMaterials();
-    const detector = createPCDDetector(detMaterials);
+    const detector = createPCDDetector(detMaterials, {
+      labels: {
+        eid: tRef.current('pcct_sprite_eid'),
+        pcd: tRef.current('pcct_sprite_pcd'),
+        eidRibbon: tRef.current('pcct_sprite_eid_ribbon'),
+        pcdRibbon: tRef.current('pcct_sprite_pcd_ribbon'),
+      },
+    });
     scene.add(detector.group);
     detector.setViewMode(detectorViewRef.current);
 
@@ -435,6 +460,16 @@ const PCCTSimulator: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, det3dMountKey]);
 
+  // --- Re-bake the 3D sprite labels when the language changes ---
+  useEffect(() => {
+    det3dSceneRef.current?.detector.setLabels({
+      eid: t('pcct_sprite_eid'),
+      pcd: t('pcct_sprite_pcd'),
+      eidRibbon: t('pcct_sprite_eid_ribbon'),
+      pcdRibbon: t('pcct_sprite_pcd_ribbon'),
+    });
+  }, [t, det3dMountKey]);
+
   // --- Apply the EID/PCD/both toggle to the live scene ---
   useEffect(() => {
     detectorViewRef.current = detectorView;
@@ -471,15 +506,15 @@ const PCCTSimulator: React.FC = () => {
   }, [activeTab, det3dMountKey]);
 
   return (
-    <SimulatorContainer title="光子计数 CT (PCCT) 物理孪生模拟器">
+    <SimulatorContainer title={t('pcct_sim_title')}>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1 space-y-6">
           <Card className="p-4 space-y-4">
-            <h3 className="text-lg font-bold text-emerald-400">物理与解剖控制参数</h3>
+            <h3 className="text-lg font-bold text-emerald-400">{t('pcct_controls_title')}</h3>
             
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-300">光子通量 (Photon Flux)</span>
+                <span className="text-gray-300">{t('pcct_flux')}</span>
                 <span className="text-emerald-400 font-bold">{params.photonFlux} Mcps/mm²</span>
               </div>
               <Slider
@@ -489,12 +524,12 @@ const PCCTSimulator: React.FC = () => {
                 value={params.photonFlux}
                 onChange={(e) => setParams((prev) => ({ ...prev, photonFlux: Number(e.target.value) }))}
               />
-              <p className="text-xs text-gray-500">高通量会导致半导体探测器脉冲堆积 (Pile-up) 和计数饱和。</p>
+              <p className="text-xs text-gray-500">{t('pcct_flux_hint')}</p>
             </div>
 
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-300">{t('overview')}</span>
+                <span className="text-gray-300">{t('pcct_bmi')}</span>
                 <span className="text-emerald-400 font-bold">{params.bmi} kg/m²</span>
               </div>
               <Slider
@@ -508,7 +543,7 @@ const PCCTSimulator: React.FC = () => {
 
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-300">对比剂浓度 ({params.contrastAgent})</span>
+                <span className="text-gray-300">{t('pcct_contrast_conc', { agent: t(AGENT_KEY[params.contrastAgent]) })}</span>
                 <span className="text-emerald-400 font-bold">{params.contrastConcentration} mg/mL</span>
               </div>
               <Slider
@@ -522,7 +557,7 @@ const PCCTSimulator: React.FC = () => {
 
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-300">钙化斑块密度</span>
+                <span className="text-gray-300">{t('pcct_calcium_density')}</span>
                 <span className="text-emerald-400 font-bold">{params.calciumDensity} HU</span>
               </div>
               <Slider
@@ -536,7 +571,7 @@ const PCCTSimulator: React.FC = () => {
 
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-300">支架线径 (Stent Struts)</span>
+                <span className="text-gray-300">{t('pcct_stent_struts')}</span>
                 <span className="text-emerald-400 font-bold">{params.stentDiameter} mm</span>
               </div>
               <Slider
@@ -554,9 +589,9 @@ const PCCTSimulator: React.FC = () => {
                 value={params.contrastAgent}
                 onChange={(e) => setParams((prev) => ({ ...prev, contrastAgent: e.target.value as 'iodine' | 'gadolinium' | 'bismuth' }))}
                 options={[
-                  { value: 'iodine', label: 'Iodine (碘 - K-edge: 33 keV)' },
-                  { value: 'gadolinium', label: 'Gadolinium (钆 - K-edge: 50 keV)' },
-                  { value: 'bismuth', label: 'Bismuth (铋 - K-edge: 90 keV)' },
+                  { value: 'iodine', label: t('pcct_kedge_iodine') },
+                  { value: 'gadolinium', label: t('pcct_kedge_gadolinium') },
+                  { value: 'bismuth', label: t('pcct_kedge_bismuth') },
                 ]}
               />
             </div>
@@ -576,19 +611,19 @@ const PCCTSimulator: React.FC = () => {
         <div className="lg:col-span-2 space-y-6">
           <Card className="p-4 space-y-4">
             <div className="flex justify-between items-center">
-              <h3 className="text-base font-bold text-emerald-400">重建图像对比：冠状动脉 CTA 与斑块、金属支架</h3>
+              <h3 className="text-base font-bold text-emerald-400">{t('pcct_recon_title')}</h3>
               <div className="flex space-x-1 p-1 bg-white/5 rounded-lg border border-white/10">
                 <button
                   onClick={() => setActiveTab('acquisition')}
                   className={`px-3 py-1 text-xs rounded-md transition-all ${activeTab === 'acquisition' ? 'bg-emerald-500 text-white' : 'text-gray-400 hover:text-white'}`}
                 >
-                  物理采集
+                  {t('pcct_tab_acq')}
                 </button>
                 <button
                   onClick={() => setActiveTab('detector')}
                   className={`px-3 py-1 text-xs rounded-md transition-all ${activeTab === 'detector' ? 'bg-emerald-500 text-white' : 'text-gray-400 hover:text-white'}`}
                 >
-                  探测器层
+                  {t('pcct_tab_det')}
                 </button>
                 <button
                   onClick={() => setActiveTab('3dview')}
@@ -600,7 +635,7 @@ const PCCTSimulator: React.FC = () => {
                   onClick={() => setActiveTab('decomposition')}
                   className={`px-3 py-1 text-xs rounded-md transition-all ${activeTab === 'decomposition' ? 'bg-emerald-500 text-white' : 'text-gray-400 hover:text-white'}`}
                 >
-                  物质分解
+                  {t('pcct_tab_dec')}
                 </button>
               </div>
             </div>
@@ -614,9 +649,9 @@ const PCCTSimulator: React.FC = () => {
                   className="w-full aspect-square bg-slate-950 rounded border border-purple-500/20 shadow-inner"
                 />
                 <div className="mt-2 text-xs text-purple-300 space-y-1 w-full p-2 bg-purple-950/20 rounded border border-purple-500/10">
-                  <p>• 电子噪声：~18 HU (EID限制)</p>
-                  <p>• 钙化膨胀 (Blooming)：{metrics.eidBlooming}%</p>
-                  <p>• 支架评估通畅率：{metrics.eidStentLumen}%</p>
+                  <p>• {t('pcct_noise_eid')}</p>
+                  <p>• {t('pcct_blooming', { value: metrics.eidBlooming })}</p>
+                  <p>• {t('pcct_stent_lumen', { value: metrics.eidStentLumen })}</p>
                 </div>
               </div>
 
@@ -628,9 +663,9 @@ const PCCTSimulator: React.FC = () => {
                   className="w-full aspect-square bg-slate-950 rounded border border-emerald-500/20 shadow-inner"
                 />
                 <div className="mt-2 text-xs text-emerald-300 space-y-1 w-full p-2 bg-emerald-950/20 rounded border border-emerald-500/10">
-                  <p>• 电子噪声：{metrics.pcctElectronicNoise} HU (零噪声)</p>
-                  <p>• 钙化膨胀 (Blooming)：{metrics.pcctBlooming}%</p>
-                  <p>• 支架评估通畅率：{metrics.pcctStentLumen}%</p>
+                  <p>• {t('pcct_noise_pcd', { hu: metrics.pcctElectronicNoise })}</p>
+                  <p>• {t('pcct_blooming', { value: metrics.pcctBlooming })}</p>
+                  <p>• {t('pcct_stent_lumen', { value: metrics.pcctStentLumen })}</p>
                 </div>
               </div>
 
@@ -643,7 +678,7 @@ const PCCTSimulator: React.FC = () => {
                 />
                 <div className="mt-2 text-xs text-sky-300 w-full p-2 bg-sky-950/20 rounded border border-sky-500/10 space-y-2">
                   <div className="flex justify-between items-center">
-                    <span>• 能级通道:</span>
+                    <span>• {t('pcct_bin_label')}</span>
                     <div className="flex space-x-1 bg-white/5 p-0.5 rounded">
                       {[1, 2, 3].map((bin) => (
                         <button
@@ -651,12 +686,12 @@ const PCCTSimulator: React.FC = () => {
                           onClick={() => setSelectedBin(bin)}
                           className={`px-1.5 py-0.5 text-[10px] rounded ${selectedBin === bin ? 'bg-sky-500 text-white' : 'text-gray-400'}`}
                         >
-                          Bin{bin}
+                          {t('pcct_bin_short', { n: bin })}
                         </button>
                       ))}
                     </div>
                   </div>
-                  <p className="text-[10px] text-gray-400">选择不同 Bin 可观察高低能量下物质投影的衰减反差变化。</p>
+                  <p className="text-[10px] text-gray-400">{t('pcct_bin_hint')}</p>
                 </div>
               </div>
             </div>
@@ -664,12 +699,12 @@ const PCCTSimulator: React.FC = () => {
 
           {activeTab === 'detector' && (
             <Card className="p-4 space-y-4">
-              <h3 className="text-base font-bold text-emerald-400">探测器能级分桶 (Energy Binning) 与非理想效应</h3>
+              <h3 className="text-base font-bold text-emerald-400">{t('pcct_binning_title')}</h3>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2 p-3 bg-white/5 rounded border border-white/5">
                   <div className="flex justify-between text-xs">
-                    <span className="text-gray-300">阈值 1 (Low Bin)</span>
+                    <span className="text-gray-300">{t('pcct_t1')}</span>
                     <span className="text-emerald-400 font-bold">{params.threshold1} keV</span>
                   </div>
                   <Slider
@@ -679,12 +714,12 @@ const PCCTSimulator: React.FC = () => {
                     value={params.threshold1}
                     onChange={(e) => setParams((prev) => ({ ...prev, threshold1: Number(e.target.value) }))}
                   />
-                  <p className="text-[10px] text-gray-500">用于剔除低能量的暗电荷与电子基线噪声。</p>
+                  <p className="text-[10px] text-gray-500">{t('pcct_t1_hint')}</p>
                 </div>
 
                 <div className="space-y-2 p-3 bg-white/5 rounded border border-white/5">
                   <div className="flex justify-between text-xs">
-                    <span className="text-gray-300">阈值 2 (Mid Bin)</span>
+                    <span className="text-gray-300">{t('pcct_t2')}</span>
                     <span className="text-emerald-400 font-bold">{params.threshold2} keV</span>
                   </div>
                   <Slider
@@ -694,12 +729,12 @@ const PCCTSimulator: React.FC = () => {
                     value={params.threshold2}
                     onChange={(e) => setParams((prev) => ({ ...prev, threshold2: Number(e.target.value) }))}
                   />
-                  <p className="text-[10px] text-gray-500">配合 K-edge 边界实现对特定重元素的精确提取。</p>
+                  <p className="text-[10px] text-gray-500">{t('pcct_t2_hint')}</p>
                 </div>
 
                 <div className="space-y-2 p-3 bg-white/5 rounded border border-white/5">
                   <div className="flex justify-between text-xs">
-                    <span className="text-gray-300">阈值 3 (High Bin)</span>
+                    <span className="text-gray-300">{t('pcct_t3')}</span>
                     <span className="text-emerald-400 font-bold">{params.threshold3} keV</span>
                   </div>
                   <Slider
@@ -709,48 +744,48 @@ const PCCTSimulator: React.FC = () => {
                     value={params.threshold3}
                     onChange={(e) => setParams((prev) => ({ ...prev, threshold3: Number(e.target.value) }))}
                   />
-                  <p className="text-[10px] text-gray-500">提取高能量康普顿衰减信息。</p>
+                  <p className="text-[10px] text-gray-500">{t('pcct_t3_hint')}</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-2">
                 <div className="p-3 bg-white/5 rounded border border-white/5">
-                  <p className="text-[10px] text-gray-400">脉冲叠加比</p>
+                  <p className="text-[10px] text-gray-400">{t('pcct_pileup')}</p>
                   <p className="text-base font-bold text-amber-400">{pileUpFraction}%</p>
-                  <p className="text-[9px] text-gray-500">高通量引起计数丢失</p>
+                  <p className="text-[9px] text-gray-500">{t('pcct_pileup_hint')}</p>
                 </div>
                 <div className="p-3 bg-white/5 rounded border border-white/5">
-                  <p className="text-[10px] text-gray-400">电荷共享比</p>
+                  <p className="text-[10px] text-gray-400">{t('pcct_charge')}</p>
                   <p className="text-base font-bold text-red-400">14.2%</p>
-                  <p className="text-[9px] text-gray-500">电荷云被邻近像素平分</p>
+                  <p className="text-[9px] text-gray-500">{t('pcct_charge_hint')}</p>
                 </div>
                 <div className="p-3 bg-white/5 rounded border border-white/5">
-                  <p className="text-[10px] text-gray-400">K-escape 比</p>
+                  <p className="text-[10px] text-gray-400">{t('pcct_escape')}</p>
                   <p className="text-base font-bold text-sky-400">8.5%</p>
-                  <p className="text-[9px] text-gray-500">CdTe 荧光逃逸引起谱偏移</p>
+                  <p className="text-[9px] text-gray-500">{t('pcct_escape_hint')}</p>
                 </div>
                 <div className="p-3 bg-white/5 rounded border border-white/5">
-                  <p className="text-[10px] text-gray-400">能量分辨率退化</p>
+                  <p className="text-[10px] text-gray-400">{t('pcct_resolution')}</p>
                   <p className="text-base font-bold text-gray-200">~6.2 keV</p>
-                  <p className="text-[9px] text-gray-500">物理谱宽的拓宽畸变</p>
+                  <p className="text-[9px] text-gray-500">{t('pcct_resolution_hint')}</p>
                 </div>
               </div>
 
               {/* Direct vs Indirect Conversion Physics Illustration */}
               <div className="mt-4 p-3 bg-slate-950 rounded border border-white/10">
                 <h4 className="text-xs font-bold text-emerald-400 mb-2 text-center">
-                  物理层直接转换 (Direct) vs 间接转换 (Indirect / EID) 机制对比
+                  {t('pcct_mechanism_title')}
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Indirect */}
                   <div className="p-2 bg-black/40 rounded flex flex-col items-center">
-                    <p className="text-[10px] font-bold text-purple-300 mb-1">间接转换 (EID / 闪烁体)</p>
+                    <p className="text-[10px] font-bold text-purple-300 mb-1">{t('pcct_mechanism_eid')}</p>
                     <svg className="w-full h-24" viewBox="0 0 200 80">
                       {/* X-ray */}
                       <path d="M 50,0 Q 45,10 55,20 T 45,40" stroke="#f43f5e" fill="none" strokeWidth="1.5" strokeDasharray="3 3" />
                       {/* Scintillator layer */}
                       <rect x="20" y="40" width="60" height="20" fill="#6b21a8" opacity="0.3" stroke="#a855f7" strokeWidth="1" />
-                      <text x="50" y="52" fill="#d8b4fe" fontSize="8" textAnchor="middle">闪烁体 (可见光散)</text>
+                      <text x="50" y="52" fill="#d8b4fe" fontSize="8" textAnchor="middle">{t('pcct_scintillator')}</text>
                       {/* Light diffusion */}
                       <circle cx="50" cy="50" r="10" fill="#fef08a" opacity="0.3" />
                       {/* Photodiode */}
@@ -758,18 +793,18 @@ const PCCTSimulator: React.FC = () => {
                       {/* Septa separator */}
                       <line x1="20" y1="40" x2="20" y2="70" stroke="#f43f5e" strokeWidth="2" />
                       <line x1="80" y1="40" x2="80" y2="70" stroke="#f43f5e" strokeWidth="2" />
-                      <text x="50" y="77" fill="#c084fc" fontSize="7" textAnchor="middle">像素元 (存在几何死区)</text>
+                      <text x="50" y="77" fill="#c084fc" fontSize="7" textAnchor="middle">{t('pcct_pixel_eid')}</text>
                     </svg>
                   </div>
                   {/* Direct */}
                   <div className="p-2 bg-black/40 rounded flex flex-col items-center">
-                    <p className="text-[10px] font-bold text-emerald-300 mb-1">直接转换 (PCCT / 半导体)</p>
+                    <p className="text-[10px] font-bold text-emerald-300 mb-1">{t('pcct_mechanism_pcd')}</p>
                     <svg className="w-full h-24" viewBox="0 0 200 80">
                       {/* X-ray */}
                       <path d="M 50,0 Q 45,10 55,20 T 45,40" stroke="#10b981" fill="none" strokeWidth="1.5" />
                       {/* Semiconductor substrate */}
                       <rect x="20" y="40" width="60" height="20" fill="#065f46" opacity="0.3" stroke="#10b981" strokeWidth="1" />
-                      <text x="50" y="52" fill="#a7f3d0" fontSize="8" textAnchor="middle">CdTe / CZT 介质</text>
+                      <text x="50" y="52" fill="#a7f3d0" fontSize="8" textAnchor="middle">{t('pcct_substrate')}</text>
                       {/* Electric drift line */}
                       <line x1="50" y1="45" x2="50" y2="60" stroke="#34d399" strokeWidth="1.5" markerEnd="url(#arrow)" />
                       {/* Electrodes */}
@@ -779,7 +814,7 @@ const PCCTSimulator: React.FC = () => {
                       <rect x="40" y="60" width="10" height="3" fill="#34d399" />
                       <rect x="55" y="60" width="10" height="3" fill="#34d399" />
                       <rect x="70" y="60" width="10" height="3" fill="#34d399" />
-                      <text x="50" y="77" fill="#6ee7b7" fontSize="7" textAnchor="middle">微像素 (几何剂量效率极高)</text>
+                      <text x="50" y="77" fill="#6ee7b7" fontSize="7" textAnchor="middle">{t('pcct_pixel_pcd')}</text>
                     </svg>
                   </div>
                 </div>
@@ -788,18 +823,18 @@ const PCCTSimulator: React.FC = () => {
               {/* Energy Spectrum Distortion Chart */}
               <div className="h-64 mt-4 bg-black/40 p-2 rounded-lg border border-white/5">
                 <p className="text-xs font-bold text-emerald-400 mb-2 text-center">
-                  X射线入射能谱畸变模拟 (理想 vs 非理想探测响应)
+                  {t('pcct_spec_title')}
                 </p>
                 <ResponsiveContainer width="100%" height="90%">
                   <LineChart data={chartData} margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#222" />
-                    <XAxis dataKey="energy" stroke="#666" fontSize={10} label={{ value: '能量 (keV)', position: 'insideBottomRight', offset: -5 }} />
-                    <YAxis stroke="#666" fontSize={10} label={{ value: '光子数 (Counts)', angle: -90, position: 'insideLeft', offset: 10 }} />
+                    <XAxis dataKey="energy" stroke="#666" fontSize={10} label={{ value: t('pcct_axis_energy'), position: 'insideBottomRight', offset: -5 }} />
+                    <YAxis stroke="#666" fontSize={10} label={{ value: t('pcct_axis_counts'), angle: -90, position: 'insideLeft', offset: 10 }} />
                     <Tooltip contentStyle={{ backgroundColor: '#111', borderColor: '#333', color: '#fff' }} />
                     <Legend wrapperStyle={{ fontSize: 10 }} />
-                    <Line type="monotone" dataKey="Ideal Spectrum (理想能谱)" stroke="#34d399" strokeWidth={1.5} dot={false} activeDot={{ r: 4 }} />
-                    <Line type="monotone" dataKey="Distorted (堆积+电荷共享畸变谱)" stroke="#f43f5e" strokeWidth={1.5} dot={false} strokeDasharray="5 5" />
-                    <ReferenceLine x={params.contrastAgent === 'iodine' ? 33 : params.contrastAgent === 'gadolinium' ? 50 : 90} stroke="#fbbf24" strokeDasharray="3 3" label={{ value: 'K-edge', fill: '#fbbf24', fontSize: 9, position: 'top' }} />
+                    <Line type="monotone" dataKey="ideal" name={t('pcct_series_ideal')} stroke="#34d399" strokeWidth={1.5} dot={false} activeDot={{ r: 4 }} />
+                    <Line type="monotone" dataKey="distorted" name={t('pcct_series_distorted')} stroke="#f43f5e" strokeWidth={1.5} dot={false} strokeDasharray="5 5" />
+                    <ReferenceLine x={params.contrastAgent === 'iodine' ? 33 : params.contrastAgent === 'gadolinium' ? 50 : 90} stroke="#fbbf24" strokeDasharray="3 3" label={{ value: t('pcct_kedge_marker'), fill: '#fbbf24', fontSize: 9, position: 'top' }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -809,7 +844,7 @@ const PCCTSimulator: React.FC = () => {
           {activeTab === '3dview' && (
             <Card className="p-4 space-y-4">
               <div className="flex justify-between items-center">
-                <h3 className="text-base font-bold text-emerald-400">3D 探测器层结构 (EID vs PCD)</h3>
+                <h3 className="text-base font-bold text-emerald-400">{t('pcct_3d_title')}</h3>
                 <span className="text-[10px] text-gray-500 font-mono">
                   {t('pcct_3d_hint')}
                 </span>
@@ -817,12 +852,12 @@ const PCCTSimulator: React.FC = () => {
 
               {/* EID / PCD / side-by-side view toggle */}
               <div className="flex items-center gap-2">
-                <span className="text-[10px] text-gray-500">对比视图:</span>
+                <span className="text-[10px] text-gray-500">{t('pcct_view_label')}</span>
                 <div className="flex space-x-1 p-1 bg-white/5 rounded-lg border border-white/10">
                   {([
-                    { mode: 'both' as const, label: '并排对比 (Both)', color: 'bg-emerald-500' },
-                    { mode: 'eid' as const, label: 'EID 间接转换', color: 'bg-purple-500' },
-                    { mode: 'pcd' as const, label: 'PCD 直接转换', color: 'bg-emerald-500' },
+                    { mode: 'both' as const, label: t('pcct_view_both'), color: 'bg-emerald-500' },
+                    { mode: 'eid' as const, label: t('pcct_view_eid'), color: 'bg-purple-500' },
+                    { mode: 'pcd' as const, label: t('pcct_view_pcd'), color: 'bg-emerald-500' },
                   ]).map(({ mode, label, color }) => (
                     <button
                       key={mode}
@@ -845,7 +880,7 @@ const PCCTSimulator: React.FC = () => {
                       {t('pcct_3d_caption')}
                     </div>
                     <div className="absolute bottom-2 right-2 font-mono text-[10px] text-gray-500 z-10 pointer-events-none">
-                      Flux: {params.photonFlux} Mcps/mm² | Noise: {params.enableElectronicNoise ? 'ON' : 'OFF'}
+                      {t('pcct_3d_status', { flux: params.photonFlux, noise: params.enableElectronicNoise ? t('pcct_on') : t('pcct_off') })}
                     </div>
                   </div>
 
@@ -853,42 +888,42 @@ const PCCTSimulator: React.FC = () => {
                       same contrast the 3D scene shows geometrically. */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
                     <div className="p-3 bg-purple-950/20 rounded border border-purple-500/20 space-y-1">
-                      <p className="text-[10px] font-bold text-purple-300">EID 读出：单一积分值</p>
+                      <p className="text-[10px] font-bold text-purple-300">{t('pcct_readout_eid_title')}</p>
                       <div className="flex justify-between text-[10px] text-gray-300">
-                        <span>累计积分信号</span>
+                        <span>{t('pcct_readout_eid_signal')}</span>
                         <span className="font-mono text-purple-300">{Math.round(detStats.eidIntegral)} a.u.</span>
                       </div>
                       <div className="flex justify-between text-[10px] text-gray-300">
-                        <span>参与积分的光子数</span>
+                        <span>{t('pcct_readout_eid_photons')}</span>
                         <span className="font-mono text-purple-300">{detStats.eidPhotons}</span>
                       </div>
                       <p className="text-[9px] text-gray-500">
-                        无论入射光子能量高低，全部并入同一个数字 — 能谱信息在读出瞬间即被丢弃。
+                        {t('pcct_readout_eid_note')}
                       </p>
                     </div>
 
                     <div className="p-3 bg-emerald-950/20 rounded border border-emerald-500/20 space-y-1">
-                      <p className="text-[10px] font-bold text-emerald-300">PCD 读出：按脉冲高度分桶计数</p>
+                      <p className="text-[10px] font-bold text-emerald-300">{t('pcct_readout_pcd_title')}</p>
                       <div className="grid grid-cols-3 gap-1 text-[10px]">
                         <div>
-                          <span className="text-gray-500">Bin1</span>
+                          <span className="text-gray-500">{t('pcct_bin1')}</span>
                           <p className="font-mono text-[#66ff99]">{detStats.bin1}</p>
                         </div>
                         <div>
-                          <span className="text-gray-500">Bin2</span>
+                          <span className="text-gray-500">{t('pcct_bin2')}</span>
                           <p className="font-mono text-[#ffd166]">{detStats.bin2}</p>
                         </div>
                         <div>
-                          <span className="text-gray-500">Bin3</span>
+                          <span className="text-gray-500">{t('pcct_bin3')}</span>
                           <p className="font-mono text-[#ff8866]">{detStats.bin3}</p>
                         </div>
                       </div>
                       <div className="flex justify-between text-[10px] text-gray-300 pt-1 border-t border-white/5">
-                        <span>低于阈值1 丢失 (电荷共享)</span>
+                        <span>{t('pcct_readout_lost')}</span>
                         <span className="font-mono text-red-400">{detStats.subThreshold}</span>
                       </div>
                       <div className="flex justify-between text-[10px] text-gray-300">
-                        <span>脉冲堆积合并事件</span>
+                        <span>{t('pcct_readout_pileup')}</span>
                         <span className="font-mono text-amber-400">{detStats.pileUp}</span>
                       </div>
                     </div>
@@ -919,10 +954,10 @@ const PCCTSimulator: React.FC = () => {
                   <div className="p-3 bg-white/5 rounded border border-amber-500/20 space-y-2">
                     <p className="text-xs font-bold text-amber-300">{t('pcct_3d_nonideal_title')}</p>
                     <p className="text-[10px] text-gray-400">
-                      <span className="text-red-400">Charge sharing</span>: {t('pcct_3d_share_desc')}
+                      <span className="text-red-400">{t('pcct_3d_share_name')}</span>: {t('pcct_3d_share_desc')}
                     </p>
                     <p className="text-[10px] text-gray-400">
-                      <span className="text-amber-400">Pulse pile-up</span>: {t('pcct_3d_pileup_desc')}
+                      <span className="text-amber-400">{t('pcct_3d_pileup_name')}</span>: {t('pcct_3d_pileup_desc')}
                     </p>
                   </div>
 
@@ -946,24 +981,24 @@ const PCCTSimulator: React.FC = () => {
               {/* Material Separation Controls */}
               <Card className="p-4 space-y-4">
                 <div className="flex justify-between items-center">
-                  <h3 className="text-base font-bold text-emerald-400">能谱物质分解 (Material Decomposition)</h3>
+                  <h3 className="text-base font-bold text-emerald-400">{t('pcct_dec_title')}</h3>
                   <div className="flex space-x-1 p-1 bg-white/5 rounded-lg border border-white/10">
-                    {['composite', 'iodine', 'calcium', 'residual'].map((ch) => (
+                    {(['composite', 'iodine', 'calcium', 'residual'] as const).map((ch) => (
                       <button
                         key={ch}
-                        onClick={() => setParams((prev) => ({ ...prev, activeMaterialChannel: ch as 'composite' | 'iodine' | 'calcium' | 'residual' }))}
+                        onClick={() => setParams((prev) => ({ ...prev, activeMaterialChannel: ch }))}
                         className={`px-3 py-1 text-xs rounded-md transition-all capitalize ${params.activeMaterialChannel === ch ? 'bg-emerald-500 text-white' : 'text-gray-400 hover:text-white'}`}
                       >
-                        {ch}
+                        {t(CHANNEL_KEY[ch])}
                       </button>
                     ))}
                   </div>
                 </div>
                 <p className="text-xs text-gray-400">
-                  {params.activeMaterialChannel === 'composite' && '复合色彩视图：红色代表钙化斑块 (骨骼成分)，绿色代表碘造影剂 (血管腔)，蓝色代表背景软组织。'}
-                  {params.activeMaterialChannel === 'iodine' && '纯碘密度图 (Iodine Map)：彻底分离钙化，仅显示冠脉血池。'}
-                  {params.activeMaterialChannel === 'calcium' && '纯钙密度图 (Calcium Map)：清晰展现冠脉壁上的硬化斑块形态。'}
-                  {params.activeMaterialChannel === 'residual' && '残差与伪影分布图：显示基线物质分解模型无法解释的系统非理想噪声分量。'}
+                  {params.activeMaterialChannel === 'composite' && t('pcct_dec_composite')}
+                  {params.activeMaterialChannel === 'iodine' && t('pcct_dec_iodine')}
+                  {params.activeMaterialChannel === 'calcium' && t('pcct_dec_calcium')}
+                  {params.activeMaterialChannel === 'residual' && t('pcct_dec_residual')}
                 </p>
               </Card>
 
@@ -971,8 +1006,8 @@ const PCCTSimulator: React.FC = () => {
               <Card className="p-4 space-y-4">
                 <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2">
                   <div>
-                    <h3 className="text-base font-bold text-emerald-400">VMI 虚拟单色能成像 (Virtual Monoenergetic Images)</h3>
-                    <p className="text-xs text-gray-400">观察低 keV 血管增强与高 keV 抑制金属/硬化伪影的工程权衡</p>
+                    <h3 className="text-base font-bold text-emerald-400">{t('pcct_vmi_title')}</h3>
+                    <p className="text-xs text-gray-400">{t('pcct_vmi_subtitle')}</p>
                   </div>
                   <div className="flex space-x-2 bg-white/5 p-1 rounded-lg border border-white/10 self-start">
                     {[40, 60, 70, 100].map((energy) => (
@@ -989,39 +1024,39 @@ const PCCTSimulator: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
                   <div className="space-y-2 text-xs text-gray-300">
-                    <p className="font-bold text-emerald-400">能谱物理效应表现：</p>
+                    <p className="font-bold text-emerald-400">{t('pcct_effect_title')}</p>
                     {vmiEnergy === 40 && (
-                      <p className="text-red-400">• 低能 40 keV：造影剂（碘/钆）的衰减极高，血管腔获得显著的对比度增强。但高 Z 物质会引起极其严重的硬化条纹伪影（Streaking Artifact）与钙化 Blooming 边缘膨胀。</p>
+                      <p className="text-red-400">{t('pcct_eff_40')}</p>
                     )}
                     {vmiEnergy === 60 && (
-                      <p className="text-amber-400">• 60 keV：在管腔对比度与伪影之间取得折中，这是临床能谱血管造影的常用高对比能级。</p>
+                      <p className="text-amber-400">{t('pcct_eff_60')}</p>
                     )}
                     {vmiEnergy === 70 && (
-                      <p className="text-gray-300">• 70 keV：标准模拟参考能级，接近常规 120 kVp 多色混合射线重建图像的软组织反差表现。</p>
+                      <p className="text-gray-300">{t('pcct_eff_70')}</p>
                     )}
                     {vmiEnergy === 100 && (
-                      <p className="text-sky-400">• 高能 100 keV：光子穿透力极强，X射线硬化伪影（Beam Hardening）被彻底消除。支架管腔通畅度极佳，Blooming 彻底消失，但碘造影剂对比度被大幅削弱（血管反差变淡）。</p>
+                      <p className="text-sky-400">{t('pcct_eff_100')}</p>
                     )}
                     
                     {/* Visual energy scale rendering details */}
                     <div className="p-3 bg-black/40 rounded border border-white/5 space-y-1">
-                      <p className="text-[10px] text-gray-400">当前 VMI 物理因子：</p>
-                      <div className="flex justify-between"><span>血管腔强度倍率:</span> <span className="text-emerald-400 font-mono">{(vmiEnergy === 40 ? 1.7 : vmiEnergy === 60 ? 1.2 : vmiEnergy === 70 ? 1.0 : 0.6).toFixed(1)}x</span></div>
-                      <div className="flex justify-between"><span>硬化伪影严重度:</span> <span className="text-red-400 font-mono">{(vmiEnergy === 40 ? 100 : vmiEnergy === 60 ? 47 : vmiEnergy === 70 ? 27 : 3).toFixed(0)}%</span></div>
-                      <div className="flex justify-between"><span>硬斑块 Blooming 膨胀率:</span> <span className="text-amber-400 font-mono">{(vmiEnergy === 40 ? 160 : vmiEnergy === 60 ? 120 : vmiEnergy === 70 ? 100 : 55).toFixed(0)}%</span></div>
+                      <p className="text-[10px] text-gray-400">{t('pcct_vmi_factors')}</p>
+                      <div className="flex justify-between"><span>{t('pcct_vmi_lumen')}:</span> <span className="text-emerald-400 font-mono">{(vmiEnergy === 40 ? 1.7 : vmiEnergy === 60 ? 1.2 : vmiEnergy === 70 ? 1.0 : 0.6).toFixed(1)}x</span></div>
+                      <div className="flex justify-between"><span>{t('pcct_vmi_streak')}:</span> <span className="text-red-400 font-mono">{(vmiEnergy === 40 ? 100 : vmiEnergy === 60 ? 47 : vmiEnergy === 70 ? 27 : 3).toFixed(0)}%</span></div>
+                      <div className="flex justify-between"><span>{t('pcct_vmi_blooming')}:</span> <span className="text-amber-400 font-mono">{(vmiEnergy === 40 ? 160 : vmiEnergy === 60 ? 120 : vmiEnergy === 70 ? 100 : 55).toFixed(0)}%</span></div>
                     </div>
                   </div>
 
                   {/* Histogram Chart showing HU values */}
                   <div className="h-44 bg-black/20 p-2 rounded-lg border border-white/5">
-                    <p className="text-[10px] font-bold text-center text-emerald-400 mb-1">各组织与支架 HU 衰减值对比图</p>
+                    <p className="text-[10px] font-bold text-center text-emerald-400 mb-1">{t('pcct_hist_title')}</p>
                     <ResponsiveContainer width="100%" height="90%">
                       <BarChart
                         data={[
-                          { name: '碘造影剂', value: Math.round((vmiEnergy === 40 ? 680 : vmiEnergy === 60 ? 420 : vmiEnergy === 70 ? 350 : 180) * (params.contrastConcentration / 6)) },
-                          { name: '钙化斑块', value: Math.round((vmiEnergy === 40 ? 590 : vmiEnergy === 60 ? 460 : vmiEnergy === 70 ? 380 : 250) * (params.calciumDensity / 50)) },
-                          { name: '软组织', value: Math.round((vmiEnergy === 40 ? 90 : vmiEnergy === 60 ? 65 : vmiEnergy === 70 ? 50 : 40)) },
-                          { name: '支架金属', value: Math.round(vmiEnergy === 40 ? 1200 : vmiEnergy === 60 ? 980 : vmiEnergy === 70 ? 850 : 650) }
+                          { name: t('pcct_hist_iodine'), value: Math.round((vmiEnergy === 40 ? 680 : vmiEnergy === 60 ? 420 : vmiEnergy === 70 ? 350 : 180) * (params.contrastConcentration / 6)) },
+                          { name: t('pcct_hist_calcium'), value: Math.round((vmiEnergy === 40 ? 590 : vmiEnergy === 60 ? 460 : vmiEnergy === 70 ? 380 : 250) * (params.calciumDensity / 50)) },
+                          { name: t('pcct_hist_soft'), value: Math.round((vmiEnergy === 40 ? 90 : vmiEnergy === 60 ? 65 : vmiEnergy === 70 ? 50 : 40)) },
+                          { name: t('pcct_hist_stent'), value: Math.round(vmiEnergy === 40 ? 1200 : vmiEnergy === 60 ? 980 : vmiEnergy === 70 ? 850 : 650) }
                         ]}
                         margin={{ top: 5, right: 5, left: -25, bottom: 5 }}
                       >
@@ -1043,24 +1078,24 @@ const PCCTSimulator: React.FC = () => {
 
               {/* K-edge teaching and mass attenuation curves */}
               <Card className="p-4 space-y-4">
-                <h3 className="text-base font-bold text-emerald-400">重元素 K-edge 教学与吸收光谱突跃对比</h3>
-                <p className="text-xs text-gray-400">展示特定元素在 K-edge 临界能量点发生的光电吸收骤增，能谱 CT 正是基于此原理进行特异性造影成像</p>
+                <h3 className="text-base font-bold text-emerald-400">{t('pcct_kedge_title')}</h3>
+                <p className="text-xs text-gray-400">{t('pcct_kedge_desc')}</p>
                 <div className="h-64 bg-black/40 p-2 rounded-lg border border-white/5">
                   <ResponsiveContainer width="100%" height="90%">
                     <LineChart data={getKEdgeCurveData()} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#222" />
-                      <XAxis dataKey="energy" stroke="#666" fontSize={9} label={{ value: '能量 (keV)', position: 'insideBottomRight', offset: -5 }} />
-                      <YAxis stroke="#666" fontSize={9} label={{ value: '质量衰减系数', angle: -90, position: 'insideLeft', offset: 10 }} />
+                      <XAxis dataKey="energy" stroke="#666" fontSize={9} label={{ value: t('pcct_axis_energy'), position: 'insideBottomRight', offset: -5 }} />
+                      <YAxis stroke="#666" fontSize={9} label={{ value: t('pcct_axis_mass_atten'), angle: -90, position: 'insideLeft', offset: 10 }} />
                       <Tooltip contentStyle={{ backgroundColor: '#111', borderColor: '#333', color: '#fff', fontSize: 10 }} />
                       <Legend wrapperStyle={{ fontSize: 9 }} />
-                      <Line type="monotone" dataKey="iodine" name="碘 (Iodine - K: 33 keV)" stroke="#34d399" strokeWidth={1.5} dot={false} />
-                      <Line type="monotone" dataKey="gadolinium" name="钆 (Gadolinium - K: 50 keV)" stroke="#fbbf24" strokeWidth={1.5} dot={false} />
-                      <Line type="monotone" dataKey="bismuth" name="铋 (Bismuth - K: 90 keV)" stroke="#f43f5e" strokeWidth={1.5} dot={false} />
-                      <Line type="monotone" dataKey="calcium" name="钙 (Calcium - 骨骼)" stroke="#a78bfa" strokeWidth={1} dot={false} strokeDasharray="4 4" />
-                      <Line type="monotone" dataKey="water" name="水" stroke="#38bdf8" strokeWidth={1} dot={false} strokeDasharray="2 2" />
-                      <ReferenceLine x={33} stroke="#34d399" strokeDasharray="3 3" label={{ value: 'I K-edge (33 keV)', fill: '#34d399', fontSize: 8, position: 'top' }} />
-                      <ReferenceLine x={50} stroke="#fbbf24" strokeDasharray="3 3" label={{ value: 'Gd K-edge (50 keV)', fill: '#fbbf24', fontSize: 8, position: 'top' }} />
-                      <ReferenceLine x={90} stroke="#f43f5e" strokeDasharray="3 3" label={{ value: 'Bi K-edge (90 keV)', fill: '#f43f5e', fontSize: 8, position: 'top' }} />
+                      <Line type="monotone" dataKey="iodine" name={t('pcct_kedge_iodine')} stroke="#34d399" strokeWidth={1.5} dot={false} />
+                      <Line type="monotone" dataKey="gadolinium" name={t('pcct_kedge_gadolinium')} stroke="#fbbf24" strokeWidth={1.5} dot={false} />
+                      <Line type="monotone" dataKey="bismuth" name={t('pcct_kedge_bismuth')} stroke="#f43f5e" strokeWidth={1.5} dot={false} />
+                      <Line type="monotone" dataKey="calcium" name={t('pcct_kedge_calcium')} stroke="#a78bfa" strokeWidth={1} dot={false} strokeDasharray="4 4" />
+                      <Line type="monotone" dataKey="water" name={t('pcct_kedge_water')} stroke="#38bdf8" strokeWidth={1} dot={false} strokeDasharray="2 2" />
+                      <ReferenceLine x={33} stroke="#34d399" strokeDasharray="3 3" label={{ value: t('pcct_kedge_ref_iodine'), fill: '#34d399', fontSize: 8, position: 'top' }} />
+                      <ReferenceLine x={50} stroke="#fbbf24" strokeDasharray="3 3" label={{ value: t('pcct_kedge_ref_gd'), fill: '#fbbf24', fontSize: 8, position: 'top' }} />
+                      <ReferenceLine x={90} stroke="#f43f5e" strokeDasharray="3 3" label={{ value: t('pcct_kedge_ref_bi'), fill: '#f43f5e', fontSize: 8, position: 'top' }} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { PCCTParams } from '@/utils/pcct-physics';
 import { DetectorMaterials } from '@/utils/three/detectorMaterials';
+import { createLabelSprite, hexToCss, type LabelSprite } from '@/utils/three/labelTexture';
 
 /**
  * 3D detector-perspective scene for the PCCT simulator.
@@ -63,6 +64,16 @@ export interface PCDDetectorOptions {
   pcdGridX?: number;
   /** Visible pixel count along Z for the PCD array. */
   pcdGridZ?: number;
+  /** Initial text of the floating labels (defaults to English). */
+  labels?: PCDDetectorLabels;
+}
+
+/** Text of the four floating 3D labels (language-dependent, set by the UI). */
+export interface PCDDetectorLabels {
+  eid: string;
+  pcd: string;
+  eidRibbon: string;
+  pcdRibbon: string;
 }
 
 /** Live counters the React layer can display next to the canvas. */
@@ -91,6 +102,8 @@ export interface PCDDetector {
   setViewMode(mode: DetectorViewMode): void;
   /** Current live counters (cheap — returns an internal snapshot copy). */
   getStats(): PCDDetectorStats;
+  /** Re-bake the floating sprite labels (call when the UI language changes). */
+  setLabels(labels: PCDDetectorLabels): void;
   /** Toggle the entire assembly. */
   setEnabled(v: boolean): void;
   /** Detach and dispose all GPU resources this module owns. */
@@ -547,64 +560,55 @@ export function createPCDDetector(
   // SECTION 5 — Labels
   // -----------------------------------------------------------------
 
+  // Labels are baked into CanvasTextures by the shared helper so they can
+  // be re-baked (setLabels) when the UI language changes.
+  const labelHandles: LabelSprite[] = [];
   function makeLabelSprite(text: string, colorHex: number, scaleX: number): THREE.Sprite {
-    const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 64;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      const fallbackMat = new THREE.SpriteMaterial({ color: colorHex });
-      ownedMaterials.push(fallbackMat);
-      const fallback = new THREE.Sprite(fallbackMat);
-      fallback.scale.set(scaleX, scaleX * 0.125, 1);
-      return fallback;
-    }
-    const css = '#' + colorHex.toString(16).padStart(6, '0');
-    ctx.fillStyle = 'rgba(8, 11, 16, 0.88)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.strokeStyle = css;
-    ctx.lineWidth = 3;
-    ctx.strokeRect(1.5, 1.5, canvas.width - 3, canvas.height - 3);
-    ctx.fillStyle = css;
-    // Shrink the font until the label fits inside the padded box, so
-    // longer captions are never clipped mid-word.
-    const maxTextWidth = canvas.width - 24;
-    let fontPx = 30;
-    do {
-      ctx.font = `bold ${fontPx}px monospace`;
-      if (ctx.measureText(text).width <= maxTextWidth) break;
-      fontPx -= 1;
-    } while (fontPx > 10);
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(text, canvas.width / 2, canvas.height / 2);
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    ownedTextures.push(tex);
-    const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false });
-    ownedMaterials.push(mat);
-    const sprite = new THREE.Sprite(mat);
-    sprite.scale.set(scaleX, scaleX * 0.125, 1);
-    return sprite;
+    const handle = createLabelSprite(text, {
+      color: hexToCss(colorHex),
+      worldWidth: scaleX,
+      width: 512,
+      height: 64,
+      fontPx: 30,
+      minFontPx: 10,
+      borderPx: 3,
+    });
+    labelHandles.push(handle);
+    return handle.sprite;
   }
 
+  const initialLabels = options.labels ?? {
+    eid: 'EID  indirect / integrating',
+    pcd: 'PCD  direct / counting',
+    eidRibbon: 'integrated signal  (no spectrum)',
+    pcdRibbon: 'pulse height = photon energy',
+  };
+
   const labelY = DETECTOR_DEPTH * 0.5 + 0.62;
-  const eidLabel = makeLabelSprite('EID  indirect / integrating', 0xa78bfa, 2.3);
+  const eidLabel = makeLabelSprite(initialLabels.eid, 0xa78bfa, 2.3);
   eidLabel.position.set(EID_X, labelY, 0);
   group.add(eidLabel);
 
-  const pcdLabel = makeLabelSprite('PCD  direct / counting', 0x34d399, 2.3);
+  const pcdLabel = makeLabelSprite(initialLabels.pcd, 0x34d399, 2.3);
   pcdLabel.position.set(PCD_X, labelY, 0);
   group.add(pcdLabel);
 
   // Ribbon captions name what each readout actually is.
-  const eidRibbonLabel = makeLabelSprite('integrated signal  (no spectrum)', 0xa78bfa, 2.1);
+  const eidRibbonLabel = makeLabelSprite(initialLabels.eidRibbon, 0xa78bfa, 2.1);
   eidRibbonLabel.position.set(EID_X, RIBBON_Y - 0.3, RIBBON_Z);
   group.add(eidRibbonLabel);
 
-  const pcdRibbonLabel = makeLabelSprite('pulse height = photon energy', 0x34d399, 2.1);
+  const pcdRibbonLabel = makeLabelSprite(initialLabels.pcdRibbon, 0x34d399, 2.1);
   pcdRibbonLabel.position.set(PCD_X, RIBBON_Y - 0.3, RIBBON_Z);
   group.add(pcdRibbonLabel);
+
+  function setLabels(labels: PCDDetectorLabels): void {
+    // Order matches creation order above.
+    labelHandles[0].setText(labels.eid);
+    labelHandles[1].setText(labels.pcd);
+    labelHandles[2].setText(labels.eidRibbon);
+    labelHandles[3].setText(labels.pcdRibbon);
+  }
 
   // -----------------------------------------------------------------
   // SECTION 6 — Photon event pool
@@ -1148,6 +1152,8 @@ export function createPCDDetector(
     for (const g of ownedGeometries) g.dispose();
     for (const m of ownedMaterials) m.dispose();
     for (const t of ownedTextures) t.dispose();
+    for (const h of labelHandles) h.dispose();
+    labelHandles.length = 0;
     ownedGeometries.length = 0;
     ownedMaterials.length = 0;
     ownedTextures.length = 0;
@@ -1160,6 +1166,7 @@ export function createPCDDetector(
     update,
     setViewMode,
     getStats,
+    setLabels,
     setEnabled,
     dispose,
   };

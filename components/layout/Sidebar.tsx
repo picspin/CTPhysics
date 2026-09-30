@@ -162,7 +162,7 @@ const Sidebar: React.FC = () => {
               </div>
               <div>
                 <h1 className="text-lg font-bold text-gray-100">CT Physics</h1>
-                <p className="text-xs text-gray-400">交互式学习平台</p>
+                <p className="text-xs text-gray-400">{t('sidebar_tagline')}</p>
               </div>
             </motion.div>
           </Link>
@@ -235,8 +235,8 @@ const Sidebar: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
           >
-            <p className="font-medium text-gray-200 mb-1">小提示 (Pro Tip)</p>
-            <p>使用键盘快捷键进行导航。按 ? 查看所有快捷键。</p>
+            <p className="font-medium text-gray-200 mb-1">{t('sidebar_tip_title')}</p>
+            <p>{t('sidebar_tip_body')}</p>
           </motion.div>
         </div>
       </motion.aside>

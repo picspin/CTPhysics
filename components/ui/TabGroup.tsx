@@ -24,7 +24,7 @@ const TabGroup: React.FC<TabGroupProps> = ({
 }) => {
   const [internalActiveTab, setInternalActiveTab] = useState(defaultTab || tabs[0]?.id);
 
-  // 使用外部控制或内部状态
+  // Use external control if provided, otherwise internal state
   const activeTab = externalActiveTab !== undefined ? externalActiveTab : internalActiveTab;
   const onChange = externalOnChange || setInternalActiveTab;
 
