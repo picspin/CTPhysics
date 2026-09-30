@@ -43,7 +43,7 @@ test.describe('Phase 2 — postprocessing + X-ray cone beam', () => {
     await page.getByRole('button', { name: '螺旋CT与螺距' }).click();
     await page.waitForTimeout(1000);
     // Click the START button to enable scanning.
-    await page.getByRole('button', { name: '开始扫描 (START)' }).click();
+    await page.getByRole('button', { name: '开始扫描' }).click();
     await page.waitForTimeout(1200); // let a few rotation frames render
     const canvas = page.locator('canvas').first();
     await expect(canvas).toBeVisible();
@@ -58,7 +58,7 @@ test.describe('Phase 2 — postprocessing + X-ray cone beam', () => {
     await page.getByRole('button', { name: '螺旋CT与螺距' }).click();
     await page.waitForTimeout(1000);
     // Enable scanning.
-    await page.getByRole('button', { name: '开始扫描 (START)' }).click();
+    await page.getByRole('button', { name: '开始扫描' }).click();
     // The Slider component is a plain <input type="range"> without an
     // aria-label. Slider order in HelicalCTSimulator.tsx:
     //   [0] Rotation Time, [1] Pitch, [2] Tube Voltage (kV), [3] Tube Current (mA)

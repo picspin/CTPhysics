@@ -9,8 +9,8 @@ test.describe('CBCT (Cone-Beam CT) integration inside Reconstruction page', () =
   });
 
   test('renders CBCT tab headers and contents', async ({ page }) => {
-    await expect(page.locator('h3', { hasText: '锥束CT (Cone Beam CT) 物理原理' })).toBeVisible();
-    await expect(page.locator('h3', { hasText: '锥束CT物理模拟' })).toBeVisible();
+    await expect(page.locator('h2', { hasText: '锥束CT物理原理' })).toBeVisible();
+    await expect(page.locator('h2', { hasText: '锥束CT物理模拟' })).toBeVisible();
   });
 
   test('interacts with CBCT parameters controls inside tab', async ({ page }) => {

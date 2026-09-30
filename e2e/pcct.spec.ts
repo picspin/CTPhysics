@@ -26,7 +26,7 @@ test.describe('PCCT (Photon-Counting CT) page and simulator interactions', () =>
 
     // Click on Detector layer tab
     await page.click('button:has-text("探测器层")');
-    await expect(page.locator('h3', { hasText: '探测器能级分桶 (Energy Binning)' })).toBeVisible();
+    await expect(page.locator('h3', { hasText: '探测器能级分桶与非理想效应' })).toBeVisible();
 
     // Verify sliders for thresholds appear in detector tab
     const sliders = page.locator('input[type="range"]');
@@ -41,7 +41,7 @@ test.describe('PCCT (Photon-Counting CT) page and simulator interactions', () =>
     await expect(page.locator('h3', { hasText: '能谱物质分解' })).toBeVisible();
     
     // Select active material channel buttons
-    await expect(page.locator('button', { hasText: 'composite' })).toBeVisible();
-    await expect(page.locator('button', { hasText: 'iodine' })).toBeVisible();
+    await expect(page.locator('button', { hasText: '复合' })).toBeVisible();
+    await expect(page.locator('button', { hasText: '碘' })).toBeVisible();
   });
 });

@@ -9,6 +9,7 @@
     "lint": "next lint",
     "test:e2e": "playwright test",
     "test": "vitest run",
+    "check:i18n": "node scripts/check-i18n.mjs",
     "test:watch": "vitest"
   },
   "dependencies": {
