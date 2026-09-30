@@ -1,0 +1,79 @@
+{
+  "title": "CT Dose Measurement",
+  "description": "This page covers how dose is measured in CT, how patient size affects dose, and dose-reduction techniques.",
+  "sections": [
+    {
+      "id": "dose-measures",
+      "title": "Different Ways of Measuring Dose",
+      "description": "Dose is the energy deposited in tissue by radiation divided by the mass of that tissue, expressed in J/kg = gray (Gy).",
+      "content": "We first need to explain what dose is, why we care about it, and which different measures exist. Dose is the energy deposited in tissue by radiation divided by the mass of the tissue, measured in J/kg = gray (Gy). Note that because it is energy per unit mass, depositing 1 joule in a 1 kg foot gives the same dose as depositing 15 joules in an abdomen that weighs about 15 kg.",
+      "illustrations": [
+        {
+          "type": "diagram",
+          "description": "Dose diagram",
+          "caption": "Left: a dose of 1 Gy from 1 J of energy; right: a dose of 1 Gy from 9 J of energy. Each square represents 1 kg of tissue."
+        }
+      ],
+      "keyPoints": [
+        "Dose is the energy deposited per unit mass of tissue (J/kg = Gy)",
+        "The adverse effects of radiation are of two types: deterministic effects and stochastic effects",
+        "Deterministic effects are directly related to the radiation received by individual cells",
+        "Stochastic effects can occur randomly, even at very small doses",
+        "Effective dose (in Sv) accounts for the different radiosensitivity of different tissues"
+      ]
+    },
+    {
+      "id": "ct-dose-measurement",
+      "title": "Measuring Dose in CT",
+      "description": "The CT dose index (CTDI) is the standard way to measure dose in CT and represents the radiation delivered to one slice of the body.",
+      "content": "Back to dose \u2014 the energy deposited in tissue divided by the mass of the tissue \u2014 we need to work out how to measure it in CT. Remember that CT essentially takes many X-ray exposures from different angles along a length of the body, so we cannot simply add up \"each X-ray\". To measure dose in CT, the CT dose index (CTDI) was devised. CTDI, usually written CTDI100, is the radiation delivered to one slice of the body during a long CT scan.",
+      "keyPoints": [
+        "CTDI is the standard way to measure dose in CT",
+        "CTDI represents the radiation delivered to one slice of the body",
+        "CTDIvol = CTDIw / pitch, so a higher pitch gives a lower dose",
+        "Dose-length product (DLP) = CTDIvol \u00d7 scan length and represents the total radiation deposited"
+      ]
+    },
+    {
+      "id": "bowtie-filter",
+      "title": "The Bowtie Filter and Dose",
+      "description": "The bowtie filter is a specially shaped filter used to even out the radiation dose received by different parts of the body.",
+      "content": "In a CT scan the X-ray tube rotates around the patient, but the patient's cross-section is usually not circular. In an abdominal scan, for example, the patient is \"thicker\" when viewed from the side than from front to back. This means that with a uniform X-ray beam the lateral directions would receive more radiation (because the beam must pass through more tissue). To solve this, CT scanners use a so-called \"bowtie filter\".",
+      "illustrations": [
+        {
+          "type": "diagram",
+          "description": "Bowtie filter diagram",
+          "caption": "The shape of the bowtie filter lets X-rays passing through the sides of the patient be more intense than those passing front to back."
+        }
+      ],
+      "keyPoints": [
+        "The bowtie filter evens out the radiation dose from different directions",
+        "Its shape lets X-rays passing through the sides of the patient be more intense than those passing front to back",
+        "This helps reduce the overall radiation dose and improves image quality"
+      ]
+    },
+    {
+      "id": "patient-size",
+      "title": "Patient Size and Dose",
+      "description": "Patient size has a major effect on CT dose: larger patients need a higher radiation dose to obtain the same image quality.",
+      "content": "Patient size has a major effect on CT dose. Larger patients need a higher radiation dose to obtain the same image quality, because the X-rays must pass through more tissue. Modern CT scanners use automatic tube-current modulation (such as Siemens CAREDose or GE Auto mA) to adjust the radiation dose automatically to the patient's size.",
+      "keyPoints": [
+        "Larger patients need a higher radiation dose to obtain the same image quality",
+        "Automatic tube-current modulation adjusts the radiation dose to the patient's size",
+        "Special care should be taken to reduce the radiation dose in pediatric patients"
+      ]
+    },
+    {
+      "id": "dose-reduction",
+      "title": "Dose Reduction",
+      "description": "Many techniques can reduce the radiation dose in CT, including iterative reconstruction, tube-current modulation and low-dose protocols.",
+      "content": "There are many ways to reduce CT radiation dose. The simplest is to lower the tube current (mA) or the tube voltage (kV). However, this increases image noise, which may affect diagnostic quality. Modern CT scanners use several techniques to reduce radiation dose while maintaining image quality, including iterative reconstruction, tube-current modulation and low-dose protocols.",
+      "keyPoints": [
+        "Lowering the tube current (mA) or tube voltage (kV) reduces the radiation dose but increases image noise",
+        "Iterative reconstruction can improve image quality at low dose",
+        "Tube-current modulation adjusts the radiation dose automatically to the patient's anatomy",
+        "Low-dose protocols optimize the scan parameters for specific clinical situations"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,408 @@
+{
+  "title": "CT Physics Review Questions",
+  "description": "A comprehensive review of core CT physics concepts, including image reconstruction, helical CT, radiation dose, cardiac CT and dual-energy physics.",
+  "questions": [
+    {
+      "id": 1,
+      "question": "What does the \"filter\" in filtered backprojection refer to?",
+      "options": [
+        "The bowtie filter between the beam and the patient",
+        "The conversion between attenuation values and HU",
+        "The conversion between fan-beam and parallel geometry",
+        "Correction of the blurring inherent in the backprojection process"
+      ],
+      "correctAnswer": 3,
+      "explanation": "The filter in filtered backprojection compensates for, or corrects, the blurring (smearing) that is inherent in the backprojection process."
+    },
+    {
+      "id": 2,
+      "question": "Changing the filter (or convolution kernel) in filtered backprojection results in:",
+      "options": [
+        "A change in the trade-off between image sharpness and noise",
+        "A different window level of the CT image",
+        "A change in patient dose",
+        "A change in the reconstruction field of view (FOV)"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Changing the filter lets more or fewer high-frequency features through. High-frequency components (analogous to the edges of k-space in MRI) are responsible for image sharpness but also carry noise. A sharp kernel (such as a bone or lung kernel) therefore increases image noise, whereas a soft-tissue kernel smooths out the noise to give a smoother image."
+    },
+    {
+      "id": 3,
+      "question": "The main advantage of iterative reconstruction over filtered backprojection is:",
+      "options": [
+        "Better display of bone detail",
+        "No need to specify a reconstruction kernel or filter",
+        "Better handling of noisy images",
+        "Faster reconstruction"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Iterative reconstruction converges on the \"best\" solution for the CT image through repeated cycles of simulation. It is less sensitive to noise than filtered backprojection, so it can give better image quality from low-dose (i.e. high-noise) CT scans and also handles metal artifacts better. The drawback is slower computation."
+    },
+    {
+      "id": 4,
+      "question": "In helical CT, a single axial slice represents:",
+      "options": [
+        "A plane through the body perpendicular to the scan axis",
+        "A plane through the body oblique to the scan axis",
+        "An image reconstructed from projection data at adjacent positions along the scan axis"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Because the table moves while the X-ray tube rotates, projection data are acquired along a helical path. To reconstruct a single axial slice (perpendicular to the scan axis), the scanner must interpolate projection data from adjacent positions along the z-axis (for example with 180° or 360° linear-interpolation algorithms)."
+    },
+    {
+      "id": 5,
+      "question": "In helical CT, pitch is defined as:",
+      "options": [
+        "Table travel per 360° rotation / beam width",
+        "Patient dose per 360° rotation / beam width",
+        "Reconstructed slice thickness / beam width",
+        "The angle of the gantry relative to the scan axis"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Pitch is the ratio of the distance the table moves during one gantry rotation (360°) to the total X-ray beam width (number of detector rows × width of each row)."
+    },
+    {
+      "id": 6,
+      "question": "High-pitch techniques are mainly used for:",
+      "options": [
+        "Very small lesions (such as non-displaced fractures)",
+        "Gated cardiac CT",
+        "Precise multiplanar reconstruction",
+        "Fast scanning"
+      ],
+      "correctAnswer": 3,
+      "explanation": "A high pitch means the table moves faster relative to the beam width, allowing a larger volume to be scanned in less time. This is very useful in trauma examinations or when the patient cannot hold their breath (such as chest CTA). However, a high pitch broadens the slice-sensitivity profile (reducing z-axis resolution)."
+    },
+    {
+      "id": 7,
+      "question": "In helical CT, a low-pitch technique is most helpful for:",
+      "options": [
+        "Scanning patients who are short of breath",
+        "Detecting non-displaced fractures",
+        "Detecting subtle liver lesions",
+        "Scanning young children"
+      ],
+      "correctAnswer": 1,
+      "explanation": "A low pitch oversamples the data along the z-axis, producing a narrower slice-sensitivity profile and better z-axis spatial resolution. This is very helpful for detecting small, non-displaced fractures."
+    },
+    {
+      "id": 8,
+      "question": "Which of the following values reported by the scanner best reflects the total amount of radiation delivered to the patient?",
+      "options": [
+        "Dose",
+        "CT dose index (CTDI)",
+        "Pitch",
+        "Dose-length product (DLP)",
+        "Effective mAs"
+      ],
+      "correctAnswer": 3,
+      "explanation": "CTDI reflects the dose within a single slice (or a normalized measure of beam intensity). DLP is CTDI multiplied by the scan length and represents the total radiation energy deposited in the patient."
+    },
+    {
+      "id": 9,
+      "question": "The metric used to reflect the risk of radiation-induced cancer (a stochastic effect) is:",
+      "options": [
+        "Dose",
+        "CT dose index (CTDI)",
+        "Mean dose",
+        "Effective dose",
+        "Dose-length product (DLP)"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Effective dose is calculated by multiplying the absorbed dose by the radiation weighting factor and the radiosensitivity (tissue weighting factor) of the organs involved. Its unit is the sievert (Sv) or millisievert (mSv), and it is used to estimate the risk of stochastic effects such as cancer."
+    },
+    {
+      "id": 10,
+      "question": "Deterministic effects in CT are best assessed by looking at which of the following?",
+      "options": [
+        "CT dose index (CTDI)",
+        "Dose-length product (DLP)",
+        "Effective dose",
+        "Pitch"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Deterministic effects (such as skin erythema or hair loss) depend on the maximum dose to a particular tissue region, not on the total energy deposited. CTDI provides a measure of this local dose."
+    },
+    {
+      "id": 11,
+      "question": "All else being equal, CT dose can be reduced by adjusting which of the following parameters?",
+      "options": [
+        "Increase kV",
+        "Increase mAs",
+        "Increase pitch",
+        "Increase scan length"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Increasing the pitch spreads the radiation over a larger region, reducing the dose at any single point in the patient. Increasing kV, mAs or scan length all increase the total dose."
+    },
+    {
+      "id": 12,
+      "question": "In a CT examination, how is the radiation dose distributed within the patient?",
+      "options": [
+        "Mainly at the skin surface",
+        "Mainly at the centre of the body",
+        "Higher at the skin surface than at the centre",
+        "Perfectly uniform from skin to centre"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Because of attenuation as the X-rays pass through the body, more radiation is absorbed at the surface. However, because the tube rotates 360° the distribution is relatively even compared with a single projection exposure, but the peripheral dose is still higher than the central dose."
+    },
+    {
+      "id": 13,
+      "question": "At the same CTDI (i.e. the same scan parameters), what effect does a change in patient size have on the radiation dose?",
+      "options": [
+        "A larger patient receives a higher dose",
+        "A larger patient receives a lower dose",
+        "A larger patient does not change the dose"
+      ],
+      "correctAnswer": 1,
+      "explanation": "CTDI is measured in a standard-size phantom (16 or 32 cm). For the same X-ray beam intensity (CTDI), a larger patient provides more \"self-shielding\", so the dose absorbed by the internal organs is actually lower than in a smaller patient."
+    },
+    {
+      "id": 14,
+      "question": "The dose parameter used to correct CTDI for patient size is:",
+      "options": [
+        "Effective dose",
+        "Dose-length product (DLP)",
+        "Dose-area product (DAP)",
+        "Size-specific dose estimate (SSDE)",
+        "Volume CTDI (CTDIvol)"
+      ],
+      "correctAnswer": 3,
+      "explanation": "SSDE applies a conversion factor to CTDIvol based on the patient's physical size (such as diameter) to estimate more accurately the dose that individual actually receives."
+    },
+    {
+      "id": 15,
+      "question": "Positioning the patient off-centre in the CT gantry results in:",
+      "options": [
+        "A lower dose",
+        "A higher dose",
+        "Reconstruction artifacts",
+        "Inaccurate CT numbers (HU)"
+      ],
+      "correctAnswer": 1,
+      "explanation": "The standard bowtie filter is designed for a centred patient. If the patient is off-centre, the thicker part of the filter may not line up with the thinner part of the patient, and automatic exposure control (AEC) may miscalculate the required mA from the scout image, usually leading to overexposure."
+    },
+    {
+      "id": 16,
+      "question": "Lowering the kV in CT is advantageous because:",
+      "options": [
+        "X-ray penetration increases",
+        "Tissue contrast improves",
+        "Scan time shortens",
+        "Metal artifacts improve"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Lowering the kV increases the proportion of photoelectric effect relative to Compton scattering, especially for materials such as iodine. This increases the attenuation difference between tissues and thus improves contrast (although it also increases image noise)."
+    },
+    {
+      "id": 17,
+      "question": "Automatic exposure control (AEC) uses the scout image (scout/topogram) to determine:",
+      "options": [
+        "Tube current (mA)",
+        "Pitch",
+        "Reconstruction filter",
+        "Bowtie filter"
+      ],
+      "correctAnswer": 0,
+      "explanation": "The AEC system analyses the attenuation in the scout image and adjusts the tube current (mA) in real time or along the z-axis, to maintain a consistent image-noise level across different body sizes or anatomical regions."
+    },
+    {
+      "id": 18,
+      "question": "The goal of automatic exposure control is to:",
+      "options": [
+        "Produce images with a similar noise level in patients of different sizes",
+        "Scan patients of different sizes with the same kV and mAs settings",
+        "Obtain attractive, low-noise images",
+        "Eliminate the radiation risk of CT examinations"
+      ],
+      "correctAnswer": 0,
+      "explanation": "AEC adjusts the mA so that every patient, regardless of size, receives enough radiation to produce a diagnostic-quality noise level, preventing overexposure of small patients and underexposure of large patients."
+    },
+    {
+      "id": 19,
+      "question": "The main technical challenge of cardiac CT is:",
+      "options": [
+        "Spatial resolution",
+        "Temporal resolution",
+        "Contrast resolution",
+        "Three-dimensional reconstruction"
+      ],
+      "correctAnswer": 1,
+      "explanation": "The heart is constantly beating. To obtain motion-free images of the coronary arteries, the scan must be completed within a very short time window (high temporal resolution), usually within a single heartbeat."
+    },
+    {
+      "id": 20,
+      "question": "The main determinant of CT temporal resolution is:",
+      "options": [
+        "Gantry rotation speed",
+        "Reconstruction algorithm",
+        "Fan angle",
+        "Detector collimation",
+        "Computer processing power"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Temporal resolution is usually half the gantry rotation time (using a 180° reconstruction algorithm). The faster the rotation, the better the temporal resolution."
+    },
+    {
+      "id": 21,
+      "question": "Increasing the number of detector rows in multi-detector helical CT (MDCT) mainly allows:",
+      "options": [
+        "Higher spatial resolution",
+        "Higher temporal resolution",
+        "Greater axial coverage",
+        "Higher contrast resolution"
+      ],
+      "correctAnswer": 2,
+      "explanation": "More detector rows mean a wider X-ray beam, i.e. a larger volume (z-axis coverage) can be scanned in one gantry rotation."
+    },
+    {
+      "id": 22,
+      "question": "A dose-reduction strategy for prospectively gated cardiac CT is:",
+      "options": [
+        "Increasing the tube mAs",
+        "Increasing the tube kV",
+        "Using an ultra-high-pitch technique",
+        "Using a scanner with more detector rows",
+        "Changing the heart rate"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Prospective gating switches the X-ray beam on only during a specific phase of the cardiac cycle (such as mid-diastole). An ultra-high-pitch helical scan can cover the entire heart within a single diastole, significantly reducing the dose."
+    },
+    {
+      "id": 23,
+      "question": "The advantage of a cone-beam scanner (compared with standard MDCT) in cardiac CT is:",
+      "options": [
+        "Improved spatial resolution",
+        "Improved temporal resolution",
+        "Improved contrast resolution",
+        "Improved patient motion artifacts"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Cone-beam or wide-detector scanners (such as 320-row) can cover the entire heart in one rotation, eliminating the artifacts that occur in helical scanning when several slabs are stitched together (stair-step artifacts)."
+    },
+    {
+      "id": 24,
+      "question": "Compared with prospectively gated CT, retrospectively gated cardiac CT has a higher radiation dose because of:",
+      "options": [
+        "Increased scanner mAs",
+        "Increased scanner kV",
+        "Increased scanner pitch",
+        "Decreased scanner pitch",
+        "Increased axial coverage",
+        "Improved spatial resolution"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Retrospective gating acquires data throughout the cardiac cycle using a very low pitch (such as 0.2) to ensure that no data are missing at any phase. Compared with prospective gating, this results in a significantly higher radiation exposure."
+    },
+    {
+      "id": 25,
+      "question": "Retrospective gating (compared with prospective gating) is particularly useful for which type of patient?",
+      "options": [
+        "Patients with a large body habitus",
+        "Patients with a slow heart rate",
+        "Patients with an irregular heart rate",
+        "Patients with anomalous coronary origins"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Because retrospective gating acquires data over the whole cycle, the best phase can be selected for reconstruction even if the heartbeat is irregular (arrhythmia), a situation that would cause prospective gating to fail."
+    },
+    {
+      "id": 26,
+      "question": "A dose-reduction strategy for retrospectively gated cardiac CT is:",
+      "options": [
+        "Electrocardiogram (ECG) dose modulation",
+        "Multi-segment reconstruction",
+        "Increasing kV",
+        "Lowering the heart rate"
+      ],
+      "correctAnswer": 0,
+      "explanation": "ECG dose modulation lowers the tube current (mA) during systole (a phase where diagnostic quality is less critical) and uses full power only in diastole, thereby reducing the overall dose."
+    },
+    {
+      "id": 27,
+      "question": "The most important physical process determining tissue contrast in CT imaging is:",
+      "options": [
+        "Coherent (Rayleigh) scattering",
+        "Photoelectric absorption",
+        "Incoherent (Compton) scattering",
+        "Characteristic X-ray production"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Photoelectric absorption depends strongly on the atomic number (Z) of the material. This makes it possible to distinguish different tissues by composition (such as soft tissue from bone or iodine)."
+    },
+    {
+      "id": 28,
+      "question": "Iodine is a good CT contrast agent because:",
+      "options": [
+        "We can reach a very high concentration in the target organ",
+        "Its K-edge (33 keV) is far below the energy of X-rays produced by a 120 kV tube",
+        "Its K-edge (33 keV) is close to the mean diagnostic X-ray energy produced by a 120 kV tube",
+        "It mimics the attenuation of bone"
+      ],
+      "correctAnswer": 2,
+      "explanation": "The K-edge of iodine (33.2 keV) is close to the mean energy of a typical 120 kVp X-ray spectrum (about 40–60 keV). This gives a high probability of photoelectric interaction and therefore high attenuation/contrast."
+    },
+    {
+      "id": 29,
+      "question": "The CT number (HU) of fat depends on:",
+      "options": [
+        "kV",
+        "mAs",
+        "Reconstruction algorithm",
+        "Nothing — it is a constant"
+      ],
+      "correctAnswer": 0,
+      "explanation": "The HU of a material depends on its linear attenuation coefficient relative to water. Because different materials have different K-edges and atomic numbers, their attenuation changes differently as the X-ray spectrum (kV) changes. For example, fat becomes \"brighter\" (higher HU) at lower kV."
+    },
+    {
+      "id": 30,
+      "question": "\"Beam hardening\" in X-ray imaging refers to:",
+      "options": [
+        "The intensity of the X-ray beam decreasing as it passes through dense material",
+        "The energy of photons decreasing when they are scattered by dense material",
+        "The energy of photons increasing when they are scattered by dense material",
+        "The mean X-ray energy of the beam decreasing as it passes through dense material",
+        "The mean X-ray energy of the beam increasing as it passes through dense material"
+      ],
+      "correctAnswer": 4,
+      "explanation": "X-ray beams are polychromatic. As they pass through matter, low-energy photons are preferentially absorbed (filtered out), leaving only the higher-energy photons. The mean energy of the remaining beam therefore increases, or \"hardens\"."
+    },
+    {
+      "id": 31,
+      "question": "What effect does a hardened beam have on the CT appearance of soft tissue?",
+      "options": [
+        "No change",
+        "It becomes darker with poorer contrast",
+        "It becomes darker with better contrast",
+        "It becomes brighter with the same contrast"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Because a hardened beam has a higher mean energy, it is absorbed less. This results in lower measured attenuation values (lower HU), making tissue look darker. It also reduces the attenuation difference between tissues, resulting in poorer contrast."
+    },
+    {
+      "id": 32,
+      "question": "A DEXA bone-density scanner uses two X-ray energies in order to:",
+      "options": [
+        "Determine the minerals present in bone (calcium vs. phosphorus)",
+        "Eliminate soft-tissue attenuation",
+        "Find the best energy for imaging bone",
+        "Reduce radiation dose"
+      ],
+      "correctAnswer": 1,
+      "explanation": "By comparing the attenuation at two different X-ray energies, the scanner can mathematically separate the contributions of soft tissue and bone, allowing an accurate measurement of bone mineral density."
+    },
+    {
+      "id": 33,
+      "question": "The advantages of dual-energy CT include all of the following EXCEPT:",
+      "options": [
+        "Virtual non-contrast images",
+        "Separation of dozens of different materials",
+        "Organ perfusion maps",
+        "Calcium subtraction"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Although dual-energy CT can separate some materials (such as iodine from calcium, or water from uric acid), using only two energy levels it can usually resolve or separate only two (sometimes three) known materials, and cannot distinguish dozens."
+    }
+  ]
+}

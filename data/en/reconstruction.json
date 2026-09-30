@@ -1,0 +1,158 @@
+{
+  "title": "CT Reconstruction and Helical CT",
+  "description": "This page covers CT reconstruction techniques and the principles of helical CT, including backprojection, filtered backprojection and the concept of pitch.",
+  "sections": [
+    {
+      "id": "backprojection",
+      "title": "Backprojection",
+      "description": "Backprojection is the basic method of CT reconstruction: the image is reconstructed by \"smearing\" the projection data back into image space.",
+      "content": "To understand CT reconstruction, we first need to understand how a computed tomography scanner works. In simple terms, it obtains information about the internal structure of the body by taking X-ray projections at different angles. At any given angle, a projection is a line of light and dark pixels that depends on how the X-rays are attenuated by the tissue. People sometimes talk about the sinogram, which is simply a display in which the projections from all the different angles are stacked together.",
+      "simulator": {
+        "type": "backprojection",
+        "options": {
+          "images": [
+            {
+              "id": "abdomen",
+              "name": "Abdomen",
+              "src": "/images/abdomen.png"
+            },
+            {
+              "id": "phantom",
+              "name": "Phantom",
+              "src": "/images/phantom.png"
+            },
+            {
+              "id": "fracture",
+              "name": "Fracture (3D)",
+              "src": "/images/fracture.png"
+            }
+          ],
+          "fanBeamAngles": [
+            {
+              "value": 30,
+              "name": "30\u00b0"
+            },
+            {
+              "value": 60,
+              "name": "60\u00b0"
+            },
+            {
+              "value": 90,
+              "name": "90\u00b0"
+            },
+            {
+              "value": 120,
+              "name": "120\u00b0"
+            }
+          ]
+        }
+      },
+      "keyPoints": [
+        "Backprojection is the process of smearing projection data back into image space",
+        "Standard backprojection produces a blurred image",
+        "Data over 180 degrees are needed to reconstruct an image",
+        "In fan-beam geometry, a part of the object must be contained in all of the projections over 180 degrees for correct reconstruction"
+      ]
+    },
+    {
+      "id": "filtered-backprojection",
+      "title": "Filtered Backprojection",
+      "description": "Filtered backprojection improves image quality by applying a filter to the projection data before backprojection.",
+      "content": "As you may have noticed, backprojection blurs the final image. To fix the blurring created by standard backprojection, we use filtered backprojection. Filtering means modifying the projection data before backprojecting it. The type of filter needed is a high-pass, or sharpening, filter. This kind of filter enhances sharp edges in the projection and tends to ignore flat regions. Because a high-pass filter actually creates negative pixels at edges, it subtracts the extra blur caused by backprojection.",
+      "keyPoints": [
+        "Filtered backprojection uses a high-pass filter to enhance edges",
+        "The high-pass filter creates negative pixels at edges, which reduces blurring",
+        "Filtered backprojection is the standard reconstruction method used in modern CT scanners"
+      ]
+    },
+    {
+      "id": "helical-ct",
+      "title": "Helical CT and Pitch",
+      "description": "Helical CT uses a continuously rotating X-ray source and detector while the patient table keeps moving, producing a helical scan path.",
+      "content": "Early CT scanners scanned only one slice of the body at a time and then moved on to the next. The slice thickness therefore depended only on the width of the CT detector. Because the scanner collimates the beam to the width of the detector, the slice thickness can also be said to equal the collimator width.\n\nModern CT uses what is called a helical (or \"spiral\") path. In helical CT the scanner rotates continuously while the patient table also moves continuously. The situation in which two CT projections are acquired at the same slice (z position) therefore forms a helical path.\n\nPitch is the ratio of the distance the table moves to the collimator width. With a pitch of 1.0 there is exactly no gap between adjacent turns of the helix; with a pitch below 1.0 adjacent turns overlap, giving higher image quality but a higher radiation dose; with a pitch above 1.0 there are gaps between adjacent turns, giving a faster scan but possibly losing information.\n\nModern helical CT averages (or \"interpolates\") data from two projections 180 degrees apart. A photon experiences the same attenuation whether it passes \"forward\" or \"backward\" through the tissue, so angles 180 degrees apart are equivalent. This interpolation converts the helical path into cross-sectional slices. It also explains the concept of slice broadening \u2014 each point reflects data from two z positions, separated by an amount determined by how fast the table moves while the beam rotates through 180 degrees.",
+      "simulator": {
+        "type": "helical-ct",
+        "options": {
+          "images": [
+            {
+              "id": "body",
+              "name": "Body phantom",
+              "src": "/images/body.png"
+            },
+            {
+              "id": "ctsim_a30",
+              "name": "CT simulation 30\u00b0",
+              "src": "/images/ctsim_a30.gif"
+            },
+            {
+              "id": "ctsim_a60",
+              "name": "CT simulation 60\u00b0",
+              "src": "/images/ctsim_a60.gif"
+            },
+            {
+              "id": "ctsim_a90",
+              "name": "CT simulation 90\u00b0",
+              "src": "/images/ctsim_a90.gif"
+            },
+            {
+              "id": "helical_30",
+              "name": "Helical CT 30\u00b0",
+              "src": "/images/helical_30.gif"
+            },
+            {
+              "id": "helical_60",
+              "name": "Helical CT 60\u00b0",
+              "src": "/images/helical_60.gif"
+            },
+            {
+              "id": "helical_90",
+              "name": "Helical CT 90\u00b0",
+              "src": "/images/helical_90.gif"
+            }
+          ],
+          "pitchValues": [
+            {
+              "value": 0.5,
+              "name": "0.5 (overlapping scan)",
+              "description": "Adjacent turns of the helix overlap by 50%: high image quality but a high radiation dose"
+            },
+            {
+              "value": 1.0,
+              "name": "1.0 (gap-free scan)",
+              "description": "There is exactly no gap between adjacent turns of the helix, balancing image quality and radiation dose"
+            },
+            {
+              "value": 1.5,
+              "name": "1.5 (small-gap scan)",
+              "description": "There is a small gap between adjacent turns of the helix: a faster scan, with possibly slight loss of information"
+            },
+            {
+              "value": 2.0,
+              "name": "2.0 (large-gap scan)",
+              "description": "There is a large gap between adjacent turns of the helix: a fast scan, but information may be lost"
+            }
+          ]
+        }
+      },
+      "keyPoints": [
+        "Helical CT lets the X-ray source and detector rotate continuously while the patient table keeps moving",
+        "Pitch is the ratio of table travel to collimator width and affects image quality and scan speed",
+        "With a pitch below 1.0 the scan overlaps, giving higher image quality but a higher radiation dose",
+        "With a pitch above 1.0 the scan has gaps, giving a faster scan but possibly losing information",
+        "Modern helical CT uses interpolation to convert the helical-path data into cross-sectional slices"
+      ]
+    },
+    {
+      "id": "cone-beam",
+      "title": "Cone-Beam CT Reconstruction",
+      "description": "Cone-beam CT (CBCT) uses a cone-shaped X-ray beam and a flat-panel detector to acquire volumetric data in a single rotation.",
+      "content": "Cone-beam CT (CBCT) differs from conventional fan-beam CT. Conventional CT uses a fan-shaped beam and a one-dimensional detector array and scans slice by slice. CBCT instead uses a cone-shaped X-ray beam and a two-dimensional flat-panel detector. This means CBCT can acquire data for the entire volume of interest in a single rotation, rather than needing multiple rotations or table movements as in helical CT.\n\nThe main advantages of CBCT include:\n1. Short scan time\n2. Generally lower radiation dose\n3. High spatial resolution (isotropic voxels)\n4. Fewer artifacts (such as metal artifacts)\n\nHowever, CBCT also has drawbacks, mainly greater scattered radiation, which makes soft-tissue contrast poorer than in conventional CT. CBCT is therefore commonly used in dentistry, orthopedics and interventional radiology, while conventional CT remains the first choice for diagnoses that require fine soft-tissue resolution (such as the abdomen and brain).\n\nThe reconstruction algorithm is usually FDK (Feldkamp-Davis-Kress), an extension of the filtered backprojection algorithm to three dimensions.",
+      "keyPoints": [
+        "CBCT uses a cone-shaped beam and a flat-panel detector to acquire volumetric data in a single rotation",
+        "It offers high spatial resolution and isotropic voxels",
+        "Scattered radiation is greater and soft-tissue contrast is lower",
+        "Commonly used in dentistry, orthopedics and interventional guidance"
+      ]
+    }
+  ]
+}
