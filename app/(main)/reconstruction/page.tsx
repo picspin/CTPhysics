@@ -8,6 +8,7 @@ import SimulatorContainer from '@/components/ui/SimulatorContainer';
 import BackprojectionSimulator from '@/components/simulators/BackprojectionSimulator';
 import HelicalCTSimulator from '@/components/simulators/HelicalCTSimulator';
 import CBCTSimulator from '@/components/simulators/CBCTSimulator';
+import CBCTApplications from '@/components/simulators/CBCTApplications';
 import IterativeReconSection from '@/components/simulators/IterativeReconSection';
 
 import { useLanguage } from '@/context/LanguageContext';
@@ -118,6 +119,8 @@ export default function ReconstructionPage() {
               <SectionCard title={t('cbct_sim_title')}>
                 <CBCTSimulator />
               </SectionCard>
+
+              <CBCTApplications />
             </>
           )}
 
