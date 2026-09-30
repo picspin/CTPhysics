@@ -475,6 +475,13 @@ export const helicalInterpolation = (
 };
 
 // Cardiac gating calculations
+/**
+ * @deprecated Simplified teaching heuristic, NOT used by the UI any more (the cardiac simulator uses
+ * utils/cardiac-windows.ts, which is based on the window-vs-heart-rate table of the manufacturer training
+ * material). The 75 % / 45 % numbers and the 65 bpm switch-over are UNSOURCED, `rotationTime` is ignored, and
+ * the percentages are relative to the R-wave. Kept unchanged because an existing unit test pins its values.
+ * See docs/cardiac-sources-and-gaps.md.
+ */
 export const calculateOptimalPhase = (
   heartRate: number,
   rotationTime: number

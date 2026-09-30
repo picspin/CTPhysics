@@ -215,9 +215,10 @@ export function buildPlan(p: PlanParams): AcqPlan {
     const blk = turboFlashBlock(p.hr);
     triggerBeat = 0;
     phaseFixed = true;
-    // trigger on the first R-wave; X-ray starts ~1.5 beats later, i.e. in the 60 % region of the NEXT beat
-    tube.push({ beat: 1, startMs: blk.startMs, endMs: Math.min(blk.endMs, rr), level: 1 });
-    targets.push({ beat: 1, startMs: blk.startMs, endMs: Math.min(blk.endMs, rr), durationKnown: true });
+    // trigger on the first R-wave; X-ray starts ~1.5 beats later, i.e. in the 60 % region of the NEXT beat.
+    // The block is NOT clipped at the next R-wave: at high heart rates it simply continues into the next beat.
+    tube.push({ beat: 1, startMs: blk.startMs, endMs: blk.endMs, level: 1 });
+    targets.push({ beat: 1, startMs: blk.startMs, endMs: blk.endMs, durationKnown: true });
   } else {
     const w = phaseWindow(p.hr, p.phase);
     const centre = (w.startMs + w.endMs) / 2;
