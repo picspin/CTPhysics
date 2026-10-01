@@ -69,11 +69,14 @@ export interface PitchValue {
 // Cardiac Gating Simulator types
 export interface CardiacGatingOptions {
   gatingTypes: GatingType[];
-  heartRateRange: {
+  /** Slider range. Optional: the cardiac content JSON files historically ship `heartRates` instead (see docs/cardiac-sources-and-gaps.md). */
+  heartRateRange?: {
     min: number;
     max: number;
     step: number;
   };
+  /** Preset heart rates listed in the page content (not used by the slider). */
+  heartRates?: number[];
 }
 
 export interface GatingType {

@@ -30,3 +30,6 @@ pnpm-debug.log*
 
 # 生产环境变量文件（不入库，可能含敏感信息）
 .env.production
+
+# TypeScript incremental build cache
+*.tsbuildinfo
