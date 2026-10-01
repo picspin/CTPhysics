@@ -27,7 +27,7 @@ import { MC_REGION_KEY } from '@/i18n/labels';
 //
 // Educational framing in the UI: this is NOT a real MC photon-transport
 // engine. It demonstrates the central MC idea — statistical noise shrinks
-// as √N. We say so explicitly so users don't mistake it for a calibrated
+// as 1/√N (variance ∝ 1/N). We say so explicitly so users don't mistake it for a calibrated
 // dose estimator.
 // ---------------------------------------------------------------------------
 

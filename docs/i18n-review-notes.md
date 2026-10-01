@@ -43,7 +43,7 @@ Default language is still **zh**. The `<html lang>` attribute is `zh-CN` in the 
 | English used | zh in source | Note |
 | --- | --- | --- |
 | calcium blooming | 钙化膨胀 | zh side no longer contains the loan word "blooming" in prose |
-| beam-hardening streaks / cupping | 硬化条纹伪影 / 杯状伪影 | |
+| beam-hardening streaks / cupping | 束硬化条纹伪影 / 杯状伪影 | |
 | K-escape | K 逃逸 | "escape peak" in the physics sense; text says CdTe fluorescence escape |
 | K-edge | K-edge | kept as loan word in zh on purpose ("K-edge 33 keV"), ignored by the mixed-label lint |
 | bowtie filter | 领结滤波器 | |
@@ -59,7 +59,8 @@ Default language is still **zh**. The `<html lang>` attribute is `zh-CN` in the 
   `correctAnswer` indices. `check:i18n` and vitest enforce this.
 * 33 quiz questions + explanations, dose, cardiac, dual-energy and reconstruction sections were translated.
   The style aims for the plain, conversational teaching tone of the source (Prof. Mark Hammer-style lecture notes)
-  rather than literal word-for-word rendering; technical claims were **not** altered.
+  rather than literal word-for-word rendering; technical claims were not altered during translation (the physics errors that
+  were present in the zh source and carried into en are listed as resolved in §7).
 * Quiz options that used "中文 (English)" style were reduced to the plain zh term in `data/zh` (only the redundant
   English gloss was removed, e.g. "螺距 (Pitch)" → "螺距"). No semantic change. Acronyms like CTDI, SSDE stay.
 * **Copyright / permission risk:** the survey (`ctphysics-overview.md`) indicates the original material derives from
@@ -88,3 +89,19 @@ Default language is still **zh**. The `<html lang>` attribute is `zh-CN` in the 
   selectors only were adjusted.
 * No Next.js route-based locale (`/en/...`) was introduced: the site stays a client-side toggle with `localStorage`,
   so URLs are not language-specific and search engines only see the zh static HTML.
+
+## 7. Review round 1 — resolved items (PR #10 review)
+
+| Item | Resolution |
+| --- | --- |
+| M1 bowtie zh term inconsistent (蝴蝶/领结) | `data/zh/dose.json` unified to **领结滤波器** (title, description, content, illustration, caption, key point); repo-wide grep for 蝴蝶滤波器 is now empty except the survey doc `website_analysis.md` (original-site analysis, untouched). |
+| M2 bowtie mechanism physically wrong (zh + en) | `data/{zh,en}/dose.json` rewritten: the bowtie shapes the fan-beam intensity (thin at the centre, thicker at the periphery) to equalize the detector signal and reduce peripheral/skin dose and scatter. The old "lateral projections receive more radiation because of more tissue" reasoning was removed. |
+| M3 Monte Carlo convergence wording | `dose_sec_mc_desc`, `dose_mc_frame_b`, `mc_desc` (zh + en): the **standard deviation / standard error shrinks as 1/√N**, the variance scales as 1/N. Code comments in `utils/dose-physics.ts`, `MonteCarloPanel.tsx` and the vitest comment corrected as well. No test asserted the old wording. |
+| M4 virtual non-contrast (zh) | `data/zh/dual-energy.json`: 虚拟平扫可以省去一次真正的平扫采集（并节省相应剂量） — now matches the English. |
+| M5 seven dead `cbct_sim_3d_*` keys | Removed from `i18n/zh.ts` and `i18n/en.ts` (grep: no references on this branch nor on `feat/recon-cbct-cardiac`). |
+| Minor: beam hardening term | PCCT strings now use **束硬化** consistently (`pcct_vmi_subtitle`, `pcct_eff_40`, `pcct_eff_100`, `pcct_vmi_streak`; terminology table §4). Quiz text about 硬化的射束 describes the *hardened beam* (not the artifact) and was left as is. |
+| Minor: AEC | `data/zh/questions.json` 自动曝光补偿 → **自动曝光控制**. |
+| Minor: motion artifacts | `data/en/questions.json` "Improved patient motion artifacts" → "Reduced motion artifacts". |
+| Minor: kV / kVp | Tube-voltage UI labels (`dose_red_kv`, `hel_tube_voltage`, `hel_slice_label`) now say kVp like the other tube-voltage labels; "120 kV tube" → "120 kVp tube" next to the existing "120 kVp spectrum". Generic "lower the kV" prose in quiz items was left as is. |
+| Minor: US/UK spelling | `data/en/questions.json` and `i18n/en.ts` normalized to US (centre→center, centred→centered, coloured→colored, grey→gray, modelling→modeling, isocentre→isocenter). Spellings inside code comments / identifiers were not touched. |
+| `check-i18n.mjs` blind spot | Added a **warning-only** unused-key report (never changes the exit code). Remaining reported keys are listed by the script; some belong to features of the stacked branch or are candidates for removal. The other lint blind spots (allow-list not verifying imports, MIXED regex ignoring all-caps glosses, multi-line values skipped, narrow vitest CJK regex) remain open. |

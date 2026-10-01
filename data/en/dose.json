@@ -37,18 +37,18 @@
     {
       "id": "bowtie-filter",
       "title": "The Bowtie Filter and Dose",
-      "description": "The bowtie filter is a specially shaped filter used to even out the radiation dose received by different parts of the body.",
-      "content": "In a CT scan the X-ray tube rotates around the patient, but the patient's cross-section is usually not circular. In an abdominal scan, for example, the patient is \"thicker\" when viewed from the side than from front to back. This means that with a uniform X-ray beam the lateral directions would receive more radiation (because the beam must pass through more tissue). To solve this, CT scanners use a so-called \"bowtie filter\".",
+      "description": "The bowtie filter is a specially shaped filter that shapes the X-ray intensity across the fan beam, equalizing the detector signal and reducing peripheral dose.",
+      "content": "In a CT scan the X-ray beam passes through the patient as a fan, and the patient's cross-section is roughly elliptical: thick in the center, thin at the periphery. With a uniform-intensity fan beam, rays through the center are strongly attenuated and give a weak detector signal, while rays through the periphery are barely attenuated and give a strong one; the periphery of the patient (including the skin) also receives unnecessary dose and produces more scatter. To solve this, CT scanners place a so-called \"bowtie filter\" in front of the X-ray source: it is thin at the center of the fan and thicker at the periphery, so the beam intensity is highest in the center and lower toward the edges, which equalizes the signal across the detector channels and reduces peripheral dose and scatter.",
       "illustrations": [
         {
           "type": "diagram",
           "description": "Bowtie filter diagram",
-          "caption": "The shape of the bowtie filter lets X-rays passing through the sides of the patient be more intense than those passing front to back."
+          "caption": "The bowtie filter is thin at the center of the fan beam and thicker at the periphery, so beam intensity is highest centrally and lower at the edges, equalizing the detector signal and reducing peripheral dose."
         }
       ],
       "keyPoints": [
-        "The bowtie filter evens out the radiation dose from different directions",
-        "Its shape lets X-rays passing through the sides of the patient be more intense than those passing front to back",
+        "The bowtie filter shapes the intensity across the fan beam to equalize the detector signal",
+        "It is thin at the beam center and thicker at the periphery, which reduces peripheral (including skin) dose and scatter",
         "This helps reduce the overall radiation dose and improves image quality"
       ]
     },
