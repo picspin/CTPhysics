@@ -53,7 +53,7 @@ const IterativeReconSection: React.FC = () => {
               <p>{t('ir_mbir_2')}</p>
             </div>
           </div>
-          <p className="text-sm">{t('ir_names_note')}</p>
+          <p className="text-sm">{t('ir_impl_note')}</p>
           <div className="bg-bg-300 p-4 rounded-lg text-sm border-l-4 border-accent-100">
             <strong>{t('ir_nonlinear_t')}</strong> {t('ir_nonlinear')}
           </div>

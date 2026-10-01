@@ -11,15 +11,15 @@ import { useLanguage, type MessageKey } from '@/context/LanguageContext';
 import {
   MOTION_RISK_START_PCT,
   SYSTOLIC_WINDOW_MS,
-  TURBO_FLASH,
+  HIGH_PITCH_DS,
   buildPlan,
   diastolicWindowMs,
   ecgValue,
   pctToMs,
   recommendPhase,
   rrMs,
-  turboFlashBlock,
-  turboFlashStatus,
+  highPitchBlock,
+  highPitchStatus,
   type AcqMode,
   type Gating,
   type PhaseChoice,
@@ -34,8 +34,8 @@ const SWEEP_SECONDS = 6;
 
 const MODES: { id: AcqMode; label: MessageKey }[] = [
   { id: 'standard', label: 'card_mode_standard' },
-  { id: 'turboFlash', label: 'card_mode_flash' },
-  { id: 'oneBeat', label: 'card_mode_onebeat' },
+  { id: 'highPitchDS', label: 'card_mode_hp' },
+  { id: 'singleBeat', label: 'card_mode_sb' },
 ];
 
 const C = {
@@ -43,10 +43,10 @@ const C = {
   diaEdge: 'rgba(34,197,94,0.95)',
   sys: 'rgba(239,68,68,0.30)',
   sysEdge: 'rgba(239,68,68,0.95)',
-  flash: 'rgba(56,189,248,0.35)',
-  flashEdge: 'rgba(56,189,248,1)',
-  one: 'rgba(192,132,252,0.22)',
-  oneEdge: 'rgba(192,132,252,1)',
+  hp: 'rgba(56,189,248,0.35)',
+  hpEdge: 'rgba(56,189,248,1)',
+  sb: 'rgba(192,132,252,0.22)',
+  sbEdge: 'rgba(192,132,252,1)',
   tube: 'rgba(250,204,21,0.85)',
   tubeLow: 'rgba(250,204,21,0.35)',
   risk: 'rgba(148,163,184,0.25)',
@@ -81,8 +81,8 @@ const CardiacGatingSimulator: React.FC<Props> = ({ options }) => {
   );
   const dia = diastolicWindowMs(heartRate);
   const rec = recommendPhase(heartRate);
-  const flashStatus = turboFlashStatus(heartRate);
-  const flashBlock = turboFlashBlock(heartRate);
+  const hpStatus = highPitchStatus(heartRate);
+  const hpBlock = highPitchBlock(heartRate);
 
   // Responsive canvas width
   useEffect(() => {
@@ -157,8 +157,8 @@ const CardiacGatingSimulator: React.FC<Props> = ({ options }) => {
 
     const beatStart = (b: number): number => b * rr;
 
-    // motion-risk zone (Turbo Flash only)
-    if (mode === 'turboFlash') {
+    // motion-risk zone (high-pitch dual-source mode only)
+    if (mode === 'highPitchDS') {
       for (let b = 0; b < plan.beats; b++) {
         const x0 = xOfMs(beatStart(b) + pctToMs(MOTION_RISK_START_PCT, heartRate));
         const x1 = xOfMs(beatStart(b) + rr);
@@ -184,14 +184,14 @@ const CardiacGatingSimulator: React.FC<Props> = ({ options }) => {
       const s = beatStart(tg.beat) + tg.startMs;
       const e = beatStart(tg.beat) + tg.endMs;
       if (!tg.durationKnown) {
-        // ONE BEAT: duration unknown -> dashed marker of fixed visual width, with a "?" label
+        // single-beat mode: duration unknown -> dashed marker of fixed visual width, with a "?" label
         const x = xOfMs(s);
-        drawBox(x - 10, x + 10, C.one, C.oneEdge, true);
-        ctx.fillStyle = C.oneEdge;
+        drawBox(x - 10, x + 10, C.sb, C.sbEdge, true);
+        ctx.fillStyle = C.sbEdge;
         ctx.textAlign = 'center';
         ctx.fillText('?', x, ecgTop + 14);
-      } else if (mode === 'turboFlash') {
-        drawBox(xOfMs(s), xOfMs(e), C.flash, C.flashEdge);
+      } else if (mode === 'highPitchDS') {
+        drawBox(xOfMs(s), xOfMs(e), C.hp, C.hpEdge);
       } else if (phase === 'diastole') {
         drawBox(xOfMs(s), xOfMs(e), C.dia, C.diaEdge);
       } else {
@@ -313,7 +313,7 @@ const CardiacGatingSimulator: React.FC<Props> = ({ options }) => {
     return t('card_win_src_above');
   };
   const recText = rec === 'diastole' ? t('card_rec_dia') : rec === 'systole' ? t('card_rec_sys') : t('card_rec_either');
-  const sys = TURBO_FLASH.systems;
+  const sys = HIGH_PITCH_DS.systems;
 
   return (
     <SimulatorContainer title={t('card_gating_title')} description={t('card_gating_desc')} enableLiquidEffect={false}>
@@ -356,7 +356,7 @@ const CardiacGatingSimulator: React.FC<Props> = ({ options }) => {
               onChange={(e) => setGating(e.target.value as Gating)}
             />
           )}
-          {mode !== 'turboFlash' && (
+          {mode !== 'highPitchDS' && (
             <div>
               <div className="text-xs text-text-300 mb-2" id="card-phase-label">{t('card_phase_label')}</div>
               <div className="flex gap-2" role="group" aria-labelledby="card-phase-label">
@@ -404,16 +404,16 @@ const CardiacGatingSimulator: React.FC<Props> = ({ options }) => {
               {mode === 'standard' && (
                 <li><span className="inline-block w-3 h-3 mr-1 align-middle rounded-sm" style={{ background: phase === 'diastole' ? C.diaEdge : C.sysEdge }} />{phase === 'diastole' ? t('card_leg_dia') : t('card_leg_sys')}</li>
               )}
-              {mode === 'turboFlash' && (
+              {mode === 'highPitchDS' && (
                 <>
-                  <li><span className="inline-block w-3 h-3 mr-1 align-middle rounded-sm" style={{ background: C.flashEdge }} />{t('card_leg_flash')}</li>
+                  <li><span className="inline-block w-3 h-3 mr-1 align-middle rounded-sm" style={{ background: C.hpEdge }} />{t('card_leg_hp')}</li>
                   <li><span className="inline-block w-3 h-3 mr-1 align-middle rounded-sm" style={{ background: '#f97316' }} />{t('card_leg_trigger')}</li>
                   <li><span className="inline-block w-3 h-3 mr-1 align-middle rounded-sm" style={{ background: C.risk }} />{t('card_leg_risk')}</li>
                 </>
               )}
-              {mode === 'oneBeat' && (
+              {mode === 'singleBeat' && (
                 <>
-                  <li><span className="inline-block w-3 h-3 mr-1 align-middle rounded-sm border border-dashed" style={{ borderColor: C.oneEdge }} />{t('card_leg_onebeat')}</li>
+                  <li><span className="inline-block w-3 h-3 mr-1 align-middle rounded-sm border border-dashed" style={{ borderColor: C.sbEdge }} />{t('card_leg_sb')}</li>
                   <li><span className="inline-block w-3 h-3 mr-1 align-middle rounded-sm" style={{ background: '#f97316' }} />{t('card_leg_trigger')}</li>
                 </>
               )}
@@ -455,65 +455,65 @@ const CardiacGatingSimulator: React.FC<Props> = ({ options }) => {
           </div>
         )}
 
-        {mode === 'turboFlash' && (
-          <div className="bg-bg-200 p-4 rounded-lg text-sm text-text-200 space-y-2" data-testid="card-info-flash">
-            <h4 className="font-semibold text-text-100">{t('card_flash_title')}</h4>
+        {mode === 'highPitchDS' && (
+          <div className="bg-bg-200 p-4 rounded-lg text-sm text-text-200 space-y-2" data-testid="card-info-hp">
+            <h4 className="font-semibold text-text-100">{t('card_hp_title')}</h4>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>
                   <tr className="text-text-300 border-b border-border-100">
-                    <th className="py-1 pr-3 font-medium">{t('card_flash_system')}</th>
+                    <th className="py-1 pr-3 font-medium">{t('card_hp_system')}</th>
                     <th className="py-1 font-medium">&nbsp;</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr className="border-b border-border-100/50 align-top">
-                    <td className="py-1 pr-3 font-mono whitespace-nowrap">Definition Flash</td>
+                    <td className="py-1 pr-3 font-mono whitespace-nowrap">{t('card_hp_sys_a')}</td>
                     <td className="py-1">
-                      {t('card_flash_pitch', { v: sys.flash.pitch })} · {t('card_flash_bed', { v: sys.flash.bedSpeedMmPerS })}<br />
-                      {t('card_flash_tr', { v: sys.flash.temporalResolutionMs, rot: sys.flash.rotationMs })}
+                      {t('card_hp_pitch', { v: sys.setA.pitch })} · {t('card_hp_bed', { v: sys.setA.bedSpeedMmPerS })}<br />
+                      {t('card_hp_tr', { v: sys.setA.temporalResolutionMs, rot: sys.setA.rotationMs })}
                     </td>
                   </tr>
                   <tr className="align-top">
-                    <td className="py-1 pr-3 font-mono whitespace-nowrap">SOMATOM Force</td>
+                    <td className="py-1 pr-3 font-mono whitespace-nowrap">{t('card_hp_sys_b')}</td>
                     <td className="py-1">
-                      {t('card_flash_pitch', { v: sys.force.pitch })}<br />
-                      {t('card_flash_tr', { v: sys.force.temporalResolutionMs, rot: sys.force.rotationMs })}
+                      {t('card_hp_pitch', { v: sys.setB.pitch })}<br />
+                      {t('card_hp_tr', { v: sys.setB.temporalResolutionMs, rot: sys.setB.rotationMs })}
                     </td>
                   </tr>
                 </tbody>
               </table>
             </div>
             <ul className="list-disc list-inside space-y-1">
-              <li>{t('card_flash_phase', { v: TURBO_FLASH.startPhasePct })}</li>
-              <li>{t('card_flash_hr', { rec: TURBO_FLASH.maxHrRecommended, field: TURBO_FLASH.maxHrFieldExperience })}</li>
+              <li>{t('card_hp_phase', { v: HIGH_PITCH_DS.startPhasePct })}</li>
+              <li>{t('card_hp_hr', { rec: HIGH_PITCH_DS.maxHrRecommended, field: HIGH_PITCH_DS.maxHrFieldExperience })}</li>
             </ul>
             <p
-              data-testid="card-flash-status"
+              data-testid="card-hp-status"
               className={
-                flashStatus === 'ok' ? 'text-green-400' : flashStatus === 'field-experience' ? 'text-yellow-300' : 'text-red-400'
+                hpStatus === 'ok' ? 'text-green-400' : hpStatus === 'field-experience' ? 'text-yellow-300' : 'text-red-400'
               }
             >
-              {flashStatus === 'ok'
-                ? t('card_flash_status_ok', { hr: heartRate })
-                : flashStatus === 'field-experience'
-                  ? t('card_flash_status_field', { hr: heartRate })
-                  : t('card_flash_status_out', { hr: heartRate })}
+              {hpStatus === 'ok'
+                ? t('card_hp_status_ok', { hr: heartRate })
+                : hpStatus === 'field-experience'
+                  ? t('card_hp_status_field', { hr: heartRate })
+                  : t('card_hp_status_out', { hr: heartRate })}
             </p>
-            {flashBlock.intoMotionZone && <p className="text-yellow-300">{t('card_flash_motion')}</p>}
-            <p className="text-xs text-text-300">{t('card_flash_trigger_note')}</p>
-            <p className="text-xs text-text-300">{t('card_flash_schematic')}</p>
+            {hpBlock.intoMotionZone && <p className="text-yellow-300">{t('card_hp_motion')}</p>}
+            <p className="text-xs text-text-300">{t('card_hp_trigger_note')}</p>
+            <p className="text-xs text-text-300">{t('card_hp_schematic')}</p>
           </div>
         )}
 
-        {mode === 'oneBeat' && (
-          <div className="bg-bg-200 p-4 rounded-lg text-sm text-text-200 space-y-2" data-testid="card-info-onebeat">
-            <h4 className="font-semibold text-text-100">{t('card_ob_title')}</h4>
-            <p>{t('card_ob_desc')}</p>
-            <p>{t('card_ob_rhythm')}</p>
-            <p>{t('card_ob_benefit')}</p>
+        {mode === 'singleBeat' && (
+          <div className="bg-bg-200 p-4 rounded-lg text-sm text-text-200 space-y-2" data-testid="card-info-sb">
+            <h4 className="font-semibold text-text-100">{t('card_sb_title')}</h4>
+            <p>{t('card_sb_desc')}</p>
+            <p>{t('card_sb_rhythm')}</p>
+            <p>{t('card_sb_benefit')}</p>
             <p className="text-yellow-300">
-              <strong>{t('card_ob_tbc_t')}</strong> {t('card_ob_tbc')}
+              <strong>{t('card_sb_tbc_t')}</strong> {t('card_sb_tbc')}
             </p>
           </div>
         )}

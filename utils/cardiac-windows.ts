@@ -4,15 +4,15 @@
  * Time axis convention: every time is in ms AFTER THE R-WAVE of the current beat (R = 0), and
  * "%" means percent of the R-R interval measured from that R-wave (the usual cardiac-CT convention).
  *
- * Sources (manufacturer training material, see docs/cardiac-sources-and-gaps.md for page references):
+ * Typical generic values used (see docs/cardiac-assumptions-and-gaps.md):
  *  - window-vs-heart-rate table (diastolic 240/190/150/100/75 ms at 60/65/70/75/80 bpm, systolic ~100 ms)
  *  - systolic acquisition recipe: pulsing 300–400 ms, scan 250–450 ms after R (absolute ms, not % R-R)
- *  - Turbo Flash: prospective ECG trigger, default start phase 60 %, pitch 3.4 (Flash) / 3.2 (Force protocols),
- *    constant temporal resolution 75 ms (Flash) / 66 ms (Force), HR ≤ 65 bpm (70 = field experience only),
- *    acquisition block ~270 ms (schematic of the Flash illustration), motion-risk zone > 90 % R-R.
- *  - ONE BEAT: NO numbers are available -> nothing numeric is provided here on purpose.
+ *  - High-pitch dual-source prospective mode: prospective ECG trigger, default start phase 60 %, typical pitch
+ *    3.4 / 3.2, constant temporal resolution about 75 ms / 66 ms, HR ≤ 65 bpm (70 = field experience only),
+ *    acquisition block ~270 ms (schematic only), motion-risk zone > 90 % R-R.
+ *  - Single-beat wide-detector axial mode: no generic numbers are given -> nothing numeric is provided here on purpose.
  *
- * Things that are NOT in the source and are therefore illustrative assumptions (flagged in the UI/docs):
+ * Things that are NOT backed by the typical values above and are therefore illustrative assumptions (flagged in the UI/docs):
  *  - the POSITION of the diastolic window inside the cycle (modelled as centred on 75 % R-R, clamped to 40–90 %)
  */
 
@@ -30,9 +30,9 @@ export const SYSTOLIC_WINDOW_MS = 100;
 export const SYSTOLIC_PULSING_MS = { start: 300, end: 400 } as const;
 export const SYSTOLIC_SCAN_MS = { start: 250, end: 450 } as const;
 
-/** Heart moves again in late diastole: cycle fraction above which Flash images may be degraded. */
+/** Heart moves again in late diastole: cycle fraction above which high-pitch images may be degraded. */
 export const MOTION_RISK_START_PCT = 90;
-/** Schematic centre of the diastolic window (assumption – the source gives durations, not positions). */
+/** Schematic centre of the diastolic window (assumption – typical tables give durations, not positions). */
 export const DIASTOLE_CENTER_PCT = 75;
 export const DIASTOLE_CLAMP_PCT = { min: 40, max: 90 } as const;
 
@@ -44,7 +44,7 @@ export type WindowSource = 'table' | 'interpolated' | 'below-table' | 'above-tab
 export interface WindowValue {
   ms: number;
   /**
-   * table: exact table entry; interpolated: linear between two entries (NOT manufacturer data);
+   * table: exact table entry; interpolated: linear between two entries (NOT tabulated data);
    * below-table: HR < 60, value is the 60 bpm entry and the true window is at least that long;
    * above-table: HR > 80, value is the 80 bpm entry and the true window is at most that long.
    */
@@ -102,19 +102,19 @@ export function phaseWindow(hr: number, phase: PhaseChoice): MsWindow {
   return phase === 'diastole' ? diastolicWindow(hr) : systolicWindow(hr);
 }
 
-// -------------------------------------------------------------------------- Turbo Flash
-export type FlashSystem = 'flash' | 'force';
-export const TURBO_FLASH = {
+// -------------------------------------------------------------------------- High-pitch dual-source prospective mode
+export type HighPitchSystem = 'setA' | 'setB';
+export const HIGH_PITCH_DS = {
   startPhasePct: 60,
-  /** total acquisition block of the Flash schematic (ms) */
+  /** total acquisition block of the schematic (ms) */
   blockMs: 270,
   maxHrRecommended: 65,
   maxHrFieldExperience: 70,
   triggerLatencyBeats: 1.5,
   systems: {
-    flash: { pitch: 3.4, rotationMs: 280, temporalResolutionMs: 75, bedSpeedMmPerS: 460 },
-    // bed speed for Force protocols is not in the source -> omitted
-    force: { pitch: 3.2, rotationMs: 250, temporalResolutionMs: 66, bedSpeedMmPerS: null },
+    setA: { pitch: 3.4, rotationMs: 280, temporalResolutionMs: 75, bedSpeedMmPerS: 460 },
+    // typical table speed for set B is not given -> omitted
+    setB: { pitch: 3.2, rotationMs: 250, temporalResolutionMs: 66, bedSpeedMmPerS: null },
   },
 } as const;
 
@@ -125,29 +125,29 @@ export const dualSourceTemporalResolutionMs = (rotationMs: number, angleDeg = 95
 export const halfScanTemporalResolutionMs = (rotationMs: number, dualSource = false): number =>
   dualSource ? rotationMs / 4 : rotationMs / 2;
 
-export type FlashStatus = 'ok' | 'field-experience' | 'out-of-range';
-export function turboFlashStatus(hr: number): FlashStatus {
-  if (hr <= TURBO_FLASH.maxHrRecommended) return 'ok';
-  if (hr <= TURBO_FLASH.maxHrFieldExperience) return 'field-experience';
+export type HighPitchStatus = 'ok' | 'field-experience' | 'out-of-range';
+export function highPitchStatus(hr: number): HighPitchStatus {
+  if (hr <= HIGH_PITCH_DS.maxHrRecommended) return 'ok';
+  if (hr <= HIGH_PITCH_DS.maxHrFieldExperience) return 'field-experience';
   return 'out-of-range';
 }
 
-export interface FlashBlock extends MsWindow {
+export interface HighPitchBlock extends MsWindow {
   startPct: number;
   endPct: number;
   /** block reaches into the > 90 % R-R zone where the heart moves again */
   intoMotionZone: boolean;
 }
 
-export function turboFlashBlock(hr: number, startPhasePct: number = TURBO_FLASH.startPhasePct): FlashBlock {
+export function highPitchBlock(hr: number, startPhasePct: number = HIGH_PITCH_DS.startPhasePct): HighPitchBlock {
   const startMs = pctToMs(startPhasePct, hr);
-  const endMs = startMs + TURBO_FLASH.blockMs;
+  const endMs = startMs + HIGH_PITCH_DS.blockMs;
   const endPct = msToPct(endMs, hr);
   return { startMs, endMs, startPct: startPhasePct, endPct, intoMotionZone: endPct > MOTION_RISK_START_PCT + 1e-9 };
 }
 
 // -------------------------------------------------------------------------- acquisition plan
-export type AcqMode = 'standard' | 'turboFlash' | 'oneBeat';
+export type AcqMode = 'standard' | 'highPitchDS' | 'singleBeat';
 export type Gating = 'prospective' | 'retrospective';
 
 export interface PlanParams {
@@ -168,7 +168,7 @@ export interface PlanSegment extends MsWindow {
 
 export interface TargetWindow extends MsWindow {
   beat: number;
-  /** false for ONE BEAT, where no duration is available: startMs = endMs = window centre */
+  /** false for the single-beat mode, where no duration is available: startMs = endMs = window centre */
   durationKnown: boolean;
 }
 
@@ -179,14 +179,14 @@ export interface AcqPlan {
   tube: PlanSegment[];
   /** windows the image data are taken from / aimed at */
   targets: TargetWindow[];
-  /** beat in which the trigger R-wave sits (Turbo Flash and ONE BEAT), else null */
+  /** beat in which the trigger R-wave sits (high-pitch and single-beat modes), else null */
   triggerBeat: number | null;
-  /** phase selection is fixed by the mode (Turbo Flash default start phase) */
+  /** phase selection is fixed by the mode (default start phase of the high-pitch mode) */
   phaseFixed: boolean;
 }
 
 export const DISPLAY_BEATS = 3;
-/** Tube-current floor with ECG pulsing in the manufacturer example (25 %). */
+/** Tube-current floor with ECG pulsing in a typical example (25 %). */
 export const PULSING_FLOOR = 0.25;
 
 export function buildPlan(p: PlanParams): AcqPlan {
@@ -211,8 +211,8 @@ export function buildPlan(p: PlanParams): AcqPlan {
         tube.push({ beat: b, startMs: 0, endMs: rr, level: 1 });
       }
     }
-  } else if (p.mode === 'turboFlash') {
-    const blk = turboFlashBlock(p.hr);
+  } else if (p.mode === 'highPitchDS') {
+    const blk = highPitchBlock(p.hr);
     triggerBeat = 0;
     phaseFixed = true;
     // trigger on the first R-wave; X-ray starts ~1.5 beats later, i.e. in the 60 % region of the NEXT beat.

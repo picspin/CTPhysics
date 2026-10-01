@@ -39,30 +39,30 @@ for (const lang of ['zh', 'en'] as const) {
       if (lang === 'en') expect(CJK.test(await page.getByTestId('cbct-dsa-principle').innerText())).toBe(false);
     });
 
-    test('cardiac: mode toggles, systolic recommendation at high HR, ONE BEAT marked to-be-confirmed', async ({ page }) => {
+    test('cardiac: mode toggles, systolic recommendation at high HR, single-beat mode marked to-be-confirmed', async ({ page }) => {
       await page.goto(`${BASE}/cardiac`);
       const sim = page.getByTestId('cardiac-sim');
       await expect(sim).toBeVisible();
       await expect(page.getByTestId('card-info-standard')).toBeVisible();
 
-      await page.getByTestId('card-mode-turboFlash').click();
-      const flash = page.getByTestId('card-info-flash');
-      await expect(flash).toContainText('3.4');
-      await expect(flash).toContainText('75');
-      await expect(flash).toContainText('66');
+      await page.getByTestId('card-mode-highPitchDS').click();
+      const hp = page.getByTestId('card-info-hp');
+      await expect(hp).toContainText('3.4');
+      await expect(hp).toContainText('75');
+      await expect(hp).toContainText('66');
 
-      // heart rate above the recommended Flash maximum -> non-"ok" status text
+      // heart rate above the recommended high-pitch maximum -> non-"ok" status text
       const hr = sim.locator('input[type=range]').first();
       await hr.evaluate((el: HTMLInputElement) => {
         const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
         set.call(el, '85');
         el.dispatchEvent(new Event('input', { bubbles: true }));
       });
-      await expect(page.getByTestId('card-flash-status')).toHaveClass(/text-red-400/);
+      await expect(page.getByTestId('card-hp-status')).toHaveClass(/text-red-400/);
 
-      await page.getByTestId('card-mode-oneBeat').click();
-      await expect(page.getByTestId('card-info-onebeat')).toBeVisible();
-      await expect(page.getByTestId('card-info-onebeat')).toContainText(lang === 'zh' ? '待确认' : 'To be confirmed');
+      await page.getByTestId('card-mode-singleBeat').click();
+      await expect(page.getByTestId('card-info-sb')).toBeVisible();
+      await expect(page.getByTestId('card-info-sb')).toContainText(lang === 'zh' ? '待确认' : 'To be confirmed');
 
       await page.getByTestId('card-mode-standard').click();
       await page.getByTestId('card-phase-systole').click();

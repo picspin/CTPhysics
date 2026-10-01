@@ -19,7 +19,7 @@ import {
 
 /**
  * Orchestrates one run of the IR-vs-FBP teaching demo (pure; used by the Web Worker and by unit tests).
- * All numbers produced here are measured on the toy phantom and say nothing about any vendor algorithm.
+ * All numbers produced here are measured on the toy phantom and say nothing about any specific commercial algorithm.
  */
 export interface DemoParams {
   /** image size n × n and n detector bins */
