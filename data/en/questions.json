@@ -140,9 +140,9 @@
       "question": "In a CT examination, how is the radiation dose distributed within the patient?",
       "options": [
         "Mainly at the skin surface",
-        "Mainly at the centre of the body",
-        "Higher at the skin surface than at the centre",
-        "Perfectly uniform from skin to centre"
+        "Mainly at the center of the body",
+        "Higher at the skin surface than at the center",
+        "Perfectly uniform from skin to center"
       ],
       "correctAnswer": 2,
       "explanation": "Because of attenuation as the X-rays pass through the body, more radiation is absorbed at the surface. However, because the tube rotates 360° the distribution is relatively even compared with a single projection exposure, but the peripheral dose is still higher than the central dose."
@@ -173,7 +173,7 @@
     },
     {
       "id": 15,
-      "question": "Positioning the patient off-centre in the CT gantry results in:",
+      "question": "Positioning the patient off-center in the CT gantry results in:",
       "options": [
         "A lower dose",
         "A higher dose",
@@ -181,7 +181,7 @@
         "Inaccurate CT numbers (HU)"
       ],
       "correctAnswer": 1,
-      "explanation": "The standard bowtie filter is designed for a centred patient. If the patient is off-centre, the thicker part of the filter may not line up with the thinner part of the patient, and automatic exposure control (AEC) may miscalculate the required mA from the scout image, usually leading to overexposure."
+      "explanation": "The standard bowtie filter is designed for a centered patient. If the patient is off-center, the thicker part of the filter may not line up with the thinner part of the patient, and automatic exposure control (AEC) may miscalculate the required mA from the scout image, usually leading to overexposure."
     },
     {
       "id": 16,
@@ -276,7 +276,7 @@
         "Improved spatial resolution",
         "Improved temporal resolution",
         "Improved contrast resolution",
-        "Improved patient motion artifacts"
+        "Reduced motion artifacts"
       ],
       "correctAnswer": 3,
       "explanation": "Cone-beam or wide-detector scanners (such as 320-row) can cover the entire heart in one rotation, eliminating the artifacts that occur in helical scanning when several slabs are stitched together (stair-step artifacts)."
@@ -336,8 +336,8 @@
       "question": "Iodine is a good CT contrast agent because:",
       "options": [
         "We can reach a very high concentration in the target organ",
-        "Its K-edge (33 keV) is far below the energy of X-rays produced by a 120 kV tube",
-        "Its K-edge (33 keV) is close to the mean diagnostic X-ray energy produced by a 120 kV tube",
+        "Its K-edge (33 keV) is far below the energy of X-rays produced by a 120 kVp tube",
+        "Its K-edge (33 keV) is close to the mean diagnostic X-ray energy produced by a 120 kVp tube",
         "It mimics the attenuation of bone"
       ],
       "correctAnswer": 2,

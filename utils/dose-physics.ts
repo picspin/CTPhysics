@@ -34,8 +34,8 @@
 //      is honestly labelled "illustrative MC" — it does not model
 //      Compton scattering, photoelectric absorption cross-sections,
 //      energy deposition kernels, or dose-to-medium vs. dose-to-
-//      water. What it DOES teach is the central MC idea: variance
-//      shrinks as 1/√N.
+//      water. What it DOES teach is the central MC idea: the standard
+//      deviation (standard error) shrinks as 1/√N (variance ∝ 1/N).
 //
 // All numbers here are derived from published literature. Where I have
 // extrapolated or simplified (especially the MC estimator), the UI
@@ -471,7 +471,7 @@ export function doseColorScalar(doseMSv: number): number {
 //      estimator and DOES NOT include scattered photons re-entering the
 //      layer or backscatter.
 //   4. Accumulate deposited energy per region. Plot the running mean
-//      with a ±1σ confidence band; the band shrinks as √N.
+//      with a ±1σ confidence band; the band shrinks as 1/√N.
 //
 // Pedagogical claim this supports:
 //   "Monte Carlo is statistical sampling. The estimate converges to a

@@ -253,7 +253,7 @@ describe('dose-physics', () => {
 
   describe('Illustrative Monte Carlo estimator', () => {
     it('produces monotonic non-increasing σ as N grows (1/√N behaviour)', () => {
-      // Run a small MC. As we add more samples, σ must shrink (variance
+      // Run a small MC. As we add more samples, σ must shrink (the standard error
       // of the mean is σ_population/√N). We check the σ trend in the
       // single dominant region.
       const run = runIllustrativeMC(8000, 42);

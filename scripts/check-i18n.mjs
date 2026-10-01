@@ -9,6 +9,7 @@
  * 5. No CJK characters in .ts/.tsx source outside the allowed files
  *    (comments are ignored; the dictionaries and data/zh are the only homes for Chinese)
  * 6. No mixed-language labels of the form "中文 (English)" in source/dictionaries
+ * 7. (warning only, never fails) dictionary keys that are not referenced anywhere in source
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -188,11 +189,49 @@ for (const file of walk(ROOT)) {
   });
 }
 
+// ------------------------------------------------------- unused keys (warning only)
+// A key counts as referenced when its name appears in any source file other than the two
+// dictionaries, or when a dynamic template key such as `prefix_${x}` could produce it.
+// This is a heuristic: it only warns and never affects the exit code.
+const warnings = [];
+{
+  let corpus = '';
+  const prefixes = new Set();
+  const scan = (dir) => {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (e.name.startsWith('.')) continue;
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) {
+        if (['node_modules', '.next', 'coverage', 'playwright-report', 'test-results', 'public', 'docs'].includes(e.name)) continue;
+        scan(p);
+      } else if (/\.(ts|tsx|mts|mjs|js|jsx)$/.test(e.name) && !e.name.endsWith('.d.ts')) {
+        const r = rel(p).split(path.sep).join('/');
+        if (r === 'i18n/zh.ts' || r === 'i18n/en.ts' || r === 'scripts/check-i18n.mjs') continue;
+        const src = fs.readFileSync(p, 'utf8');
+        corpus += src + '\n';
+        for (const m of src.matchAll(/[`'"]([A-Za-z0-9_]*)\$\{/g)) if (m[1]) prefixes.add(m[1]);
+      }
+    }
+  };
+  scan(ROOT);
+  const words = new Set(corpus.match(/[A-Za-z0-9_]+/g) ?? []);
+  for (const k of zh.keys()) {
+    if (words.has(k)) continue;
+    if ([...prefixes].some((pre) => k.startsWith(pre))) continue;
+    warnings.push(k);
+  }
+}
+
 // ------------------------------------------------------------------ report
 if (errors.length) {
   console.error(`check:i18n FAILED (${errors.length} problem${errors.length === 1 ? '' : 's'})`);
   for (const e of errors.slice(0, 200)) console.error(' - ' + e);
   if (errors.length > 200) console.error(` ... and ${errors.length - 200} more`);
   process.exit(1);
+}
+if (warnings.length) {
+  console.warn(`check:i18n warning: ${warnings.length} dictionary key(s) not referenced in source (heuristic, not an error):`);
+  for (const k of warnings.slice(0, 50)) console.warn(' - ' + k);
+  if (warnings.length > 50) console.warn(` ... and ${warnings.length - 50} more`);
 }
 console.log(`check:i18n OK — ${zh.size} keys in zh/en parity, ${zhFiles.length} data files bilingual, no stray CJK in source.`);
