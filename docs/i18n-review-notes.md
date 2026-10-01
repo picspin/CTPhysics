@@ -17,7 +17,7 @@ and has not been reviewed by a native speaker or by a CT-physics domain expert.*
 | Guard rails | `scripts/check-i18n.mjs` (`npm run check:i18n`), `tests/i18n.test.ts`, `e2e/i18n.spec.ts` |
 
 Default language is still **zh**. The `<html lang>` attribute is `zh-CN` in the static HTML and an inline script in
-`app/layout.tsx` fixes it from `localStorage['pref-lang']` before hydration (avoids a wrong-language flash of the
+`app/layout.tsx` fixes it from `localStorage['pref-lang']` before hydration (avoids a wrong-language flicker of the
 `lang` attribute; the visible text still renders zh first, then switches after hydration when the user chose en).
 
 ## 2. Bugs fixed in the dictionary
@@ -49,7 +49,7 @@ Default language is still **zh**. The `<html lang>` attribute is `zh-CN` in the 
 | bowtie filter | 领结滤波器 | |
 | slice-sensitivity profile | 切片灵敏度分布 | zh source literally says "sensitivity distribution" |
 | charge sharing / pulse pile-up | 电荷共享 / 脉冲堆积 | |
-| virtual non-contrast / iodine overlay / bone subtraction | 虚拟平扫 / 碘叠加 / 骨骼减除 | vendor-neutral wording |
+| virtual non-contrast / iodine overlay / bone subtraction | 虚拟平扫 / 碘叠加 / 骨骼减除 | neutral wording |
 | SSDE / DLP / CTDIvol | kept as acronyms | full names in zh: 剂量长度乘积, 容积CT剂量指数 |
 | quarter-scan / half-scan reconstruction | 四分之一扫描 / 半扫描重建 | |
 

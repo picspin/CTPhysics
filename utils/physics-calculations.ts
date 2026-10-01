@@ -50,8 +50,8 @@ export const simulateBeamHardening = (
 // Reference for the simplified relationship:
 //   CTDIvol ≈ 0.01 * mAs * (kVp/120)^2.5 / pitch   (mGy)
 //
-// This is an illustrative polynomial fit, NOT a vendor-calibrated value.
-// For real protocol planning, use the manufacturer's CTDIw / pitch tables
+// This is an illustrative polynomial fit, NOT a scanner-calibrated value.
+// For real protocol planning, use the scanner-specific CTDIw / pitch tables
 // or AAPM Report 96 phantom measurements.
 export interface CTDIInput {
   mAs: number;

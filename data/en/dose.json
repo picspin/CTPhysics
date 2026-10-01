@@ -56,7 +56,7 @@
       "id": "patient-size",
       "title": "Patient Size and Dose",
       "description": "Patient size has a major effect on CT dose: larger patients need a higher radiation dose to obtain the same image quality.",
-      "content": "Patient size has a major effect on CT dose. Larger patients need a higher radiation dose to obtain the same image quality, because the X-rays must pass through more tissue. Modern CT scanners use automatic tube-current modulation (such as Siemens CAREDose or GE Auto mA) to adjust the radiation dose automatically to the patient's size.",
+      "content": "Patient size has a major effect on CT dose. Larger patients need a higher radiation dose to obtain the same image quality, because the X-rays must pass through more tissue. Modern CT scanners use automatic tube-current modulation (automatic exposure control) to adjust the radiation dose automatically to the patient's size.",
       "keyPoints": [
         "Larger patients need a higher radiation dose to obtain the same image quality",
         "Automatic tube-current modulation adjusts the radiation dose to the patient's size",
