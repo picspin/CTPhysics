@@ -164,6 +164,11 @@ export interface PlanSegment extends MsWindow {
   beat: number;
   /** relative tube current 0 … 1 */
   level: number;
+  /**
+   * true when the X-ray-on duration is NOT known (single-beat mode): startMs = endMs = window centre and the
+   * UI draws a hatched marker labelled "duration TBC" instead of a to-scale segment. Absent/false = to scale.
+   */
+  durationUnknown?: boolean;
 }
 
 export interface TargetWindow extends MsWindow {
@@ -224,6 +229,9 @@ export function buildPlan(p: PlanParams): AcqPlan {
     const centre = (w.startMs + w.endMs) / 2;
     triggerBeat = 0;
     targets.push({ beat: 1, startMs: centre, endMs: centre, durationKnown: false });
+    // X-ray is on during the acquisition, but how long is not known: say so explicitly with a zero-width
+    // "unknown duration" tube marker instead of leaving the tube-current band empty (which would read as "no exposure").
+    tube.push({ beat: 1, startMs: centre, endMs: centre, level: 1, durationUnknown: true });
   }
   return { beats, rr, tube, targets, triggerBeat, phaseFixed };
 }

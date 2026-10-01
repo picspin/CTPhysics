@@ -783,6 +783,8 @@ export const en: Record<MessageKey, string> = {
   card_leg_dia: "Diastolic target window",
   card_leg_sys: "Systolic target window",
   card_leg_tube_full: "Tube current (X-ray on)",
+  card_leg_tube_unknown: "Tube current (X-ray on, duration to be confirmed; hatched marker is not to scale)",
+  card_tube_tbc: "duration TBC",
   card_leg_tube_low: "Reduced tube current (ECG pulsing; 25 % in a typical example)",
   card_leg_hp: "High-pitch acquisition block (about 270 ms in the schematic)",
   card_leg_sb: "Single-beat acquisition: phase position only schematic, duration to be confirmed",

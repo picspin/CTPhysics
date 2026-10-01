@@ -203,6 +203,36 @@ const CardiacGatingSimulator: React.FC<Props> = ({ options }) => {
     ctx.fillStyle = '#111827';
     ctx.fillRect(padL, tubeTop, plotW, tubeBot - tubeTop);
     for (const seg of plan.tube) {
+      if (seg.durationUnknown) {
+        // single-beat mode: X-ray is on but the duration is unknown -> hatched, dashed marker of fixed visual
+        // width (NOT to scale) labelled "duration TBC", so the band is not misread as "no exposure".
+        const xc = xOfMs(beatStart(seg.beat) + seg.startMs);
+        const bx0 = xc - 22;
+        const bw = 44;
+        if (sweep !== null && xc > xOfMs(Math.max(cursorMs, -PRE_ROLL_S * 1000))) continue;
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(bx0, tubeTop + 2, bw, tubeBot - tubeTop - 4);
+        ctx.clip();
+        ctx.strokeStyle = C.tube;
+        ctx.lineWidth = 1.5;
+        for (let hx = bx0 - (tubeBot - tubeTop); hx < bx0 + bw; hx += 6) {
+          ctx.beginPath();
+          ctx.moveTo(hx, tubeBot - 2);
+          ctx.lineTo(hx + (tubeBot - tubeTop), tubeTop + 2);
+          ctx.stroke();
+        }
+        ctx.restore();
+        ctx.strokeStyle = C.tube;
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 3]);
+        ctx.strokeRect(bx0 + 0.5, tubeTop + 2.5, bw - 1, tubeBot - tubeTop - 5);
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#fef9c3';
+        ctx.textAlign = 'center';
+        ctx.fillText(t('card_tube_tbc'), xc, (tubeTop + tubeBot) / 2 + fs / 3);
+        continue;
+      }
       const s = beatStart(seg.beat) + seg.startMs;
       const e = beatStart(seg.beat) + seg.endMs;
       const x0 = xOfMs(s);
@@ -417,7 +447,11 @@ const CardiacGatingSimulator: React.FC<Props> = ({ options }) => {
                   <li><span className="inline-block w-3 h-3 mr-1 align-middle rounded-sm" style={{ background: '#f97316' }} />{t('card_leg_trigger')}</li>
                 </>
               )}
-              <li><span className="inline-block w-3 h-3 mr-1 align-middle rounded-sm" style={{ background: C.tube }} />{t('card_leg_tube_full')}</li>
+              {mode === 'singleBeat' ? (
+                <li data-testid="card-leg-tube-unknown"><span className="inline-block w-3 h-3 mr-1 align-middle rounded-sm border border-dashed" style={{ borderColor: C.tube, background: 'repeating-linear-gradient(45deg, rgba(250,204,21,0.85) 0 2px, transparent 2px 4px)' }} />{t('card_leg_tube_unknown')}</li>
+              ) : (
+                <li><span className="inline-block w-3 h-3 mr-1 align-middle rounded-sm" style={{ background: C.tube }} />{t('card_leg_tube_full')}</li>
+              )}
               {mode === 'standard' && gating === 'retrospective' && ecgPulsing && (
                 <li><span className="inline-block w-3 h-3 mr-1 align-middle rounded-sm" style={{ background: C.tubeLow }} />{t('card_leg_tube_low')}</li>
               )}

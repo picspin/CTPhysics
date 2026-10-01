@@ -131,6 +131,9 @@ const IterativeReconSimulator: React.FC = () => {
         w.postMessage(msg);
       } else {
         // main-thread fallback (no Worker support or worker failed to load)
+        // NOTE: computeDemo() runs the whole reconstruction (FBP + all SIRT iterations) synchronously on the
+        // main thread, so with large n / nAngles / nIter this can block the UI for a noticeable time. The
+        // setTimeout(0) below only defers the work past the current paint; it does not chunk it or yield during it.
         setTimeout(() => {
           if (id !== reqId.current) return;
           setResult(computeDemo(params));

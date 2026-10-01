@@ -785,6 +785,8 @@ export const zh = {
   card_leg_dia: "舒张期目标窗口",
   card_leg_sys: "收缩期目标窗口",
   card_leg_tube_full: "管电流（X 线开启）",
+  card_leg_tube_unknown: "管电流（X 线开启，持续时间待确认；阴影标记不按比例）",
+  card_tube_tbc: "时长待确认",
   card_leg_tube_low: "降低的管电流（ECG 脉冲，典型示例为 25%）",
   card_leg_hp: "高螺距采集块（示意图中约 270 ms）",
   card_leg_sb: "单心跳采集：时相位置仅为示意，持续时间待确认",

@@ -144,7 +144,20 @@ describe('acquisition plan', () => {
     expect(p.targets).toHaveLength(1);
     expect(p.targets[0].durationKnown).toBe(false);
     expect(p.targets[0].startMs).toBe(p.targets[0].endMs);
-    expect(p.tube).toHaveLength(0);
+    // the tube-current band is NOT empty: one explicit unknown-duration marker, no invented length
+    expect(p.tube).toHaveLength(1);
+    expect(p.tube[0].durationUnknown).toBe(true);
+    expect(p.tube[0].beat).toBe(p.targets[0].beat);
+    expect(p.tube[0].startMs).toBe(p.tube[0].endMs);
+    expect(p.tube[0].startMs).toBe(p.targets[0].startMs);
+  });
+
+  it('only single-beat mode produces unknown-duration tube segments', () => {
+    for (const mode of ['standard', 'highPitchDS'] as const) {
+      const p = buildPlan({ ...base, mode });
+      expect(p.tube.length).toBeGreaterThan(0);
+      expect(p.tube.some((s) => s.durationUnknown)).toBe(false);
+    }
   });
 });
 
