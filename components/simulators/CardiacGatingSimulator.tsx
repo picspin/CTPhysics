@@ -7,15 +7,17 @@ import { Select } from '@/components/ui/Select';
 import { Slider } from '@/components/ui/Slider';
 import { Button } from '@/components/ui/Button';
 import { CardiacGatingOptions } from '@/types';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface Props {
   options?: CardiacGatingOptions;
 }
 
 const CardiacGatingSimulator: React.FC<Props> = ({ options }) => {
+  const { t } = useLanguage();
   const defaultGatingTypes = [
-    { id: 'prospective', name: '前瞻性门控 (Prospective - Step & Shoot)' },
-    { id: 'retrospective', name: '回顾性门控 (Retrospective - Helical)' }
+    { id: 'prospective', name: t('card_gate_prospective') },
+    { id: 'retrospective', name: t('card_gate_retrospective') }
   ];
 
   const gatingTypes = options?.gatingTypes || defaultGatingTypes;
@@ -190,21 +192,21 @@ const CardiacGatingSimulator: React.FC<Props> = ({ options }) => {
 
   return (
     <SimulatorContainer
-      title="心脏门控模拟器 (Cardiac Gating)"
-      description="比较不同心率下的前瞻性门控与回顾性门控模式。"
+      title={t('card_gating_title')}
+      description={t('card_gating_desc')}
       enableLiquidEffect={false}
     >
       <div className="space-y-6">
         {/* Controls */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Select
-            label="门控模式 (Mode)"
-            options={gatingTypes.map(t => ({ value: t.id, label: t.name }))}
+            label={t('card_mode')}
+            options={gatingTypes.map(g => ({ value: g.id, label: g.name }))}
             value={gatingType}
             onChange={(e) => setGatingType(e.target.value)}
           />
           <Slider
-            label={`心率 (Heart Rate): ${heartRate} BPM`}
+            label={t('card_heart_rate_bpm', { hr: heartRate })}
             min={40}
             max={120}
             step={1}
@@ -217,7 +219,7 @@ const CardiacGatingSimulator: React.FC<Props> = ({ options }) => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* ECG Monitor */}
           <div className="md:col-span-2 bg-black rounded-lg border border-border-100 p-2 relative h-48">
-            <div className="absolute top-2 right-2 text-xs text-green-500 font-mono">心电监护 (ECG MONITOR)</div>
+            <div className="absolute top-2 right-2 text-xs text-green-500 font-mono">{t('card_ecg_monitor')}</div>
             <canvas ref={canvasRef} width={600} height={200} className="w-full h-full" />
           </div>
 
@@ -231,26 +233,26 @@ const CardiacGatingSimulator: React.FC<Props> = ({ options }) => {
             </motion.div>
             <div className="text-center">
               <div className="text-2xl font-bold text-text-100">{heartRate}</div>
-              <div className="text-xs text-text-300">BPM</div>
+              <div className="text-xs text-text-300">{t('card_bpm')}</div>
             </div>
             <Button onClick={toggleScan} variant={isScanning ? 'danger' : 'primary'} className="w-full">
-              {isScanning ? '停止采集 (Stop)' : '开始采集 (Start)'}
+              {isScanning ? t('card_stop_acq') : t('card_start_acq')}
             </Button>
           </div>
         </div>
 
         {/* Info Box */}
         <div className="bg-bg-200 p-4 rounded-lg text-sm text-text-200">
-          <h4 className="font-semibold text-text-100 mb-2">技术指南 (Guide)</h4>
+          <h4 className="font-semibold text-text-100 mb-2">{t('card_guide')}</h4>
           {gatingType === 'prospective' ? (
             <p>
-              <strong>步进扫描 (Step & Shoot):</strong> X射线仅在舒张期开启（黄色条）。
-              <br />剂量低，但需要稳定且较低的心率（&lt;65 BPM）以保证图像质量。
+              <strong>{t('card_guide_pro_t')}</strong> {t('card_guide_pro_1')}
+              <br />{t('card_guide_pro_2')}
             </p>
           ) : (
             <p>
-              <strong>螺旋回顾性扫描 (Helical):</strong> X射线连续开启。数据标记有ECG相位。
-              <br />剂量较高。允许在任意相位（收缩期/舒张期）重建以观察运动或选择最佳静止期。
+              <strong>{t('card_guide_retro_t')}</strong> {t('card_guide_retro_1')}
+              <br />{t('card_guide_retro_2')}
             </p>
           )}
         </div>

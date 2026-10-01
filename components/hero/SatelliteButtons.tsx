@@ -3,18 +3,20 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { useLanguage, type MessageKey } from '@/context/LanguageContext';
 
-const modules = [
-    { title: 'Reconstruction', href: '/reconstruction', desc: 'FBP, Helical & Kernels', color: 'shadow-cyan-500/50 border-cyan-400/30' },
-    { title: 'Reconstruction', href: '/reconstruction', desc: '3D FDK Reconstruction', color: 'shadow-sky-500/50 border-sky-400/30' },
-    { title: 'PCCT', href: '/pcct', desc: 'Direct Conversion Spec', color: 'shadow-emerald-500/50 border-emerald-400/30' },
-    { title: 'Dose & Safety', href: '/dose', desc: 'CTDI, DLP & ALARA', color: 'shadow-red-500/50 border-red-400/30' },
-    { title: 'Cardiac CT', href: '/cardiac', desc: 'ECG Gating & 4D', color: 'shadow-pink-500/50 border-pink-400/30' },
-    { title: 'Dual Energy', href: '/dual-energy', desc: 'Spectral Analysis', color: 'shadow-purple-500/50 border-purple-400/30' },
-    { title: 'Quiz Base', href: '/questions', desc: 'Test Knowledge', color: 'shadow-emerald-500/50 border-emerald-400/30' },
+const modules: { titleKey: MessageKey; descKey: MessageKey; href: string; color: string }[] = [
+    { titleKey: 'land_mod_recon', href: '/reconstruction', descKey: 'land_mod_recon_desc', color: 'shadow-cyan-500/50 border-cyan-400/30' },
+    { titleKey: 'land_mod_cbct', href: '/reconstruction', descKey: 'land_mod_cbct_desc', color: 'shadow-sky-500/50 border-sky-400/30' },
+    { titleKey: 'land_mod_pcct', href: '/pcct', descKey: 'land_mod_pcct_desc', color: 'shadow-emerald-500/50 border-emerald-400/30' },
+    { titleKey: 'land_mod_dose', href: '/dose', descKey: 'land_mod_dose_desc', color: 'shadow-red-500/50 border-red-400/30' },
+    { titleKey: 'land_mod_cardiac', href: '/cardiac', descKey: 'land_mod_cardiac_desc', color: 'shadow-pink-500/50 border-pink-400/30' },
+    { titleKey: 'land_mod_dual', href: '/dual-energy', descKey: 'land_mod_dual_desc', color: 'shadow-purple-500/50 border-purple-400/30' },
+    { titleKey: 'land_mod_quiz', href: '/questions', descKey: 'land_mod_quiz_desc', color: 'shadow-emerald-500/50 border-emerald-400/30' },
 ];
 
 const SatelliteButtons = () => {
+    const { t } = useLanguage();
     // Rotation State driven by center hover
     const [isHoveringCenter, setIsHoveringCenter] = useState(false);
 
@@ -60,7 +62,7 @@ const SatelliteButtons = () => {
                 onMouseOver={() => setIsHoveringCenter(true)}
                 onMouseOut={() => setIsHoveringCenter(false)}
                 onClick={() => setIsHoveringCenter(true)}
-                title="Hover to accelerate orbit"
+                title={t('land_hover_hint')}
             />
 
             {/* Orbiting Container */}
@@ -105,8 +107,8 @@ const SatelliteButtons = () => {
                                         }}
                                     >
                                         <div className={`absolute inset-0 rounded-full opacity-0 group-hover:opacity-40 transition-opacity duration-300 bg-gradient-to-t from-current to-transparent`} />
-                                        <h3 className="text-sm font-bold text-white mb-1 tracking-wider uppercase group-hover:text-cyan-300 transition-colors">{mod.title}</h3>
-                                        <p className="text-[10px] text-gray-400 font-light leading-tight px-1 hidden md:block">{mod.desc}</p>
+                                        <h3 className="text-sm font-bold text-white mb-1 tracking-wider uppercase group-hover:text-cyan-300 transition-colors">{t(mod.titleKey)}</h3>
+                                        <p className="text-[10px] text-gray-400 font-light leading-tight px-1 hidden md:block">{t(mod.descKey)}</p>
                                         <div className="absolute -inset-1 rounded-full border border-white/5 group-hover:border-white/20 transition-colors duration-500 scale-110" />
                                     </motion.div>
                                 </Link>

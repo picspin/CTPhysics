@@ -1,0 +1,108 @@
+{
+  "title": "Beam Hardening and Dual-Energy CT",
+  "description": "This page covers beam hardening and dual-energy CT techniques, including X-ray energy and attenuation, beam hardening, dual-energy radiography and dual-energy reconstruction.",
+  "sections": [
+    {
+      "id": "xray-energy",
+      "title": "X-ray Energy and Attenuation",
+      "description": "How X-rays of different energies are attenuated by different materials is the basis of dual-energy CT.",
+      "content": "To understand dual-energy CT we first need to understand how X-rays of different energies are attenuated by different materials. In the diagnostic energy range, the two important physical processes by which X-rays interact with matter are the photoelectric effect and Compton (incoherent) scattering. Compton scattering is relatively similar across most materials, but the probability of photoelectric absorption differs greatly. Specifically, the probability of a photoelectric event is proportional to (Z/E)\u00b3, where Z is the atomic number and E is the X-ray photon energy. This means it depends strongly on the material, but also, importantly, on the X-ray energy.",
+      "simulator": {
+        "type": "xray-attenuation",
+        "options": {
+          "tissues": [
+            {"id": "soft_tissue", "name": "Soft tissue (e.g. muscle)"},
+            {"id": "fat", "name": "Fat"},
+            {"id": "bone", "name": "Bone"},
+            {"id": "iodine", "name": "Iodinated contrast"},
+            {"id": "iodine_enhanced", "name": "Iodine-enhanced organ"},
+            {"id": "water", "name": "Water"},
+            {"id": "air", "name": "Air"}
+          ],
+          "iodineConcentrations": [1, 2, 5, 8, 10]
+        }
+      },
+      "keyPoints": [
+        "X-ray attenuation is determined mainly by the photoelectric effect and Compton scattering",
+        "The photoelectric effect depends strongly on the atomic number of the material and on the X-ray energy",
+        "The K-edge is the minimum energy required for a K-shell photoelectric event to occur",
+        "The K-edge of iodine is at 33 keV, squarely within the diagnostic X-ray energy range",
+        "The CT number (HU) is directly related to the linear attenuation coefficient, but normalized"
+      ]
+    },
+    {
+      "id": "beam-hardening",
+      "title": "Beam Hardening",
+      "description": "Beam hardening is the phenomenon in which low-energy X-rays are preferentially absorbed as the beam passes through matter, raising the mean energy of the beam.",
+      "content": "When an X-ray beam passes through matter, low-energy X-rays are absorbed more readily than high-energy X-rays. This raises the mean energy of the beam that emerges from the material, a phenomenon we call beam hardening. Beam hardening can cause artifacts in CT images, especially around dense objects such as metal implants or bone.",
+      "simulator": {
+        "type": "beam-hardening",
+        "options": {
+          "materials": [
+            {"id": "aluminum", "name": "Aluminum (2.5 mm)"},
+            {"id": "titanium", "name": "Titanium (5 mm)"},
+            {"id": "bone", "name": "Bone (1 cm)"}
+          ],
+          "kVs": [80, 100, 120, 140]
+        }
+      },
+      "keyPoints": [
+        "Beam hardening is the preferential absorption of low-energy X-rays as the beam passes through matter",
+        "Beam hardening can cause artifacts in CT images",
+        "Filters can reduce beam hardening by removing low-energy X-rays beforehand",
+        "Beam-hardening correction algorithms can reduce artifacts during image reconstruction"
+      ]
+    },
+    {
+      "id": "dual-energy-radiography",
+      "title": "Dual-Energy Radiography",
+      "description": "Dual-energy radiography uses the difference in attenuation of X-rays of different energies to distinguish different materials.",
+      "content": "Dual-energy radiography is the precursor of dual-energy CT. It uses the difference in attenuation of X-rays of different energies to distinguish different materials. For example, bone and soft tissue attenuate very differently at low and high X-ray energies, which can be used to create images that show only soft tissue or only bone. Dual-energy radiography is widely used in bone-density measurement (DXA scans).",
+      "keyPoints": [
+        "Dual-energy radiography uses the difference in attenuation of X-rays of different energies to distinguish different materials",
+        "It can be used to create images that show only soft tissue or only bone",
+        "Dual-energy radiography is widely used in bone-density measurement"
+      ]
+    },
+    {
+      "id": "dual-energy-ct",
+      "title": "Dual-Energy CT Systems",
+      "description": "Dual-energy CT systems use X-rays of two different energies to obtain more information about tissue composition.",
+      "content": "Dual-energy CT systems use X-rays of two different energies to obtain more information about tissue composition. There are several ways to implement dual-energy CT: dual-source CT (two X-ray tubes and two detector arrays), rapid kV switching (a single X-ray tube switching rapidly between high and low kV), dual-layer detectors (the upper layer detects low-energy X-rays and the lower layer detects high-energy X-rays) and split-beam (using a filter to split the X-ray beam into high- and low-energy parts).",
+      "keyPoints": [
+        "Dual-energy CT uses X-rays of two different energies to obtain more information about tissue composition",
+        "Ways to implement dual-energy CT include dual-source CT, rapid kV switching, dual-layer detectors and split-beam",
+        "Dual-energy CT can provide material information that conventional CT cannot"
+      ]
+    },
+    {
+      "id": "dual-energy-reconstruction",
+      "title": "Dual-Energy Reconstruction",
+      "description": "Dual-energy CT enables material decomposition, producing special images such as virtual non-contrast, iodine overlay, bone subtraction and lung perfusion.",
+      "content": "The main advantage of dual-energy CT is that it allows material decomposition, distinguishing different material components. This makes it possible to create a range of special images, including: virtual non-contrast (removing the effect of iodinated contrast to simulate an image without contrast injection), iodine overlay (highlighting iodine-containing regions), bone subtraction (removing bone to make vessels and soft tissue easier to see) and lung perfusion (assessing pulmonary blood flow).",
+      "simulator": {
+        "type": "dual-energy-reconstruction",
+        "options": {
+          "reconstructionTypes": [
+            {"id": "virtual_noncontrast", "name": "Virtual non-contrast"},
+            {"id": "iodine_overlay", "name": "Iodine overlay"},
+            {"id": "bone_subtraction", "name": "Bone subtraction"},
+            {"id": "lung_perfusion", "name": "Lung perfusion"}
+          ],
+          "cases": [
+            {"id": "liver", "name": "Liver lesion"},
+            {"id": "lung", "name": "Pulmonary embolism"},
+            {"id": "kidney", "name": "Kidney stone"}
+          ]
+        }
+      },
+      "keyPoints": [
+        "Dual-energy CT allows material decomposition, distinguishing different material components",
+        "Virtual non-contrast images can reduce the need for an additional unenhanced acquisition",
+        "Iodine overlay can improve lesion detection",
+        "Bone subtraction simplifies the assessment of vessels and soft tissue",
+        "Lung perfusion images can help assess pulmonary embolism"
+      ]
+    }
+  ]
+}

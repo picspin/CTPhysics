@@ -21,6 +21,8 @@ import KeyPoints from '@/components/ui/KeyPoints';
 import SimulatorContainer from '@/components/ui/SimulatorContainer';
 import { Slider } from '@/components/ui/Slider';
 import { Select } from '@/components/ui/Select';
+import { useLanguage, type MessageKey } from '@/context/LanguageContext';
+import { ORGAN_KEY, DOSE_REGION_KEY } from '@/i18n/labels';
 
 import {
   calculateCTDI,
@@ -55,12 +57,7 @@ import { MonteCarloPanel } from '@/components/dose/MonteCarloPanel';
 // that the body model reads, so changes propagate in real time.
 // ---------------------------------------------------------------------------
 
-interface PageData {
-  title: string;
-  description: string;
-  sections: { id: string; title: string; description: string; content?: string; keyPoints?: string[] }[];
-}
-import doseData from '@/data/dose.json';
+import { useContent } from '@/data/content';
 
 // ===== Existing dose calculator (kept; bug fixed via named-options) =====
 const DoseCalculatorSimulator: React.FC = () => {
@@ -69,13 +66,14 @@ const DoseCalculatorSimulator: React.FC = () => {
   const [pitch, setPitch] = useState(1.0);
   const [scanLength, setScanLength] = useState(30);
   const [region, setRegion] = useState('chest');
+  const { t } = useLanguage();
 
-  const regions = [
-    { id: 'head', name: '头部 (Head)', kFactor: 0.0021 },
-    { id: 'neck', name: '颈部 (Neck/Thyroid)', kFactor: 0.0059 },
-    { id: 'chest', name: '胸部 (Chest)', kFactor: 0.014 },
-    { id: 'abdomen', name: '腹部 (Abdomen)', kFactor: 0.015 },
-    { id: 'peripheral', name: '四肢 (Extremities)', kFactor: 0.0007 },
+  const regions: { id: string; nameKey: MessageKey; kFactor: number }[] = [
+    { id: 'head', nameKey: 'dose_region_head', kFactor: 0.0021 },
+    { id: 'neck', nameKey: 'dose_region_neck', kFactor: 0.0059 },
+    { id: 'chest', nameKey: 'dose_region_chest', kFactor: 0.014 },
+    { id: 'abdomen', nameKey: 'dose_region_abdomen', kFactor: 0.015 },
+    { id: 'peripheral', nameKey: 'dose_region_peripheral', kFactor: 0.0007 },
   ];
 
   // FIX: calculateCTDI now takes a NAMED-OPTIONS object so the previous
@@ -87,19 +85,19 @@ const DoseCalculatorSimulator: React.FC = () => {
 
   return (
     <SimulatorContainer
-      title="剂量计算器 (Dose Calculator)"
-      description="根据扫描参数计算 CTDI, DLP 和有效剂量"
+      title={t('dose_calc_title')}
+      description={t('dose_calc_desc')}
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div className="space-y-4">
           <Select
-            label="解剖部位 (Region)"
-            options={regions.map((r) => ({ value: r.id, label: r.name }))}
+            label={t('dose_calc_region')}
+            options={regions.map((r) => ({ value: r.id, label: t(r.nameKey) }))}
             value={region}
             onChange={(e) => setRegion(e.target.value)}
           />
           <Slider
-            label="管电压 (Tube Voltage) [kVp]"
+            label={t('dose_calc_kvp')}
             min={80}
             max={140}
             step={10}
@@ -108,7 +106,7 @@ const DoseCalculatorSimulator: React.FC = () => {
             valueDisplay={kVp}
           />
           <Slider
-            label="管电流 (Tube Current) [mAs]"
+            label={t('dose_calc_mas')}
             min={50}
             max={500}
             step={10}
@@ -117,7 +115,7 @@ const DoseCalculatorSimulator: React.FC = () => {
             valueDisplay={mAs}
           />
           <Slider
-            label="螺距 (Pitch)"
+            label={t('dose_calc_pitch')}
             min={0.5}
             max={2.0}
             step={0.1}
@@ -126,7 +124,7 @@ const DoseCalculatorSimulator: React.FC = () => {
             valueDisplay={pitch}
           />
           <Slider
-            label="扫描长度 (Scan Length) [cm]"
+            label={t('dose_calc_length')}
             min={10}
             max={100}
             step={1}
@@ -144,7 +142,7 @@ const DoseCalculatorSimulator: React.FC = () => {
             <div className="flex justify-between items-center">
               <div>
                 <div className="text-sm text-text-200">
-                  容积CT剂量指数 (CTDI<sub>vol</sub>)
+                  {t('dose_calc_ctdivol')}
                 </div>
                 <div className="text-2xl font-bold text-text-100">{ctdi.toFixed(2)}</div>
               </div>
@@ -158,7 +156,7 @@ const DoseCalculatorSimulator: React.FC = () => {
           >
             <div className="flex justify-between items-center">
               <div>
-                <div className="text-sm text-text-200">剂量长度乘积 (DLP)</div>
+                <div className="text-sm text-text-200">{t('dose_calc_dlp')}</div>
                 <div className="text-2xl font-bold text-text-100">{dlp.toFixed(0)}</div>
               </div>
               <div className="text-sm text-text-200">mGy·cm</div>
@@ -171,7 +169,7 @@ const DoseCalculatorSimulator: React.FC = () => {
           >
             <div className="flex justify-between items-center">
               <div>
-                <div className="text-sm text-primary-100">有效剂量 (Effective Dose)</div>
+                <div className="text-sm text-primary-100">{t('dose_calc_ed')}</div>
                 <div className="text-2xl font-bold text-primary-100">{effectiveDose.toFixed(2)}</div>
               </div>
               <div className="text-sm text-primary-100">mSv</div>
@@ -179,12 +177,12 @@ const DoseCalculatorSimulator: React.FC = () => {
           </motion.div>
 
           <div className="bg-yellow-50/10 border border-yellow-200/50 rounded-lg p-4">
-            <h4 className="font-medium text-yellow-200 mb-2">风险评估 (Risk Assessment)</h4>
+            <h4 className="font-medium text-yellow-200 mb-2">{t('dose_risk_title')}</h4>
             <p className="text-sm text-yellow-100">
-              {effectiveDose < 1 && '极低风险 - 相当于几个月的自然本底辐射。'}
-              {effectiveDose >= 1 && effectiveDose < 10 && '低风险 - 相当于1-3年的自然本底辐射。'}
-              {effectiveDose >= 10 && effectiveDose < 20 && '中等风险 - 考虑各种剂量优化策略。'}
-              {effectiveDose >= 20 && '较高风险 - 必须确保临床正当性并严格优化方案。'}
+              {effectiveDose < 1 && t('dose_risk_vlow')}
+              {effectiveDose >= 1 && effectiveDose < 10 && t('dose_risk_low')}
+              {effectiveDose >= 10 && effectiveDose < 20 && t('dose_risk_mid')}
+              {effectiveDose >= 20 && t('dose_risk_high')}
             </p>
           </div>
         </div>
@@ -197,6 +195,7 @@ const DoseCalculatorSimulator: React.FC = () => {
 const PatientSizeDoseSimulator: React.FC = () => {
   const [patientDiameter, setPatientDiameter] = useState(30);
   const [useAEC, setUseAEC] = useState(true);
+  const { t } = useLanguage();
 
   const generateSizeData = () => {
     const data = [];
@@ -220,13 +219,13 @@ const PatientSizeDoseSimulator: React.FC = () => {
 
   return (
     <SimulatorContainer
-      title="患者体型与剂量关系 (Patient Size & Dose)"
-      description="观察患者体型如何影响剂量和图像噪声"
+      title={t('dose_size_title')}
+      description={t('dose_size_desc')}
     >
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="space-y-6">
           <Slider
-            label="患者直径 (Patient Diameter) [cm]"
+            label={t('dose_size_diameter')}
             min={15}
             max={45}
             step={5}
@@ -243,19 +242,19 @@ const PatientSizeDoseSimulator: React.FC = () => {
                 className="w-4 h-4 text-primary-100 rounded focus:ring-primary-100"
               />
               <span className="text-sm font-medium text-text-100">
-                启用自动曝光控制 (Use AEC)
+                {t('dose_size_aec')}
               </span>
             </label>
           </div>
           <div className="bg-bg-200 rounded-lg p-4">
-            <h4 className="font-medium text-text-100 mb-3">当前数值</h4>
+            <h4 className="font-medium text-text-100 mb-3">{t('dose_size_current')}</h4>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-text-200">相对剂量:</span>
+                <span className="text-text-200">{t('dose_size_rel_dose')}</span>
                 <span className="font-medium text-text-100">{currentData.aecDose.toFixed(1)} mGy</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-text-200">图像噪声:</span>
+                <span className="text-text-200">{t('dose_size_noise')}</span>
                 <span className="font-medium text-text-100">{currentData.imageNoise.toFixed(1)} HU</span>
               </div>
             </div>
@@ -267,11 +266,11 @@ const PatientSizeDoseSimulator: React.FC = () => {
               <CartesianGrid strokeDasharray="3 3" stroke="#444" />
               <XAxis
                 dataKey="diameter"
-                label={{ value: '患者直径 (cm)', position: 'insideBottom', offset: -5, fill: '#888' }}
+                label={{ value: t('dose_size_axis_diam'), position: 'insideBottom', offset: -5, fill: '#888' }}
                 stroke="#6b7280"
               />
               <YAxis
-                label={{ value: '剂量 (mGy)', angle: -90, position: 'insideLeft', fill: '#888' }}
+                label={{ value: t('dose_size_axis_dose'), angle: -90, position: 'insideLeft', fill: '#888' }}
                 stroke="#6b7280"
               />
               <Tooltip
@@ -282,7 +281,7 @@ const PatientSizeDoseSimulator: React.FC = () => {
                 type="monotone"
                 dataKey="manualDose"
                 stroke="#ef4444"
-                name="固定电流 (Fixed mAs)"
+                name={t('dose_size_series_fixed')}
                 strokeWidth={2}
                 dot={true}
               />
@@ -290,7 +289,7 @@ const PatientSizeDoseSimulator: React.FC = () => {
                 type="monotone"
                 dataKey="aecDose"
                 stroke="#10b981"
-                name="自动曝光 (With AEC)"
+                name={t('dose_size_series_aec')}
                 strokeWidth={2}
                 dot={true}
                 strokeDasharray={useAEC ? '0' : '5 5'}
@@ -300,11 +299,11 @@ const PatientSizeDoseSimulator: React.FC = () => {
         </div>
       </div>
       <div className="mt-6 bg-blue-50/10 border border-blue-200/50 rounded-lg p-4">
-        <h4 className="font-medium text-blue-300 mb-2">关键见解</h4>
+        <h4 className="font-medium text-blue-300 mb-2">{t('dose_size_insights')}</h4>
         <ul className="space-y-1 text-sm text-blue-200">
-          <li>• 如果不使用AEC，剂量并不会随体型自动变化，但图像质量会急剧下降（噪声增加）。</li>
-          <li>• AEC 通过根据患者衰减自动调整剂量，保持图像质量一致。</li>
-          <li>• 较大的患者为了获得相同的图像质量，需要指数级更高的剂量（这也解释了所谓的&ldquo;体型代价&rdquo;）。</li>
+          <li>• {t('dose_size_i1')}</li>
+          <li>• {t('dose_size_i2')}</li>
+          <li>• {t('dose_size_i3')}</li>
         </ul>
       </div>
     </SimulatorContainer>
@@ -316,12 +315,13 @@ const DoseReductionSimulator: React.FC = () => {
   const [strategy, setStrategy] = useState('none');
   const [kVp, setKVp] = useState(120);
   const [iterativeStrength, setIterativeStrength] = useState(50);
+  const { t } = useLanguage();
 
-  const strategies = [
-    { id: 'none', name: '标准方案 (Standard Protocol)' },
-    { id: 'lowkv', name: '低电压成像 (Low kV)' },
-    { id: 'iterative', name: '迭代重建 (Iterative Reconstruction)' },
-    { id: 'combined', name: '组合策略 (Combined Approach)' },
+  const strategies: { id: string; nameKey: MessageKey }[] = [
+    { id: 'none', nameKey: 'dose_red_standard' },
+    { id: 'lowkv', nameKey: 'dose_red_lowkv' },
+    { id: 'iterative', nameKey: 'dose_red_iterative' },
+    { id: 'combined', nameKey: 'dose_red_combined' },
   ];
 
   const calculateDoseReduction = () => {
@@ -340,9 +340,9 @@ const DoseReductionSimulator: React.FC = () => {
   const optimizedDose = baseDose * (1 - doseReduction / 100);
 
   const comparisonData = [
-    { technique: '标准 (Standard)', dose: baseDose, quality: 100 },
+    { technique: t('dose_red_bar_standard'), dose: baseDose, quality: 100 },
     {
-      technique: '优化 (Optimized)',
+      technique: t('dose_red_bar_optimized'),
       dose: Number(optimizedDose.toFixed(2)),
       quality: Number((95 - doseReduction * 0.1).toFixed(1)),
     },
@@ -350,20 +350,20 @@ const DoseReductionSimulator: React.FC = () => {
 
   return (
     <SimulatorContainer
-      title="剂量降低策略 (Dose Reduction Strategies)"
-      description="比较不同的辐射剂量降低技术"
+      title={t('dose_red_title')}
+      description={t('dose_red_desc')}
     >
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="space-y-6">
           <Select
-            label="降低策略 (Strategy)"
-            options={strategies.map((s) => ({ value: s.id, label: s.name }))}
+            label={t('dose_red_strategy')}
+            options={strategies.map((s) => ({ value: s.id, label: t(s.nameKey) }))}
             value={strategy}
             onChange={(e) => setStrategy(e.target.value)}
           />
           {(strategy === 'lowkv' || strategy === 'combined') && (
             <Slider
-              label="管电压 (Tube Voltage) [kV]"
+              label={t('dose_red_kv')}
               min={80}
               max={120}
               step={10}
@@ -374,7 +374,7 @@ const DoseReductionSimulator: React.FC = () => {
           )}
           {(strategy === 'iterative' || strategy === 'combined') && (
             <Slider
-              label="迭代强度 (Iterative Strength) [%]"
+              label={t('dose_red_iter_strength')}
               min={0}
               max={100}
               step={10}
@@ -384,10 +384,10 @@ const DoseReductionSimulator: React.FC = () => {
             />
           )}
           <div className="bg-green-50/10 border border-green-200/50 rounded-lg p-4">
-            <h4 className="font-medium text-green-300 mb-1">剂量降低</h4>
+            <h4 className="font-medium text-green-300 mb-1">{t('dose_red_result')}</h4>
             <div className="text-3xl font-bold text-green-400 mt-1">-{doseReduction.toFixed(0)}%</div>
             <div className="text-sm text-green-300 mt-2">
-              {optimizedDose.toFixed(1)} mSv (原剂量 {baseDose} mSv)
+              {t('dose_red_result_detail', { optimized: optimizedDose.toFixed(1), base: baseDose })}
             </div>
           </div>
         </div>
@@ -400,8 +400,8 @@ const DoseReductionSimulator: React.FC = () => {
               <Tooltip
                 contentStyle={{ backgroundColor: '#222', border: '1px solid #444', color: '#eee' }}
               />
-              <Bar dataKey="dose" fill="#FF7A00" name="剂量 (mSv)" />
-              <Bar dataKey="quality" fill="#4A90E2" name="图像质量 (%)" />
+              <Bar dataKey="dose" fill="#FF7A00" name={t('dose_red_series_dose')} />
+              <Bar dataKey="quality" fill="#4A90E2" name={t('dose_red_series_quality')} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -421,6 +421,7 @@ const DoseReductionSimulator: React.FC = () => {
 // ---------------------------------------------------------------------------
 
 const BODY_3D_EXPLORER: React.FC = () => {
+  const { t } = useLanguage();
   // Protocol parameters
   const [mAs, setMAs] = useState(200);
   const [kVp, setKVp] = useState(120);
@@ -486,15 +487,13 @@ const BODY_3D_EXPLORER: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="rounded-lg bg-blue-50/10 border border-blue-200/40 p-4 text-sm text-blue-100">
-        <div className="font-medium text-blue-200 mb-1">教学核心 · Teaching goal</div>
+        <div className="font-medium text-blue-200 mb-1">{t('dose_3d_goal_title')}</div>
         <p className="leading-relaxed">
-          Click any region of the body to walk through the four-step chain
-          that turns a scanner output into a comparable dose number:
-          <span className="text-blue-300"> CTDIvol → DLP → SSDE → Effective dose (E)</span>.
-          The lesson: <span className="text-orange-200">CTDIvol is NOT patient dose</span> —
-          it&apos;s what the scanner emitted into a plastic cylinder. The body
-          habitus slider shows how SSDE diverges from CTDIvol as the patient
-          changes size.
+          {t('dose_3d_goal_a')}
+          <span className="text-blue-300">{t('dose_3d_goal_chain')}</span>
+          {t('dose_3d_goal_b')}
+          <span className="text-orange-200">{t('dose_3d_goal_key')}</span>
+          {t('dose_3d_goal_c')}
         </p>
       </div>
 
@@ -527,7 +526,7 @@ const BODY_3D_EXPLORER: React.FC = () => {
       {/* Controls */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="rounded-lg bg-bg-200 border border-white/10 p-4">
-          <div className="text-xs text-text-200 mb-2">管电压 · kVp</div>
+          <div className="text-xs text-text-200 mb-2">{t('dose_3d_ctl_kvp')} · kVp</div>
           <Slider
             label=""
             min={80}
@@ -539,7 +538,7 @@ const BODY_3D_EXPLORER: React.FC = () => {
           />
         </div>
         <div className="rounded-lg bg-bg-200 border border-white/10 p-4">
-          <div className="text-xs text-text-200 mb-2">管电流 · mAs</div>
+          <div className="text-xs text-text-200 mb-2">{t('dose_3d_ctl_mas')} · mAs</div>
           <Slider
             label=""
             min={50}
@@ -551,7 +550,7 @@ const BODY_3D_EXPLORER: React.FC = () => {
           />
         </div>
         <div className="rounded-lg bg-bg-200 border border-white/10 p-4">
-          <div className="text-xs text-text-200 mb-2">螺距 · Pitch</div>
+          <div className="text-xs text-text-200 mb-2">{t('dose_3d_ctl_pitch')}</div>
           <Slider
             label=""
             min={0.5}
@@ -563,7 +562,7 @@ const BODY_3D_EXPLORER: React.FC = () => {
           />
         </div>
         <div className="rounded-lg bg-bg-200 border border-white/10 p-4">
-          <div className="text-xs text-text-200 mb-2">水等效直径 · Dw</div>
+          <div className="text-xs text-text-200 mb-2">{t('dose_3d_ctl_dw')}</div>
           <Slider
             label=""
             min={12}
@@ -579,7 +578,7 @@ const BODY_3D_EXPLORER: React.FC = () => {
           />
         </div>
         <div className="rounded-lg bg-bg-200 border border-white/10 p-4">
-          <div className="text-xs text-text-200 mb-2">体型缩放 · Body scale</div>
+          <div className="text-xs text-text-200 mb-2">{t('dose_3d_ctl_scale')}</div>
           <Slider
             label=""
             min={0.55}
@@ -600,10 +599,10 @@ const BODY_3D_EXPLORER: React.FC = () => {
       <div className="rounded-lg bg-bg-200 border border-white/10 p-4">
         <div className="flex items-baseline justify-between mb-2">
           <h4 className="font-medium text-text-100 text-sm">
-            CTDIvol vs SSDE — divergence with patient size
+            {t('dose_3d_div_title')}
           </h4>
           <span className="text-xs text-text-200">
-            for chest protocol · mAs={mAs} · kVp={kVp} · pitch={pitch}
+            {t('dose_3d_div_sub', { mas: mAs, kvp: kVp, pitch })}
           </span>
         </div>
         <div className="h-64 w-full">
@@ -616,7 +615,7 @@ const BODY_3D_EXPLORER: React.FC = () => {
                 domain={[12, 48]}
                 stroke="#888"
                 label={{
-                  value: 'Water-equivalent diameter Dw (cm)',
+                  value: t('dose_3d_div_axis_x'),
                   position: 'insideBottom',
                   offset: -5,
                   fill: '#888',
@@ -626,7 +625,7 @@ const BODY_3D_EXPLORER: React.FC = () => {
               <YAxis
                 stroke="#888"
                 label={{
-                  value: 'Dose (mGy / mSv)',
+                  value: t('dose_3d_div_axis_y'),
                   angle: -90,
                   position: 'insideLeft',
                   fill: '#888',
@@ -645,7 +644,7 @@ const BODY_3D_EXPLORER: React.FC = () => {
                 type="monotone"
                 dataKey="ctdiVol"
                 stroke="#888"
-                name="CTDIvol (scanner output)"
+                name={t('dose_3d_div_ctdi')}
                 strokeWidth={2}
                 dot={false}
               />
@@ -653,7 +652,7 @@ const BODY_3D_EXPLORER: React.FC = () => {
                 type="monotone"
                 dataKey="ssde"
                 stroke="#FF7A00"
-                name="SSDE (patient size-corrected)"
+                name={t('dose_3d_div_ssde')}
                 strokeWidth={3}
                 dot={false}
               />
@@ -661,7 +660,7 @@ const BODY_3D_EXPLORER: React.FC = () => {
                 type="monotone"
                 dataKey="effectiveDose"
                 stroke="#4A90E2"
-                name="Effective dose (E, mSv)"
+                name={t('dose_3d_div_ed')}
                 strokeWidth={2}
                 strokeDasharray="4 4"
                 dot={false}
@@ -670,30 +669,25 @@ const BODY_3D_EXPLORER: React.FC = () => {
           </ResponsiveContainer>
         </div>
         <p className="text-xs text-text-200 mt-2 leading-relaxed">
-          CTDIvol is FLAT — the scanner emits the same dose regardless of who
-          is on the table. SSDE diverges: it goes UP for small patients (they
-          absorb more) and DOWN for large patients (their attenuation leaves
-          less dose inside). Watch the orange SSDE line separate from the
-          gray CTDIvol line as you change Dw. This divergence is exactly what
-          AAPM Report 204/220 was created to express.
+          {t('dose_3d_div_text')}
         </p>
       </div>
 
       {/* Per-region summary table — quick numerical reference */}
       <div className="rounded-lg bg-bg-200 border border-white/10 p-4 overflow-x-auto">
         <h4 className="font-medium text-text-100 text-sm mb-3">
-          Per-region dose breakdown (live)
+          {t('dose_3d_tbl_title')}
         </h4>
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-white/10">
-              <th className="text-left py-1.5 px-2 text-text-200">Region</th>
+              <th className="text-left py-1.5 px-2 text-text-200">{t('dose_3d_tbl_region')}</th>
               <th className="text-right py-1.5 px-2 text-text-200">CTDIvol (mGy)</th>
               <th className="text-right py-1.5 px-2 text-text-200">DLP (mGy·cm)</th>
               <th className="text-right py-1.5 px-2 text-text-200">SSDE (mGy)</th>
               <th className="text-right py-1.5 px-2 text-text-200">E (mSv)</th>
-              <th className="text-right py-1.5 px-2 text-text-200">k-factor</th>
-              <th className="text-left py-1.5 px-2 text-text-200">Dominant organs</th>
+              <th className="text-right py-1.5 px-2 text-text-200">{t('dose_3d_tbl_kfactor')}</th>
+              <th className="text-left py-1.5 px-2 text-text-200">{t('dose_3d_tbl_organs')}</th>
             </tr>
           </thead>
           <tbody>
@@ -708,8 +702,8 @@ const BODY_3D_EXPLORER: React.FC = () => {
                     isSelected ? 'bg-primary-100/10' : ''
                   }`}
                 >
-                  <td className="py-1.5 px-2 text-text-100 font-medium capitalize">
-                    {rid}
+                  <td className="py-1.5 px-2 text-text-100 font-medium">
+                    {t(DOSE_REGION_KEY[rid])}
                   </td>
                   <td className="py-1.5 px-2 text-right font-mono text-text-100">
                     {b.ctdiVolMgy.toFixed(2)}
@@ -729,7 +723,7 @@ const BODY_3D_EXPLORER: React.FC = () => {
                   <td className="py-1.5 px-2 text-text-200">
                     {describeRegionOrgans(rid)
                       .slice(0, 3)
-                      .map((o) => o.name)
+                      .map((o) => t(ORGAN_KEY[o.organ]))
                       .join(', ')}
                   </td>
                 </tr>
@@ -738,10 +732,7 @@ const BODY_3D_EXPLORER: React.FC = () => {
           </tbody>
         </table>
         <p className="text-xs text-text-200 mt-2 leading-relaxed">
-          Note: ICRP 103 effective dose is a <strong>population-averaged protection
-          quantity</strong>. It is designed for comparing CT protocols (this scan
-          vs that scan), NOT for estimating an individual patient&apos;s cancer
-          risk. ICRP Publication 103 explicitly warns against the latter use.
+          {t('dose_3d_tbl_note')}
         </p>
       </div>
     </div>
@@ -752,22 +743,17 @@ const BODY_3D_EXPLORER: React.FC = () => {
 // New: Monte Carlo explorer
 // ---------------------------------------------------------------------------
 const MC_EXPLORER: React.FC = () => {
+  const { t } = useLanguage();
   return (
     <div className="space-y-4">
       <div className="rounded-lg bg-orange-50/10 border border-orange-200/40 p-4 text-sm text-orange-100">
         <div className="font-medium text-orange-200 mb-1">
-          Honest framing · 真实的局限性
+          {t('dose_mc_frame_title')}
         </div>
         <p className="leading-relaxed">
-          A real Monte Carlo photon-transport engine (GEANT4, GATE, MCNP)
-          tracks every photon through geometry with full Compton scattering,
-          photoelectric cross-sections, and energy-deposition kernels. We
-          do not run that here — it is far outside the scope of a browser
-          lesson. What we run instead is a deliberately simplified MC that
-          samples photons and deposits energy via Beer-Lambert local
-          absorption. The numbers are <strong>illustrative</strong>, not
-          calibrated. What IS faithfully taught is the central MC idea:
-          variance shrinks as √N.
+          {t('dose_mc_frame_a')}
+          <strong>{t('dose_mc_frame_illus')}</strong>
+          {t('dose_mc_frame_b')}
         </p>
       </div>
       <MonteCarloPanel seed={42} />
@@ -780,13 +766,15 @@ const MC_EXPLORER: React.FC = () => {
 // ---------------------------------------------------------------------------
 
 const DosePage: React.FC = () => {
-  const pageData = doseData as PageData;
-  const [activeSection, setActiveSection] = useState(pageData.sections[0]?.id || 'dose-metrics');
+  const { t } = useLanguage();
+  const pageData = useContent('dose');
+  // The page's tabs are its own ids (not the JSON section ids).
+  const [activeSection, setActiveSection] = useState('dose-metrics');
 
   const tabs = [
     {
       id: 'dose-metrics',
-      label: '剂量链 (Dose Chain)',
+      label: t('dose_tab_chain'),
       icon: (
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -795,7 +783,7 @@ const DosePage: React.FC = () => {
     },
     {
       id: 'dose-3d',
-      label: '3D 人体模型 (3D Body)',
+      label: t('dose_tab_3d'),
       icon: (
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -804,12 +792,12 @@ const DosePage: React.FC = () => {
     },
     {
       id: 'patient-size',
-      label: '患者体型 (Patient Size)',
+      label: t('dose_tab_size'),
       icon: null,
     },
     {
       id: 'mc',
-      label: '蒙特卡洛 (Monte Carlo)',
+      label: t('dose_tab_mc'),
       icon: (
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <circle cx="12" cy="12" r="9" strokeWidth={2} />
@@ -821,7 +809,7 @@ const DosePage: React.FC = () => {
     },
     {
       id: 'dose-reduction',
-      label: '剂量降低 (Reduction)',
+      label: t('dose_tab_reduction'),
       icon: null,
     },
   ];
@@ -857,12 +845,11 @@ const DosePage: React.FC = () => {
       <div className="mt-6">
         {activeSection === 'dose-metrics' && (
           <SectionCard
-            title="Dose measurement methods"
-            description="From the scanner output CTDI to the comparable patient dose E"
+            title={t('dose_sec_measure_title')}
+            description={t('dose_sec_measure_desc')}
           >
             <p className="whitespace-pre-line text-text-100 mb-4">
-              {pageData.sections.find((s) => s.id === 'ct-dose-measurement')?.content ??
-                'CTDI is the standard dose index in CT.'}
+              {pageData.sections.find((s) => s.id === 'ct-dose-measurement')?.content}
             </p>
             <KeyPoints
               points={
@@ -877,8 +864,8 @@ const DosePage: React.FC = () => {
 
         {activeSection === 'dose-3d' && (
           <SectionCard
-            title="Interactive 3D Body Model"
-            description="Click any region to walk the CTDIvol → DLP → SSDE → Effective-dose chain"
+            title={t('dose_sec_3d_title')}
+            description={t('dose_sec_3d_desc')}
           >
             <BODY_3D_EXPLORER />
           </SectionCard>
@@ -886,12 +873,11 @@ const DosePage: React.FC = () => {
 
         {activeSection === 'patient-size' && (
           <SectionCard
-            title="Patient Size & Dose"
-            description="See how the patient habitus drives SSDE divergence from CTDIvol"
+            title={t('dose_sec_size_title')}
+            description={t('dose_sec_size_desc')}
           >
             <p className="whitespace-pre-line text-text-100 mb-4">
-              {pageData.sections.find((s) => s.id === 'patient-size')?.content ??
-                'Larger patients need more dose for equivalent image quality.'}
+              {pageData.sections.find((s) => s.id === 'patient-size')?.content}
             </p>
             <KeyPoints
               points={
@@ -906,8 +892,8 @@ const DosePage: React.FC = () => {
 
         {activeSection === 'mc' && (
           <SectionCard
-            title="Illustrative Monte Carlo"
-            description="A deliberately simplified MC estimator — variance shrinks as √N"
+            title={t('dose_sec_mc_title')}
+            description={t('dose_sec_mc_desc')}
           >
             <MC_EXPLORER />
           </SectionCard>
@@ -915,12 +901,11 @@ const DosePage: React.FC = () => {
 
         {activeSection === 'dose-reduction' && (
           <SectionCard
-            title="Dose Reduction Strategies"
-            description="Lower mAs, lower kV, iterative reconstruction"
+            title={t('dose_sec_red_title')}
+            description={t('dose_sec_red_desc')}
           >
             <p className="whitespace-pre-line text-text-100 mb-4">
-              {pageData.sections.find((s) => s.id === 'dose-reduction')?.content ??
-                'Several strategies reduce dose while preserving diagnostic quality.'}
+              {pageData.sections.find((s) => s.id === 'dose-reduction')?.content}
             </p>
             <KeyPoints
               points={

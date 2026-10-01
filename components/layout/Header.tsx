@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePathname } from 'next/navigation';
-import { useLanguage } from '@/context/LanguageContext';
+import { useLanguage, type MessageKey } from '@/context/LanguageContext';
 
 const Header: React.FC = () => {
   const pathname = usePathname();
@@ -16,7 +16,7 @@ const Header: React.FC = () => {
   const [themeStyle, setThemeStyle] = useState<'glass' | 'minimal'>('glass');
 
   // Page titles mapping with translation
-  const pageTitles: Record<string, string> = {
+  const pageTitles: Record<string, MessageKey> = {
     '/': 'title',
     '/reconstruction': 'reconstruction',
     '/dose': 'dose',
@@ -26,8 +26,8 @@ const Header: React.FC = () => {
     '/pcct': 'pcct',
   };
 
-  const titleKey = pageTitles[pathname] || '';
-  const currentTitle = titleKey ? t(titleKey) : 'CT Physics';
+  const titleKey = pageTitles[pathname];
+  const currentTitle = titleKey ? t(titleKey) : t('title');
 
   useEffect(() => {
     // Sync Theme Style on load
@@ -182,6 +182,7 @@ const Header: React.FC = () => {
                 <h3 className="text-lg font-bold text-white">{t('settings')}</h3>
                 <button
                   onClick={() => setIsSettingsOpen(false)}
+                  aria-label={t('close')}
                   className="p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -203,7 +204,7 @@ const Header: React.FC = () => {
                           : 'bg-zinc-800/40 border-transparent text-zinc-300 hover:bg-zinc-800'
                       }`}
                     >
-                      简体中文
+                      {t('lang_name_zh')}
                     </button>
                     <button
                       onClick={() => setLanguage('en')}
@@ -213,7 +214,7 @@ const Header: React.FC = () => {
                           : 'bg-zinc-800/40 border-transparent text-zinc-300 hover:bg-zinc-800'
                       }`}
                     >
-                      English
+                      {t('lang_name_en')}
                     </button>
                   </div>
                 </div>
@@ -232,7 +233,7 @@ const Header: React.FC = () => {
                             : 'bg-zinc-800/40 border-transparent text-zinc-300 hover:bg-zinc-800'
                         }`}
                       >
-                        {t('theme_' + tMode)}
+                        {tMode === 'glass' ? t('theme_glass') : t('theme_minimal')}
                       </button>
                     ))}
                   </div>

@@ -8,11 +8,12 @@ import KeyPoints from '@/components/ui/KeyPoints';
 import SimulatorContainer from '@/components/ui/SimulatorContainer';
 import TabGroup from '@/components/ui/TabGroup';
 import CardiacGatingSimulator from '@/components/simulators/CardiacGatingSimulator';
-import { PageData } from '@/types';
-import cardiacData from '@/data/cardiac.json';
+import { useLanguage } from '@/context/LanguageContext';
+import { useContent } from '@/data/content';
 
 const CardiacPage: React.FC = () => {
-  const pageData = cardiacData as PageData;
+  const { t } = useLanguage();
+  const pageData = useContent('cardiac');
   const [activeSection, setActiveSection] = useState(pageData.sections[0]?.id || 'cardiac-gating');
 
   const tabs = pageData.sections.map(section => ({
@@ -68,8 +69,8 @@ const CardiacPage: React.FC = () => {
               {activeContent.id === 'temporal-resolution' && (
                 <div className="mt-8">
                   <SimulatorContainer
-                    title="时间分辨率计算器 (Temporal Resolution Calculator)"
-                    description="根据旋转时间和重建方法计算时间分辨率"
+                    title={t('card_tr_title')}
+                    description={t('card_tr_desc')}
                   >
                     <TemporalResolutionCalculator />
                   </SimulatorContainer>
@@ -79,8 +80,8 @@ const CardiacPage: React.FC = () => {
               {activeContent.id === 'radiation-dose' && (
                 <div className="mt-8">
                   <SimulatorContainer
-                    title="心脏CT剂量计算器 (Cardiac Dose Calculator)"
-                    description="比较不同门控技术下的辐射剂量"
+                    title={t('card_dose_title')}
+                    description={t('card_dose_desc')}
                   >
                     <CardiacDoseCalculator />
                   </SimulatorContainer>
@@ -96,6 +97,7 @@ const CardiacPage: React.FC = () => {
 
 // Temporal Resolution Calculator Component
 const TemporalResolutionCalculator: React.FC = () => {
+  const { t } = useLanguage();
   const [rotationTime, setRotationTime] = useState(0.5);
   const [isMultisource, setIsMultisource] = useState(false);
 
@@ -108,7 +110,7 @@ const TemporalResolutionCalculator: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <label className="block text-sm font-medium text-text-100 mb-2">
-            机架旋转时间 (Rotation Time) [秒]
+            {t('card_tr_rot')}
           </label>
           <input
             type="number"
@@ -130,7 +132,7 @@ const TemporalResolutionCalculator: React.FC = () => {
               className="w-4 h-4 text-primary-100 rounded focus:ring-primary-100"
             />
             <span className="text-sm font-medium text-text-100">
-              双源CT (Dual-source CT)
+              {t('card_tr_dual')}
             </span>
           </label>
         </div>
@@ -138,20 +140,19 @@ const TemporalResolutionCalculator: React.FC = () => {
 
       <div className="bg-bg-200 rounded-lg p-6">
         <div className="text-center">
-          <div className="text-sm text-text-200 mb-2">时间分辨率 (Temporal Resolution)</div>
+          <div className="text-sm text-text-200 mb-2">{t('card_tr_label')}</div>
           <div className="text-4xl font-bold text-primary-100">
             {(temporalResolution * 1000).toFixed(0)} ms
           </div>
           <div className="text-sm text-text-200 mt-2">
-            {isMultisource ? '四分之一扇区重建 (Quarter-scan reconstruction)' : '半扇区重建 (Half-scan reconstruction)'}
+            {isMultisource ? t('card_tr_quarter') : t('card_tr_half')}
           </div>
         </div>
       </div>
 
       <div className="text-sm text-text-200">
         <p>
-          <strong>注：</strong> 时间分辨率决定了冻结心脏运动的能力。
-          对于可靠的心脏成像，在心率达到 70 bpm 时，时间分辨率应小于 100ms。
+          <strong>{t('common_note')}</strong>{t('card_tr_note')}
         </p>
       </div>
     </div>
@@ -160,6 +161,7 @@ const TemporalResolutionCalculator: React.FC = () => {
 
 // Cardiac Dose Calculator Component
 const CardiacDoseCalculator: React.FC = () => {
+  const { t } = useLanguage();
   const [gatingType, setGatingType] = useState<'prospective' | 'retrospective'>('prospective');
   const [heartRate, setHeartRate] = useState(70);
 
@@ -172,21 +174,21 @@ const CardiacDoseCalculator: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <label className="block text-sm font-medium text-text-100 mb-2">
-            门控类型 (Gating Type)
+            {t('card_dose_gating')}
           </label>
           <select
             value={gatingType}
             onChange={(e) => setGatingType(e.target.value as 'prospective' | 'retrospective')}
             className="w-full px-4 py-2 border border-border-100 rounded-lg focus:ring-2 focus:ring-primary-100 bg-bg-200 text-text-100"
           >
-            <option value="prospective">前瞻性心电触发 (Prospective)</option>
-            <option value="retrospective">回顾性心电门控 (Retrospective)</option>
+            <option value="prospective">{t('card_dose_opt_pro')}</option>
+            <option value="retrospective">{t('card_dose_opt_retro')}</option>
           </select>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-text-100 mb-2">
-            心率 (Heart Rate) [bpm]
+            {t('card_dose_hr')}
           </label>
           <input
             type="number"
@@ -204,7 +206,7 @@ const CardiacDoseCalculator: React.FC = () => {
           className="bg-bg-200 rounded-lg p-4 text-center border border-border-100"
           whileHover={{ scale: 1.02 }}
         >
-          <div className="text-sm text-text-200">估算剂量 (Estimated Dose)</div>
+          <div className="text-sm text-text-200">{t('card_dose_est')}</div>
           <div className="text-2xl font-bold text-primary-100 mt-1">
             {estimatedDose.toFixed(1)} mSv
           </div>
@@ -214,9 +216,9 @@ const CardiacDoseCalculator: React.FC = () => {
           className="bg-bg-200 rounded-lg p-4 text-center border border-border-100"
           whileHover={{ scale: 1.02 }}
         >
-          <div className="text-sm text-text-200">剂量降低 (Dose Reduction)</div>
+          <div className="text-sm text-text-200">{t('card_dose_red')}</div>
           <div className="text-2xl font-bold text-green-500 mt-1">
-            {gatingType === 'prospective' ? '70-80%' : '基准 (Baseline)'}
+            {gatingType === 'prospective' ? '70–80%' : t('card_dose_baseline')}
           </div>
         </motion.div>
 
@@ -224,19 +226,19 @@ const CardiacDoseCalculator: React.FC = () => {
           className="bg-bg-200 rounded-lg p-4 text-center border border-border-100"
           whileHover={{ scale: 1.02 }}
         >
-          <div className="text-sm text-text-200">图像质量 (Image Quality)</div>
+          <div className="text-sm text-text-200">{t('card_dose_iq')}</div>
           <div className="text-2xl font-bold text-accent-100 mt-1">
-            {heartRate <= 65 ? '优秀 (Excellent)' : heartRate <= 80 ? '良好 (Good)' : '一般 (Fair)'}
+            {heartRate <= 65 ? t('card_iq_excellent') : heartRate <= 80 ? t('card_iq_good') : t('card_iq_fair')}
           </div>
         </motion.div>
       </div>
 
       <div className="bg-yellow-50/10 border border-yellow-200/50 rounded-lg p-4">
         <p className="text-sm text-yellow-200">
-          <strong>推荐：</strong>
-          {heartRate > 70 && ' 考虑使用β受体阻滞剂降低心率。'}
-          {gatingType === 'retrospective' && ' 使用心电管电流调制技术以降低剂量。'}
-          {gatingType === 'prospective' && heartRate <= 65 && ' 这是低剂量心脏CT的最佳条件。'}
+          <strong>{t('card_rec_title')}</strong>
+          {heartRate > 70 && t('card_rec_bb')}
+          {gatingType === 'retrospective' && t('card_rec_mod')}
+          {gatingType === 'prospective' && heartRate <= 65 && t('card_rec_best')}
         </p>
       </div>
     </div>

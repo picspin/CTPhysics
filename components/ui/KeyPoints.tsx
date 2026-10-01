@@ -1,15 +1,19 @@
+'use client';
+
 import React from 'react';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface KeyPointsProps {
   points: string[];
 }
 
 const KeyPoints: React.FC<KeyPointsProps> = ({ points }) => {
+  const { t } = useLanguage();
   if (!points || points.length === 0) return null;
 
   return (
     <div className="mt-6 rounded-xl bg-bg-200 bg-opacity-70 p-5 backdrop-blur-sm">
-      <h3 className="mb-3 font-semibold text-text-100">要点</h3>
+      <h3 className="mb-3 font-semibold text-text-100">{t('common_key_points')}</h3>
       <ul className="space-y-2 text-text-200">
         {points.map((point, index) => (
           <li key={index} className="flex items-start">

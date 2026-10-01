@@ -9,11 +9,12 @@ import DualEnergyReconstructionSimulator from '@/components/simulators/DualEnerg
 import XrayAttenuationSimulator from '@/components/simulators/XrayAttenuationSimulator';
 import BeamHardeningSimulator from '@/components/simulators/BeamHardeningSimulator';
 import TabGroup from '@/components/ui/TabGroup';
-
-// 从JSON文件导入数据
-import dualEnergyData from '@/data/dual-energy.json';
+import { useLanguage } from '@/context/LanguageContext';
+import { useContent } from '@/data/content';
 
 export default function DualEnergyPage() {
+    const { t } = useLanguage();
+    const dualEnergyData = useContent('dualEnergy');
     return (
         <div className="space-y-8 animate-fadeIn">
             <PageHeader
@@ -38,12 +39,12 @@ export default function DualEnergyPage() {
                 </SectionCard>
             ))}
 
-            <SimulatorContainer title="Technology Simulators">
+            <SimulatorContainer title={t('de_page_sim_title')}>
                 <TabGroup
                     tabs={[
-                        { id: 'attenuation', label: '1. X-Ray Attenuation' },
-                        { id: 'hardening', label: '2. Beam Hardening' },
-                        { id: 'dual-energy', label: '3. Dual Energy CT' },
+                        { id: 'attenuation', label: t('de_page_tab_att') },
+                        { id: 'hardening', label: t('de_page_tab_bh') },
+                        { id: 'dual-energy', label: t('de_page_tab_de') },
                     ]}
                 >
                     {(activeTab) => (

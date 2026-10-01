@@ -14,8 +14,23 @@ import { createParametricPhantomMesh } from '@/utils/three/parametricPhantom';
 import { createAttenuationOverlay } from './_fx/AttenuationOverlay';
 import { createPostFX } from '@/utils/three/postFX';
 import { createXRayBeam } from '@/utils/three/xrayBeam';
+import { createLabelSprite, type LabelSprite } from '@/utils/three/labelTexture';
+import { useLanguage, type MessageKey } from '@/context/LanguageContext';
+
+// Log entries store a message key (+ kernel key) rather than rendered text,
+// so the log re-renders in the current language after a toggle.
+type LogEntry = { key: MessageKey; kernelKey?: MessageKey };
+
+const KERNEL_KEY = {
+  soft: 'hel_kernel_soft',
+  bone: 'hel_kernel_bone',
+  lung: 'hel_kernel_lung',
+} as const satisfies Record<string, MessageKey>;
 
 const HelicalCTSimulator: React.FC = () => {
+  const { t } = useLanguage();
+  const tRef = useRef(t);
+  tRef.current = t;
   // --- State ---
   const [params, setParams] = useState({
     speed: 1.0,
@@ -28,7 +43,7 @@ const HelicalCTSimulator: React.FC = () => {
   });
 
   const [dose, setDose] = useState(0);
-  const [logs, setLogs] = useState<string[]>(['> 系统启动中 (System Booting)...']);
+  const [logs, setLogs] = useState<LogEntry[]>([{ key: 'hel_log_boot' }]);
 
   // --- Refs ---
   const containerRef = useRef<HTMLDivElement>(null);
@@ -48,14 +63,14 @@ const HelicalCTSimulator: React.FC = () => {
     materials: ReturnType<typeof createScannerMaterials>;
     phantom: THREE.Group;
     attenuation: ReturnType<typeof createAttenuationOverlay>;
-    attenuationLabel: THREE.Sprite;
+    attenuationLabel: LabelSprite;
     postFX: ReturnType<typeof createPostFX>;
     xrayBeam: ReturnType<typeof createXRayBeam>;
   }>();
 
   // --- Helper: Log ---
-  const addLog = (msg: string) => {
-    setLogs((prev) => [...prev.slice(-4), `> ${msg}`]);
+  const addLog = (entry: LogEntry) => {
+    setLogs((prev) => [...prev.slice(-4), entry]);
   };
 
   // --- 3D Initialization ---
@@ -269,43 +284,16 @@ const HelicalCTSimulator: React.FC = () => {
 
     // Sprite label — uses CanvasTexture (no new deps) to draw a small
     // "Slice @ kV=120" tag floating above the slice plane.
-    function makeLabelSprite(text: string): THREE.Sprite {
-      const c = document.createElement('canvas');
-      c.width = 256;
-      c.height = 64;
-      const ctx = c.getContext('2d')!;
-      const tex = new THREE.CanvasTexture(c);
-      tex.colorSpace = THREE.SRGBColorSpace;
-      const mat = new THREE.SpriteMaterial({
-        map: tex,
-        transparent: true,
-        depthWrite: false,
-      });
-      function draw(current: string): void {
-        ctx.fillStyle = 'rgba(10, 13, 18, 0.85)';
-        ctx.fillRect(0, 0, c.width, c.height);
-        ctx.strokeStyle = '#ffaa66';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(1, 1, c.width - 2, c.height - 2);
-        ctx.fillStyle = '#ffaa66';
-        ctx.font = 'bold 28px monospace';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(current, c.width / 2, c.height / 2);
-        tex.needsUpdate = true;
-      }
-      draw(text);
-      const sprite = new THREE.Sprite(mat);
-      sprite.scale.set(1.4, 0.35, 1);
-      // setText re-bakes the canvas so the label can track kv slider changes.
-      sprite.userData.setText = (next: string) => draw(next);
-      sprite.userData.dispose = () => {
-        tex.dispose();
-        mat.dispose();
-      };
-      return sprite;
-    }
-    const label = makeLabelSprite(`Slice @ ${initialKv} kV`);
+    const labelHandle = createLabelSprite(tRef.current('hel_slice_label', { kv: initialKv }), {
+      color: '#ffaa66',
+      width: 256,
+      height: 64,
+      fontPx: 28,
+      minFontPx: 12,
+      borderPx: 2,
+      worldWidth: 1.4,
+    });
+    const label = labelHandle.sprite;
     label.position.set(2.5, 2.2, 4.5);
 
     // Mount overlay + leader + label to the scene directly (NOT tableGroup)
@@ -372,7 +360,7 @@ const HelicalCTSimulator: React.FC = () => {
       materials,
       phantom,
       attenuation,
-      attenuationLabel: label,
+      attenuationLabel: labelHandle,
       postFX,
       xrayBeam,
     };
@@ -436,9 +424,7 @@ const HelicalCTSimulator: React.FC = () => {
       // Dispose exploded-view leader line + label (CanvasTexture/Sprite).
       leaderGeo.dispose();
       leaderMat.dispose();
-      if (typeof label.userData.dispose === 'function') {
-        label.userData.dispose();
-      }
+      labelHandle.dispose();
       // Phase 2: dispose postFX chain + X-ray beam.
       xrayBeam.dispose();
       postFX.dispose();
@@ -644,17 +630,14 @@ const HelicalCTSimulator: React.FC = () => {
       // shows the same anatomy but its coloring shifts as energy changes.
       sceneRef.current.attenuation.updateAttenuationTexture(params.kv);
       // Re-render the floating "Slice @ kV" label so it tracks the slider.
-      const setLabel = sceneRef.current.attenuationLabel.userData
-        .setText as (s: string) => void;
-      if (typeof setLabel === 'function') {
-        setLabel(`Slice @ ${params.kv} kV`);
-      }
+      sceneRef.current.attenuationLabel.setText(t('hel_slice_label', { kv: params.kv }));
     }
-  }, [params, drawPhantom]);
+    // `t` changes with the language, re-baking the label text on toggle.
+  }, [params, drawPhantom, t]);
 
   const toggleScan = () => {
     setParams(p => ({ ...p, scanning: !p.scanning }));
-    addLog(params.scanning ? "扫描已停止 (Scan stopped)." : "扫描开始 (Scan started).");
+    addLog({ key: params.scanning ? 'hel_log_scan_stop' : 'hel_log_scan_start' });
   };
 
   const toggleDualEnergy = () => {
@@ -668,15 +651,15 @@ const HelicalCTSimulator: React.FC = () => {
         {/* 3D View */}
         <div ref={containerRef} className="flex-1 relative bg-[#111] border-r-2 border-[#333]">
           <div className="absolute top-4 left-4 font-mono text-sm text-[var(--sim-accent)] z-10 pointer-events-none">
-            机架室视图 (GANTRY ROOM VIEW)<br />
-            STATUS: <span className={params.scanning ? "text-red-500" : ""}>{params.scanning ? "曝光中 (EXPOSURE)" : "待机 (STANDBY)"}</span>
+            {t('hel_view_gantry')}<br />
+            {t('hel_status')} <span className={params.scanning ? "text-red-500" : ""}>{params.scanning ? t('hel_status_exposure') : t('hel_status_standby')}</span>
           </div>
         </div>
 
         {/* Image View */}
         <div className="flex-1 bg-black flex flex-col items-center justify-center relative">
           <div className="absolute top-4 left-4 font-mono text-sm text-[var(--sim-accent)] pointer-events-none">
-            实时重建 (REAL-TIME RECONSTRUCTION)
+            {t('hel_view_recon')}
           </div>
           <canvas
             ref={canvasRef}
@@ -685,7 +668,7 @@ const HelicalCTSimulator: React.FC = () => {
             className="bg-black shadow-[0_0_20px_rgba(255,255,255,0.1)] max-w-[90%] max-h-[80%] aspect-square"
           />
           <div className="mt-2 font-mono text-xs text-gray-500">
-            剂量 (Dose): {dose} mGy
+            {t('hel_dose', { dose })}
           </div>
         </div>
       </div>
@@ -694,17 +677,17 @@ const HelicalCTSimulator: React.FC = () => {
       <div className="h-[250px] bg-bg-200 grid grid-cols-4 gap-4 p-4 shadow-[0_-4px_10px_rgba(0,0,0,0.5)] z-20">
 
         {/* Motion Control */}
-        <Card title="运动控制 (Motion Control)" className="bg-transparent border-[#444] !p-0">
+        <Card title={t('hel_card_motion')} className="bg-transparent border-[#444] !p-0">
           <div className="p-3 flex flex-col gap-4">
             <Slider
-              label="旋转时间 (Rotation Time) [s]"
+              label={t('hel_rot_time')}
               valueDisplay={params.speed}
               min={0.2} max={2.0} step={0.1}
               value={params.speed}
               onChange={(e) => setParams({ ...params, speed: parseFloat(e.target.value) })}
             />
             <Slider
-              label="螺距 (Pitch)"
+              label={t('hel_pitch')}
               valueDisplay={params.pitch}
               min={0.1} max={2.0} step={0.1}
               value={params.pitch}
@@ -715,23 +698,23 @@ const HelicalCTSimulator: React.FC = () => {
               className="mt-auto w-full"
               onClick={toggleScan}
             >
-              {params.scanning ? "停止扫描 (STOP)" : "开始扫描 (START)"}
+              {params.scanning ? t('hel_btn_stop') : t('hel_btn_start')}
             </Button>
           </div>
         </Card>
 
         {/* Exposure */}
-        <Card title="曝光参数 (Exposure)" className="bg-transparent border-[#444] !p-0">
+        <Card title={t('hel_card_exposure')} className="bg-transparent border-[#444] !p-0">
           <div className="p-3 flex flex-col gap-4">
             <Slider
-              label="管电压 (Tube Voltage) [kV]"
+              label={t('hel_tube_voltage')}
               valueDisplay={params.kv}
               min={80} max={140} step={10}
               value={params.kv}
               onChange={(e) => setParams({ ...params, kv: parseInt(e.target.value) })}
             />
             <Slider
-              label="管电流 (Tube Current) [mA]"
+              label={t('hel_tube_current')}
               valueDisplay={params.ma}
               min={50} max={800} step={50}
               value={params.ma}
@@ -741,19 +724,19 @@ const HelicalCTSimulator: React.FC = () => {
         </Card>
 
         {/* Reconstruction */}
-        <Card title="重建参数 (Reconstruction)" className="bg-transparent border-[#444] !p-0">
+        <Card title={t('hel_card_recon')} className="bg-transparent border-[#444] !p-0">
           <div className="p-3 flex flex-col gap-4">
             <Select
-              label="滤波核 (Kernel)"
+              label={t('hel_kernel')}
               options={[
-                { value: 'soft', label: '标准 (Standard/Soft)' },
-                { value: 'bone', label: '骨窗 (Bone/Sharp)' },
-                { value: 'lung', label: '肺窗 (Lung/High Contrast)' },
+                { value: 'soft', label: t('hel_kernel_soft') },
+                { value: 'bone', label: t('hel_kernel_bone') },
+                { value: 'lung', label: t('hel_kernel_lung') },
               ]}
               value={params.kernel}
               onChange={(e) => {
                 setParams({ ...params, kernel: e.target.value });
-                addLog(`Kernel changed to: ${e.target.value}`);
+                addLog({ key: 'hel_log_kernel', kernelKey: KERNEL_KEY[e.target.value as keyof typeof KERNEL_KEY] });
               }}
             />
             <Button
@@ -761,16 +744,16 @@ const HelicalCTSimulator: React.FC = () => {
               className="mt-auto w-full"
               onClick={toggleDualEnergy}
             >
-              {params.dualEnergy ? "双能: 开 (Dual Energy: ON)" : "双能: 关 (Dual Energy: OFF)"}
+              {params.dualEnergy ? t('hel_de_on') : t('hel_de_off')}
             </Button>
           </div>
         </Card>
 
         {/* System Log */}
-        <Card title="系统日志 (System Log)" className="bg-transparent border-[#444] !p-0">
+        <Card title={t('hel_card_log')} className="bg-transparent border-[#444] !p-0">
           <div className="p-3 h-full overflow-y-auto font-mono text-[10px] text-green-500">
             {logs.map((log, i) => (
-              <div key={i}>{log}</div>
+              <div key={i}>{"> "}{log.kernelKey ? t(log.key, { kernel: t(log.kernelKey) }) : t(log.key)}</div>
             ))}
           </div>
         </Card>

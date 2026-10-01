@@ -2,17 +2,19 @@
 
 import React, { useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { useLanguage, type MessageKey } from '@/context/LanguageContext';
 
-const navItems = [
-    { label: 'CT Reconst', href: '/reconstruction' },
-    { label: 'PCCT', href: '/pcct' },
-    { label: 'Dose Safe', href: '/dose' },
-    { label: 'Cardiac CT', href: '/cardiac' },
-    { label: 'Spectral', href: '/dual-energy' },
-    { label: 'Practice', href: '/questions' },
+const navItems: { labelKey: MessageKey; href: string }[] = [
+    { labelKey: 'land_nav_recon', href: '/reconstruction' },
+    { labelKey: 'land_nav_pcct', href: '/pcct' },
+    { labelKey: 'land_nav_dose', href: '/dose' },
+    { labelKey: 'land_nav_cardiac', href: '/cardiac' },
+    { labelKey: 'land_nav_spectral', href: '/dual-energy' },
+    { labelKey: 'land_nav_practice', href: '/questions' },
 ];
 
 export default function LandingNav() {
+    const { t, language, setLanguage } = useLanguage();
     const navRef = useRef<HTMLElement>(null);
 
     useEffect(() => {
@@ -41,7 +43,7 @@ export default function LandingNav() {
             }
         >
             <div className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-teal-400 tracking-wider z-10">
-                CT PHYSICS
+                {t('brand_name')}
             </div>
 
             {/* Spotlight Effect */}
@@ -57,7 +59,7 @@ export default function LandingNav() {
                     <Link key={item.href} href={item.href}>
                         <div className="relative px-5 py-2 rounded-full overflow-hidden transition-all duration-300 hover:bg-white/10 text-gray-300 hover:text-white group/btn">
                             <span className="relative z-10 flex items-center gap-2 text-sm font-medium">
-                                {item.label}
+                                {t(item.labelKey)}
                                 <svg
                                     viewBox="0 0 24 24"
                                     fill="none"
@@ -83,6 +85,17 @@ export default function LandingNav() {
                     </Link>
                 ))}
             </div>
+
+            {/* Language toggle (the landing page has no settings header) */}
+            <button
+                type="button"
+                data-testid="landing-lang-toggle"
+                onClick={() => setLanguage(language === 'zh' ? 'en' : 'zh')}
+                className="z-10 ml-4 px-3 py-1.5 rounded-full border border-white/20 text-xs font-medium text-gray-200 hover:text-white hover:bg-white/10 transition-colors"
+                aria-label={t('language')}
+            >
+                {language === 'zh' ? t('lang_name_en') : t('lang_name_zh')}
+            </button>
 
             {/* Mobile Menu Icon (Placeholder) */}
             <div className="md:hidden text-white">

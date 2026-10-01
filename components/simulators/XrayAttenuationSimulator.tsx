@@ -1,10 +1,14 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import SimulatorContainer from '@/components/ui/SimulatorContainer';
 import { Select } from '@/components/ui/Select';
 import { Slider } from '@/components/ui/Slider';
+import { useLanguage, type MessageKey } from '@/context/LanguageContext';
 
 const XrayAttenuationSimulator = () => {
+    const { t } = useLanguage();
     const [selectedTissue, setSelectedTissue] = useState('soft_tissue');
     const [iodineConcentration, setIodineConcentration] = useState(5);
     interface ChartData {
@@ -21,19 +25,19 @@ const XrayAttenuationSimulator = () => {
 
     const [chartData, setChartData] = useState<ChartData[]>([]);
 
-    const tissues = [
-        { id: 'soft_tissue', name: '软组织（如肌肉）' },
-        { id: 'fat', name: '脂肪' },
-        { id: 'bone', name: '骨骼' },
-        { id: 'iodine', name: '碘造影剂' },
-        { id: 'iodine_enhanced', name: '碘增强器官' },
-        { id: 'water', name: '水' },
-        { id: 'air', name: '空气' }
-    ];
+    const tissues: { id: string; name: string }[] = ([
+        ['soft_tissue', 'att_tissue_soft_tissue'],
+        ['fat', 'att_tissue_fat'],
+        ['bone', 'att_tissue_bone'],
+        ['iodine', 'att_tissue_iodine'],
+        ['iodine_enhanced', 'att_tissue_iodine_enhanced'],
+        ['water', 'att_tissue_water'],
+        ['air', 'att_tissue_air'],
+    ] as [string, MessageKey][]).map(([id, key]) => ({ id, name: t(key) }));
 
-    // 计算不同材料在不同能量下的衰减系数（模拟数据）
+    // Attenuation coefficient of each material vs. energy (simulated data)
     const calculateAttenuation = (tissue: string, energy: number, concentration = 5) => {
-        // 这些是模拟值，实际应用中应使用真实物理数据
+        // Illustrative values only; real applications must use measured physical data
         const baseValues: Record<string, number> = {
             soft_tissue: 0.3,
             fat: 0.2,
@@ -44,19 +48,19 @@ const XrayAttenuationSimulator = () => {
             air: 0.01
         };
 
-        // 模拟光电效应的能量依赖性 (Z/E)^3
+        // Model the energy dependence of the photoelectric effect, (Z/E)^3
         let attenuation = baseValues[tissue] * Math.pow(80 / energy, 2.5);
 
-        // 为碘添加K边缘效应（33 keV）
+        // Add the iodine K-edge (33 keV)
         if ((tissue === 'iodine' || tissue === 'iodine_enhanced') && energy >= 33 && energy < 40) {
-            attenuation *= 2.5 - (energy - 33) * 0.2; // K边缘后迅速下降
+            attenuation *= 2.5 - (energy - 33) * 0.2; // falls off quickly above the K-edge
         }
 
-        // 为碘造影剂添加浓度依赖性
+        // Add concentration dependence for iodine contrast
         if (tissue === 'iodine') {
             attenuation *= concentration / 5;
         } else if (tissue === 'iodine_enhanced') {
-            // 碘增强器官 = 软组织 + 碘的贡献
+            // Iodine-enhanced organ = soft tissue + iodine contribution
             attenuation = baseValues.soft_tissue * Math.pow(80 / energy, 2.5) +
                 (concentration / 10) * baseValues.iodine * Math.pow(80 / energy, 2.5);
 
@@ -68,11 +72,11 @@ const XrayAttenuationSimulator = () => {
         return attenuation;
     };
 
-    // 生成模拟数据
+    // Generate the simulated data
     useEffect(() => {
         const generateData = () => {
             const data = [];
-            // 从20到140 keV生成数据点
+            // Generate data points from 20 to 140 keV
             for (let energy = 20; energy <= 140; energy += 5) {
                 const dataPoint = {
                     energy,
@@ -92,13 +96,13 @@ const XrayAttenuationSimulator = () => {
         generateData();
     }, [iodineConcentration]);
 
-    // 获取图表中显示的线条颜色
+    // Line colour used in the chart
     const getLineColor = (tissue: string) => {
         const colors: Record<string, string> = {
-            soft_tissue: '#FF8C00', // 主题色
+            soft_tissue: '#FF8C00', // theme colour
             fat: '#FFC107',
             bone: '#795548',
-            iodine: '#4A90E2', // 强调色
+            iodine: '#4A90E2', // accent colour
             iodine_enhanced: '#003a80',
             water: '#00BCD4',
             air: '#9E9E9E'
@@ -107,19 +111,19 @@ const XrayAttenuationSimulator = () => {
     };
 
     return (
-        <SimulatorContainer title="X射线衰减模拟器">
+        <SimulatorContainer title={t('att_title')}>
             <div className="mb-4 space-y-4">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <Select
-                        label="选择组织类型"
-                        options={tissues.map(t => ({ value: t.id, label: t.name }))}
+                        label={t('att_tissue_select')}
+                        options={tissues.map(x => ({ value: x.id, label: x.name }))}
                         value={selectedTissue}
                         onChange={(e) => setSelectedTissue(e.target.value)}
                     />
 
                     {(selectedTissue === 'iodine' || selectedTissue === 'iodine_enhanced') && (
                         <Slider
-                            label="碘浓度 (mg/ml)"
+                            label={t('att_iodine_conc')}
                             min={1}
                             max={10}
                             value={iodineConcentration}
@@ -130,7 +134,7 @@ const XrayAttenuationSimulator = () => {
                 </div>
 
                 <div className="rounded-md border border-border bg-bg-100 p-3 sm:p-4">
-                    <div className="mb-2 text-sm font-medium text-text-100">X射线能量与衰减系数关系</div>
+                    <div className="mb-2 text-sm font-medium text-text-100">{t('att_chart_title')}</div>
                     <div className="h-64 w-full md:h-80">
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart
@@ -140,12 +144,12 @@ const XrayAttenuationSimulator = () => {
                                 <CartesianGrid strokeDasharray="3 3" />
                                 <XAxis
                                     dataKey="energy"
-                                    label={{ value: 'X射线能量 (keV)', position: 'insideBottomRight', offset: -10 }}
+                                    label={{ value: t('att_axis_x'), position: 'insideBottomRight', offset: -10 }}
                                 />
                                 <YAxis
-                                    label={{ value: '衰减系数 (cm⁻¹)', angle: -90, position: 'insideLeft' }}
+                                    label={{ value: t('att_axis_y'), angle: -90, position: 'insideLeft' }}
                                 />
-                                <Tooltip formatter={(value: number) => [value.toFixed(2), '衰减系数']} />
+                                <Tooltip formatter={(value: number) => [value.toFixed(2), t('att_tooltip')]} />
                                 <Legend layout="horizontal" verticalAlign="bottom" wrapperStyle={{ paddingTop: 10 }} />
                                 {tissues.map(tissue => (
                                     <Line
@@ -166,9 +170,9 @@ const XrayAttenuationSimulator = () => {
             </div>
 
             <div className="rounded-md bg-bg-200 p-3 text-sm text-text-200 sm:p-4">
-                <h3 className="mb-2 font-medium text-text-100">说明</h3>
-                <p>此模拟器展示了不同组织在不同X射线能量下的衰减特性。注意碘在33 keV处的K边缘效应，这是双能CT的基础。</p>
-                <p className="mt-2">图表中的衰减系数是模拟值，用于教育目的。在实际临床应用中，这些值会根据具体的组织成分和密度而变化。</p>
+                <h3 className="mb-2 font-medium text-text-100">{t('att_note_title')}</h3>
+                <p>{t('att_note_1')}</p>
+                <p className="mt-2">{t('att_note_2')}</p>
             </div>
         </SimulatorContainer>
     );

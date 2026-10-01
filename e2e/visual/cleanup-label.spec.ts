@@ -26,7 +26,7 @@ test.describe('PR #1 — AttenuationOverlay slice label tracks kV slider', () =>
     await helicalTab.click();
     // Wait until the helical simulator's kV slider label is in the DOM
     // (proves the helical simulator mounted, not the default FBP one).
-    const kvLabel = page.locator('span', { hasText: 'Tube Voltage' });
+    const kvLabel = page.locator('span', { hasText: '管电压' });
     await kvLabel.waitFor({ state: 'visible', timeout: 60_000 });
     const kvSlider = kvLabel
       .locator('xpath=ancestor::div[contains(@class,"flex-col")][1]')

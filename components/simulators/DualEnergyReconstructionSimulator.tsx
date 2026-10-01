@@ -1,14 +1,28 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import SimulatorContainer from '@/components/ui/SimulatorContainer';
 import TabGroup from '@/components/ui/TabGroup';
 import { Select } from '@/components/ui/Select';
+import { useLanguage, type MessageKey } from '@/context/LanguageContext';
+
+const MATERIAL_KEY = {
+  soft: 'de_mat_soft',
+  fat: 'de_mat_fat',
+  iodine: 'de_mat_iodine',
+  bone: 'de_mat_bone',
+  air: 'de_mat_air',
+  calcium_stone: 'de_mat_calcium_stone',
+} as const satisfies Record<string, MessageKey>;
+type MaterialId = keyof typeof MATERIAL_KEY;
 
 const DualEnergyReconstructionSimulator = () => {
+  const { t } = useLanguage();
   const [selectedCase, setSelectedCase] = useState('liver');
   const [reconstructionType, setReconstructionType] = useState('virtual_noncontrast');
   interface MaterialComposition {
-    name: string;
+    name: MaterialId;
     conventional: number;
     virtual_noncontrast: number;
     iodine_overlay: number;
@@ -19,43 +33,43 @@ const DualEnergyReconstructionSimulator = () => {
   const [materialComposition, setMaterialComposition] = useState<MaterialComposition[]>([]);
 
   const reconstructionTypes = [
-    { id: 'virtual_noncontrast', label: '虚拟平扫' },
-    { id: 'iodine_overlay', label: '碘叠加' },
-    { id: 'bone_subtraction', label: '骨骼减除' },
-    { id: 'lung_perfusion', label: '肺灌注' }
+    { id: 'virtual_noncontrast', label: t('de_rt_virtual_noncontrast') },
+    { id: 'iodine_overlay', label: t('de_rt_iodine_overlay') },
+    { id: 'bone_subtraction', label: t('de_rt_bone_subtraction') },
+    { id: 'lung_perfusion', label: t('de_rt_lung_perfusion') }
   ];
 
   const cases = [
-    { id: 'liver', name: '肝脏病变' },
-    { id: 'lung', name: '肺栓塞' },
-    { id: 'kidney', name: '肾结石' }
+    { id: 'liver', name: t('de_case_liver') },
+    { id: 'lung', name: t('de_case_lung') },
+    { id: 'kidney', name: t('de_case_kidney') }
   ];
 
-  // 生成模拟材料分解数据
+  // Illustrative material-decomposition data (keyed by material id)
   useEffect(() => {
     const generateMaterialData = () => {
-      // 不同病例的材料组成（模拟数据）
+      // Material composition per case (illustrative data)
       const compositions: Record<string, MaterialComposition[]> = {
         'liver': [
-          { name: '软组织', conventional: 65, virtual_noncontrast: 65, iodine_overlay: 65, bone_subtraction: 70, lung_perfusion: 65 },
-          { name: '脂肪', conventional: 15, virtual_noncontrast: 15, iodine_overlay: 15, bone_subtraction: 15, lung_perfusion: 15 },
-          { name: '碘', conventional: 15, virtual_noncontrast: 0, iodine_overlay: 15, bone_subtraction: 15, lung_perfusion: 15 },
-          { name: '骨骼', conventional: 5, virtual_noncontrast: 5, iodine_overlay: 5, bone_subtraction: 0, lung_perfusion: 5 },
-          { name: '空气', conventional: 0, virtual_noncontrast: 0, iodine_overlay: 0, bone_subtraction: 0, lung_perfusion: 0 }
+          { name: 'soft', conventional: 65, virtual_noncontrast: 65, iodine_overlay: 65, bone_subtraction: 70, lung_perfusion: 65 },
+          { name: 'fat', conventional: 15, virtual_noncontrast: 15, iodine_overlay: 15, bone_subtraction: 15, lung_perfusion: 15 },
+          { name: 'iodine', conventional: 15, virtual_noncontrast: 0, iodine_overlay: 15, bone_subtraction: 15, lung_perfusion: 15 },
+          { name: 'bone', conventional: 5, virtual_noncontrast: 5, iodine_overlay: 5, bone_subtraction: 0, lung_perfusion: 5 },
+          { name: 'air', conventional: 0, virtual_noncontrast: 0, iodine_overlay: 0, bone_subtraction: 0, lung_perfusion: 0 }
         ],
         'lung': [
-          { name: '软组织', conventional: 30, virtual_noncontrast: 30, iodine_overlay: 30, bone_subtraction: 35, lung_perfusion: 30 },
-          { name: '脂肪', conventional: 5, virtual_noncontrast: 5, iodine_overlay: 5, bone_subtraction: 5, lung_perfusion: 5 },
-          { name: '碘', conventional: 10, virtual_noncontrast: 0, iodine_overlay: 10, bone_subtraction: 10, lung_perfusion: 10 },
-          { name: '骨骼', conventional: 15, virtual_noncontrast: 15, iodine_overlay: 15, bone_subtraction: 0, lung_perfusion: 15 },
-          { name: '空气', conventional: 40, virtual_noncontrast: 40, iodine_overlay: 40, bone_subtraction: 50, lung_perfusion: 40 }
+          { name: 'soft', conventional: 30, virtual_noncontrast: 30, iodine_overlay: 30, bone_subtraction: 35, lung_perfusion: 30 },
+          { name: 'fat', conventional: 5, virtual_noncontrast: 5, iodine_overlay: 5, bone_subtraction: 5, lung_perfusion: 5 },
+          { name: 'iodine', conventional: 10, virtual_noncontrast: 0, iodine_overlay: 10, bone_subtraction: 10, lung_perfusion: 10 },
+          { name: 'bone', conventional: 15, virtual_noncontrast: 15, iodine_overlay: 15, bone_subtraction: 0, lung_perfusion: 15 },
+          { name: 'air', conventional: 40, virtual_noncontrast: 40, iodine_overlay: 40, bone_subtraction: 50, lung_perfusion: 40 }
         ],
         'kidney': [
-          { name: '软组织', conventional: 60, virtual_noncontrast: 60, iodine_overlay: 60, bone_subtraction: 65, lung_perfusion: 60 },
-          { name: '脂肪', conventional: 20, virtual_noncontrast: 20, iodine_overlay: 20, bone_subtraction: 20, lung_perfusion: 20 },
-          { name: '碘', conventional: 10, virtual_noncontrast: 0, iodine_overlay: 10, bone_subtraction: 10, lung_perfusion: 10 },
-          { name: '骨骼', conventional: 5, virtual_noncontrast: 5, iodine_overlay: 5, bone_subtraction: 0, lung_perfusion: 5 },
-          { name: '钙（结石）', conventional: 5, virtual_noncontrast: 15, iodine_overlay: 5, bone_subtraction: 5, lung_perfusion: 5 }
+          { name: 'soft', conventional: 60, virtual_noncontrast: 60, iodine_overlay: 60, bone_subtraction: 65, lung_perfusion: 60 },
+          { name: 'fat', conventional: 20, virtual_noncontrast: 20, iodine_overlay: 20, bone_subtraction: 20, lung_perfusion: 20 },
+          { name: 'iodine', conventional: 10, virtual_noncontrast: 0, iodine_overlay: 10, bone_subtraction: 10, lung_perfusion: 10 },
+          { name: 'bone', conventional: 5, virtual_noncontrast: 5, iodine_overlay: 5, bone_subtraction: 0, lung_perfusion: 5 },
+          { name: 'calcium_stone', conventional: 5, virtual_noncontrast: 15, iodine_overlay: 5, bone_subtraction: 5, lung_perfusion: 5 }
         ]
       };
 
@@ -66,11 +80,11 @@ const DualEnergyReconstructionSimulator = () => {
   }, [selectedCase]);
 
   return (
-    <SimulatorContainer title="双能重建模拟器">
+    <SimulatorContainer title={t('de_title')}>
       <div className="mb-4 space-y-4">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Select
-            label="选择病例"
+            label={t('de_select_case')}
             options={cases.map(c => ({ value: c.id, label: c.name }))}
             value={selectedCase}
             onChange={(e) => setSelectedCase(e.target.value)}
@@ -85,10 +99,10 @@ const DualEnergyReconstructionSimulator = () => {
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <div className="rounded-md border border-border-100 bg-bg-100 p-4">
-            <div className="mb-2 text-sm font-medium text-text-100">常规CT图像</div>
+            <div className="mb-2 text-sm font-medium text-text-100">{t('de_conventional_image')}</div>
             <div className="aspect-square w-full overflow-hidden rounded-md bg-black">
               <div className="relative h-full w-full">
-                {/* 模拟CT图像 */}
+                {/* Simulated CT image */}
                 <div className="absolute inset-0 flex items-center justify-center">
                   {selectedCase === 'liver' && (
                     <div className="h-3/4 w-3/4 rounded-full bg-gray-700">
@@ -121,17 +135,17 @@ const DualEnergyReconstructionSimulator = () => {
                 </div>
 
                 <div className="absolute bottom-2 left-2 rounded bg-black bg-opacity-50 px-2 py-1 text-xs text-white">
-                  常规单能CT
+                  {t('de_conventional_label')}
                 </div>
               </div>
             </div>
           </div>
 
           <div className="rounded-md border border-border-100 bg-bg-100 p-4">
-            <div className="mb-2 text-sm font-medium text-text-100">双能CT重建</div>
+            <div className="mb-2 text-sm font-medium text-text-100">{t('de_recon_image')}</div>
             <div className="aspect-square w-full overflow-hidden rounded-md bg-black">
               <div className="relative h-full w-full">
-                {/* 模拟双能CT重建图像 */}
+                {/* Simulated dual-energy reconstruction image */}
                 <div className="absolute inset-0 flex items-center justify-center">
                   {selectedCase === 'liver' && reconstructionType === 'virtual_noncontrast' && (
                     <div className="h-3/4 w-3/4 rounded-full bg-gray-600">
@@ -171,12 +185,12 @@ const DualEnergyReconstructionSimulator = () => {
                     </div>
                   )}
 
-                  {/* 默认显示 */}
+                  {/* Fallback: reconstruction type not applicable to this case */}
                   {((selectedCase === 'liver' && (reconstructionType === 'bone_subtraction' || reconstructionType === 'lung_perfusion')) ||
                     (selectedCase === 'lung' && (reconstructionType === 'virtual_noncontrast' || reconstructionType === 'iodine_overlay' || reconstructionType === 'bone_subtraction')) ||
                     (selectedCase === 'kidney' && (reconstructionType === 'iodine_overlay' || reconstructionType === 'bone_subtraction' || reconstructionType === 'lung_perfusion'))) && (
                       <div className="flex h-full w-full items-center justify-center text-white">
-                        <p>此重建类型不适用于当前病例</p>
+                        <p>{t('de_not_applicable')}</p>
                       </div>
                     )}
                 </div>
@@ -190,7 +204,7 @@ const DualEnergyReconstructionSimulator = () => {
         </div>
 
         <div className="rounded-md border border-border-100 bg-bg-100 p-4">
-          <div className="mb-2 text-sm font-medium text-text-100">材料分解</div>
+          <div className="mb-2 text-sm font-medium text-text-100">{t('de_material_title')}</div>
           <div className="h-64 w-full md:h-72">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
@@ -199,13 +213,13 @@ const DualEnergyReconstructionSimulator = () => {
                 layout="vertical"
               >
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" domain={[0, 100]} label={{ value: '百分比 (%)', position: 'insideBottom', offset: -5 }} />
-                <YAxis dataKey="name" type="category" width={80} />
-                <Tooltip formatter={(value) => [`${value}%`, '比例']} />
+                <XAxis type="number" domain={[0, 100]} label={{ value: t('de_axis_percent'), position: 'insideBottom', offset: -5 }} />
+                <YAxis dataKey="name" type="category" width={90} tickFormatter={(id: MaterialId) => t(MATERIAL_KEY[id])} />
+                <Tooltip formatter={(value) => [`${value}%`, t('de_tooltip_ratio')]} />
                 <Legend />
                 <Bar
                   dataKey="conventional"
-                  name="常规CT"
+                  name={t('de_series_conventional')}
                   fill="#cccccc"
                   radius={[0, 4, 4, 0]}
                 />
@@ -222,15 +236,15 @@ const DualEnergyReconstructionSimulator = () => {
       </div>
 
       <div className="rounded-md bg-bg-200 p-4 text-sm text-text-200">
-        <h3 className="mb-2 font-medium text-text-100">说明</h3>
-        <p>此模拟器展示了双能CT的不同重建类型：</p>
+        <h3 className="mb-2 font-medium text-text-100">{t('de_desc_title')}</h3>
+        <p>{t('de_desc_intro')}</p>
         <ul className="mt-2 list-inside list-disc space-y-1">
-          <li><span className="font-medium">虚拟平扫</span>：移除碘造影剂的影响，模拟未注射造影剂的图像</li>
-          <li><span className="font-medium">碘叠加</span>：突出显示含碘区域，有助于识别高血供病变</li>
-          <li><span className="font-medium">骨骼减除</span>：移除骨骼，便于观察血管和软组织</li>
-          <li><span className="font-medium">肺灌注</span>：评估肺部血流，有助于诊断肺栓塞</li>
+          <li><span className="font-medium">{t('de_rt_virtual_noncontrast')}</span>{t('common_colon')}{t('de_desc_vnc')}</li>
+          <li><span className="font-medium">{t('de_rt_iodine_overlay')}</span>{t('common_colon')}{t('de_desc_io')}</li>
+          <li><span className="font-medium">{t('de_rt_bone_subtraction')}</span>{t('common_colon')}{t('de_desc_bs')}</li>
+          <li><span className="font-medium">{t('de_rt_lung_perfusion')}</span>{t('common_colon')}{t('de_desc_lp')}</li>
         </ul>
-        <p className="mt-2">不同的重建类型适用于不同的临床情况，材料分解图表显示了各种重建方法如何改变图像中不同材料的表现。</p>
+        <p className="mt-2">{t('de_desc_outro')}</p>
       </div>
     </SimulatorContainer>
   );

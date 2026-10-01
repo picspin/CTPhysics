@@ -6,9 +6,11 @@ import { Select } from '@/components/ui/Select';
 import { Slider } from '@/components/ui/Slider';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { useLanguage } from '@/context/LanguageContext';
 import { calculateCBCTMetrics, generateCBCTProjectionData, CBCTParams } from '@/utils/cbct-physics';
 
 const CBCTSimulator: React.FC = () => {
+  const { t, language } = useLanguage();
   const [params, setParams] = useState<CBCTParams>({
     coneAngle: 15,
     pitchRotationAngle: 0,
@@ -173,37 +175,39 @@ const CBCTSimulator: React.FC = () => {
 
       ctx.fillStyle = '#38bdf8';
       ctx.font = '10px sans-serif';
-      ctx.fillText(mode === 'axial' ? 'Axial (轴位)' : 'Coronal (冠状位)', 10, 20);
+      ctx.fillText(mode === 'axial' ? t('cbct_label_axial') : t('cbct_label_coronal'), 10, 20);
     };
 
     drawReconstructedSlice(axCanvas, 'axial');
     drawReconstructedSlice(corCanvas, 'coronal');
 
-  }, [params, metrics.relativeNoise, metrics.artifactSeverity]);
+    // `language` is a dependency so the labels baked into the canvases re-render on toggle.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params, metrics.relativeNoise, metrics.artifactSeverity, language]);
 
   return (
-    <SimulatorContainer title="锥形束CT (CBCT) 物理建模模拟器">
+    <SimulatorContainer title={t('cbct_sim_panel_title')}>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1 space-y-6">
           <Card className="p-4 space-y-4">
-            <h3 className="text-lg font-bold text-sky-400">采集与几何参数</h3>
+            <h3 className="text-lg font-bold text-sky-400">{t('cbct_acq_title')}</h3>
             
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-300">体模选择 (Phantom)</label>
+              <label className="text-sm font-medium text-gray-300">{t('cbct_phantom')}</label>
               <Select
                 value={params.phantomType}
                 onChange={(e) => setParams((prev) => ({ ...prev, phantomType: e.target.value as 'dental' | 'skull' | 'cylinder' }))}
                 options={[
-                  { value: 'dental', label: 'Dental Phantom (牙科/下颌)' },
-                  { value: 'skull', label: 'Skull Phantom (颅脑/鼻窦)' },
-                  { value: 'cylinder', label: 'Cylinder Phantom (圆柱QA体模)' },
+                  { value: 'dental', label: t('cbct_phantom_dental') },
+                  { value: 'skull', label: t('cbct_phantom_skull') },
+                  { value: 'cylinder', label: t('cbct_phantom_cylinder') },
                 ]}
               />
             </div>
 
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-300">锥角 (Cone Angle)</span>
+                <span className="text-gray-300">{t('cbct_cone_angle')}</span>
                 <span className="text-sky-400 font-bold">{params.coneAngle}°</span>
               </div>
               <Slider
@@ -213,12 +217,12 @@ const CBCTSimulator: React.FC = () => {
                 value={params.coneAngle}
                 onChange={(e) => setParams((prev) => ({ ...prev, coneAngle: Number(e.target.value) }))}
               />
-              <p className="text-xs text-gray-500">较大的锥角会导致严重的非平面对称性伪影（FDK退化）。</p>
+              <p className="text-xs text-gray-500">{t('cbct_cone_hint')}</p>
             </div>
 
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-300">探测器像素大小 (Pixel Size)</span>
+                <span className="text-gray-300">{t('cbct_pixel')}</span>
                 <span className="text-sky-400 font-bold">{params.detectorPixelSize} mm</span>
               </div>
               <Slider
@@ -228,12 +232,12 @@ const CBCTSimulator: React.FC = () => {
                 value={params.detectorPixelSize}
                 onChange={(e) => setParams((prev) => ({ ...prev, detectorPixelSize: Number(e.target.value) }))}
               />
-              <p className="text-xs text-gray-500">微小像素提供高空间分辨率。</p>
+              <p className="text-xs text-gray-500">{t('cbct_pixel_hint')}</p>
             </div>
 
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-300">管电压 (kVp)</span>
+                <span className="text-gray-300">{t('cbct_kvp')}</span>
                 <span className="text-sky-400 font-bold">{params.kVp} kVp</span>
               </div>
               <Slider
@@ -247,7 +251,7 @@ const CBCTSimulator: React.FC = () => {
 
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-300">辐射剂量 (Dose/mAs)</span>
+                <span className="text-gray-300">{t('cbct_dose')}</span>
                 <span className="text-sky-400 font-bold">{params.dose} mAs</span>
               </div>
               <Slider
@@ -261,7 +265,7 @@ const CBCTSimulator: React.FC = () => {
 
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-300">扫描角度 (Rotation)</span>
+                <span className="text-gray-300">{t('cbct_rotation')}</span>
                 <span className="text-sky-400 font-bold">{params.pitchRotationAngle}°</span>
               </div>
               <Slider
@@ -279,37 +283,37 @@ const CBCTSimulator: React.FC = () => {
                 className="w-full"
                 onClick={() => setIsPlaying(!isPlaying)}
               >
-                {isPlaying ? '暂停扫描' : '启动自动扫描'}
+                {isPlaying ? t('cbct_auto_pause') : t('cbct_auto_start')}
               </Button>
               <Button
                 variant="secondary"
                 className="w-full"
                 onClick={() => setParams((prev) => ({ ...prev, pitchRotationAngle: 0 }))}
               >
-                重置角度
+                {t('cbct_reset_angle')}
               </Button>
             </div>
           </Card>
 
           <Card className="p-4 space-y-3">
-            <h3 className="text-lg font-bold text-sky-400">物理性能指标</h3>
+            <h3 className="text-lg font-bold text-sky-400">{t('cbct_metrics_title')}</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="p-3 bg-white/5 rounded-lg border border-white/5">
-                <p className="text-xs text-gray-400">空间分辨率</p>
+                <p className="text-xs text-gray-400">{t('cbct_m_resolution')}</p>
                 <p className="text-lg font-bold text-gray-200">{metrics.spatialResolutionMm} mm</p>
                 <p className="text-xs text-sky-400/80">{metrics.lpPerMm} lp/mm</p>
               </div>
               <div className="p-3 bg-white/5 rounded-lg border border-white/5">
-                <p className="text-xs text-gray-400">FDK锥束伪影</p>
+                <p className="text-xs text-gray-400">{t('cbct_m_artifact')}</p>
                 <p className="text-lg font-bold text-gray-200">{metrics.artifactSeverity}%</p>
-                <p className="text-xs text-red-400/80">{metrics.artifactSeverity > 40 ? '高偏轴伪影' : '可接受'}</p>
+                <p className="text-xs text-red-400/80">{metrics.artifactSeverity > 40 ? t('cbct_m_artifact_high') : t('cbct_m_artifact_ok')}</p>
               </div>
               <div className="p-3 bg-white/5 rounded-lg border border-white/5">
-                <p className="text-xs text-gray-400">对比度噪声比 (CNR)</p>
+                <p className="text-xs text-gray-400">{t('cbct_m_cnr')}</p>
                 <p className="text-lg font-bold text-gray-200">{metrics.cnr}</p>
               </div>
               <div className="p-3 bg-white/5 rounded-lg border border-white/5">
-                <p className="text-xs text-gray-400">相对图像噪声</p>
+                <p className="text-xs text-gray-400">{t('cbct_m_noise')}</p>
                 <p className="text-lg font-bold text-gray-200">{metrics.relativeNoise}%</p>
               </div>
             </div>
@@ -318,7 +322,7 @@ const CBCTSimulator: React.FC = () => {
 
         <div className="lg:col-span-2 space-y-6">
           <Card className="p-4 space-y-4">
-            <h3 className="text-base font-bold text-sky-400">3D 锥形束投影光路模拟</h3>
+            <h3 className="text-base font-bold text-sky-400">{t('cbct_path_title')}</h3>
             <div className="relative w-full h-64 bg-slate-950 rounded-lg overflow-hidden border border-white/10 flex items-center justify-center">
               <svg className="w-full h-full" viewBox="0 0 600 240">
                 <defs>
@@ -339,13 +343,13 @@ const CBCTSimulator: React.FC = () => {
                 <g transform={`translate(${150 + 40 * Math.sin((params.pitchRotationAngle * Math.PI)/180)}, ${70 + 10 * Math.cos((params.pitchRotationAngle * Math.PI)/180)})`}>
                   <rect x="-15" y="-10" width="30" height="20" rx="3" fill="#1e293b" stroke="#38bdf8" strokeWidth="2" />
                   <circle cx="0" cy="0" r="5" fill="#f43f5e" />
-                  <text x="-25" y="-18" fill="#94a3b8" fontSize="10">X-Ray Tube</text>
+                  <text x="-25" y="-18" fill="#94a3b8" fontSize="10">{t('cbct_xray_tube')}</text>
                 </g>
 
                 <g transform={`translate(${430 - 40 * Math.sin((params.pitchRotationAngle * Math.PI)/180)}, ${140 - 10 * Math.cos((params.pitchRotationAngle * Math.PI)/180)})`}>
                   <rect x="-10" y="-50" width="20" height="100" fill="#0f172a" stroke="#0ea5e9" strokeWidth="2" />
                   <path d="M -10,-50 L 10,-50 L 10,100" stroke="rgba(56, 189, 248, 0.4)" strokeWidth="1" />
-                  <text x="-20" y="-58" fill="#94a3b8" fontSize="10">2D Flat Panel</text>
+                  <text x="-20" y="-58" fill="#94a3b8" fontSize="10">{t('cbct_flat_panel')}</text>
                 </g>
 
                 <polygon
@@ -360,75 +364,75 @@ const CBCTSimulator: React.FC = () => {
                 </g>
               </svg>
               <div className="absolute bottom-2 right-2 px-2 py-1 bg-black/60 rounded text-xs text-gray-400">
-                源-Isocenter: 500mm | 源-探测器: 1000mm
+                {t('cbct_geometry_note')}
               </div>
             </div>
           </Card>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card className="p-3 flex flex-col items-center">
-              <h4 className="text-sm font-bold text-sky-400 mb-2">2D 探测器投影 (Projection)</h4>
+              <h4 className="text-sm font-bold text-sky-400 mb-2">{t('cbct_proj_title')}</h4>
               <canvas
                 ref={projectionCanvasRef}
                 width={128}
                 height={128}
                 className="w-full aspect-square bg-black rounded border border-white/10 shadow-inner"
               />
-              <p className="text-xs text-gray-500 mt-2 text-center">FPD 实时采样得到的 2D 衰减图</p>
+              <p className="text-xs text-gray-500 mt-2 text-center">{t('cbct_proj_caption')}</p>
             </Card>
 
             <Card className="p-3 flex flex-col items-center">
-              <h4 className="text-sm font-bold text-sky-400 mb-2">3D FDK 重建 - 轴位</h4>
+              <h4 className="text-sm font-bold text-sky-400 mb-2">{t('cbct_axial_title')}</h4>
               <canvas
                 ref={reconAxialCanvasRef}
                 width={128}
                 height={128}
                 className="w-full aspect-square bg-black rounded border border-white/10 shadow-inner"
               />
-              <p className="text-xs text-gray-500 mt-2 text-center">中平面 z = 0 处的二维反投影</p>
+              <p className="text-xs text-gray-500 mt-2 text-center">{t('cbct_axial_caption')}</p>
             </Card>
 
             <Card className="p-3 flex flex-col items-center">
-              <h4 className="text-sm font-bold text-sky-400 mb-2">3D FDK 重建 - 冠状位</h4>
+              <h4 className="text-sm font-bold text-sky-400 mb-2">{t('cbct_coronal_title')}</h4>
               <canvas
                 ref={reconCoronalCanvasRef}
                 width={128}
                 height={128}
                 className="w-full aspect-square bg-black rounded border border-white/10 shadow-inner"
               />
-              <p className="text-xs text-gray-500 mt-2 text-center">展现偏轴 (Off-axis) 的锥束几何伪影</p>
+              <p className="text-xs text-gray-500 mt-2 text-center">{t('cbct_coronal_caption')}</p>
             </Card>
           </div>
         </div>
       </div>
 
       <Card className="mt-6 p-4">
-        <h3 className="text-lg font-bold text-sky-400 mb-2">CBCT 与三维 FDK 滤波反投影原理</h3>
+        <h3 className="text-lg font-bold text-sky-400 mb-2">{t('cbct_theory_title')}</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-gray-300">
           <div>
             <p className="mb-2">
-              <strong>1. 锥形束几何 (Cone-Beam Geometry)：</strong>
-              与传统扇形束（Fan-beam）逐层扫描不同，CBCT 使用面探测器（Flat Panel Detector）以及锥形 X-ray 射束，在一次旋转中直接获取整个三维体积的二维投影。这大大缩短了扫描时间并提高了空间分辨率（非常适合高对比度的牙科与骨骼显像）。
+              <strong>{t('cbct_theory_1_t')}</strong>
+              {t('cbct_theory_1')}
             </p>
             <p>
-              <strong>2. 空间分辨率 vs 探测器像素：</strong>
-              CBCT 的空间分辨率受探测器元尺寸（d）与几何放大率（M）的限制。有效三维体素大小极限约为 d / M。调整参数可以看到空间分辨率的变化。
+              <strong>{t('cbct_theory_2_t')}</strong>
+              {t('cbct_theory_2')}
             </p>
           </div>
           <div>
             <p className="mb-2">
-              <strong>3. Feldkamp-Davis-Kress (FDK) 算法：</strong>
-              这是 CBCT 重建的核心数学基石。其主要步骤为：
+              <strong>{t('cbct_theory_3_t')}</strong>
+              {t('cbct_theory_3')}
               <br />
-              <span className="text-sky-400 font-mono">1. 投影加权：</span> 根据射线斜角对探测器数据加权：W = D0 / sqrt(D0^2 + u^2 + v^2)。
+              <span className="text-sky-400 font-mono">{t('cbct_theory_step1')}</span> {t('cbct_theory_step1_b')} W = D0 / sqrt(D0^2 + u^2 + v^2).
               <br />
-              <span className="text-sky-400 font-mono">2. 一维滤波：</span> 对加权投影沿探测器行方向（水平面）进行 Ramp 滤波。
+              <span className="text-sky-400 font-mono">{t('cbct_theory_step2')}</span> {t('cbct_theory_step2_b')}
               <br />
-              <span className="text-sky-400 font-mono">3. 三维加权反投影：</span> 沿锥形束三维射线路径反投影回体素网格。
+              <span className="text-sky-400 font-mono">{t('cbct_theory_step3')}</span> {t('cbct_theory_step3_b')}
             </p>
             <p>
-              <strong>4. 锥束伪影 (Cone-beam Artifacts)：</strong>
-              因为 FDK 假设射线仅在倾斜平面中传播，这是一种近似算法。对于偏离中心平面（z &gt;&gt; 0）的体素，以及圆锥角较大的情况下，数据会出现不完备性，在重建图像中产生明显的“下阴影”和“V型模糊”伪影。
+              <strong>{t('cbct_theory_4_t')}</strong>
+              {t('cbct_theory_4')}
             </p>
           </div>
         </div>

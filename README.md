@@ -89,8 +89,10 @@ CTPhysics 是一个用于学习与演示计算机断层扫描（CT）成像物�
   - 代码风格与提交信息规范
   - 测试与环境管理要求
 
-## 许可证
-- License：参见仓库根目录的 LICENSE 文件（例如 MIT）
+## 许可证 / License
+- 本项目采用 [PolyForm Noncommercial License 1.0.0](LICENSE)（非商业、源码可见许可），版权所有 © 2026 picspin / Ahloe Brown。
+- 学术、教学、科研，以及第三方学术/专业学会的使用与支持：免费。
+- 未经另行书面许可，不得用于商业用途。如需商业授权或有其他疑问，请通过 GitHub Issues 联系。
 
 ## 相关文档
 - 环境变量：docs/ENV.md
@@ -185,7 +187,9 @@ CTPhysics is an interactive learning and demonstration platform for CT (Computed
   - Testing & environment management requirements
 
 ## License
-- See LICENSE file at the repo root (e.g., MIT)
+- This project is released under the [PolyForm Noncommercial License 1.0.0](LICENSE) (non-commercial, source-available). Copyright (c) 2026 picspin / Ahloe Brown.
+- Free for academic, educational and research use, and for use and support by third-party academic or professional societies.
+- Commercial use is not permitted without separate permission. To ask about commercial licensing or anything else, please open a GitHub issue.
 
 ## Documentation links
 - Environment variables: docs/ENV.md

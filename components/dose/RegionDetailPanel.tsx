@@ -6,24 +6,17 @@ import {
   BodyRegionId,
   BODY_REGIONS,
   ICRP103_ORGANS,
-  ICRP103_ORGAN_NAMES,
   ICRP103_TOTAL_WT,
   computeDoseForRegion,
 } from '@/utils/dose-physics';
+import { useLanguage } from '@/context/LanguageContext';
+import { DOSE_REGION_KEY, ORGAN_KEY } from '@/i18n/labels';
 
 // ---------------------------------------------------------------------------
 // RegionDetailPanel — what shows in the right column when a region is
 // clicked. Walks the user through the CTDIvol → DLP → SSDE → E chain
 // with explicit "what this number means" callouts.
 // ---------------------------------------------------------------------------
-
-const REGION_DISPLAY: Record<BodyRegionId, { zh: string; en: string }> = {
-  head: { zh: '头部', en: 'Head' },
-  neck: { zh: '颈部 / 甲状腺', en: 'Neck (Thyroid)' },
-  cardiothoracic: { zh: '心胸', en: 'Cardiothoracic' },
-  abdomen: { zh: '腹部', en: 'Abdomen' },
-  peripheral: { zh: '四肢 / 周围', en: 'Peripheral' },
-};
 
 export interface RegionDetailPanelProps {
   region: BodyRegionId | null;
@@ -42,17 +35,14 @@ export const RegionDetailPanel: React.FC<RegionDetailPanelProps> = ({
   scanLengthCm,
   waterEquivalentDiameterCm,
 }) => {
+  const { t } = useLanguage();
   if (!region) {
     return (
       <div className="rounded-lg bg-bg-200 border border-white/10 p-4 text-sm text-text-200">
         <div className="font-medium text-text-100 mb-1">
-          点击区域 (Click a region)
+          {t('region_click_title')}
         </div>
-        <p>
-          Click any of the five colored regions on the body model to see
-          the CTDIvol → DLP → SSDE → Effective dose chain for that region,
-          along with which ICRP 103 organs dominate the dose.
-        </p>
+        <p>{t('region_click_body')}</p>
       </div>
     );
   }
@@ -76,14 +66,13 @@ export const RegionDetailPanel: React.FC<RegionDetailPanelProps> = ({
     <div className="rounded-lg bg-bg-200 border border-white/10 p-4 space-y-3">
       <div>
         <div className="text-[10px] uppercase tracking-wide text-text-200">
-          Selected region
+          {t('region_selected')}
         </div>
         <div className="text-lg font-medium text-text-100">
-          {REGION_DISPLAY[region].en} · {REGION_DISPLAY[region].zh}
+          {t(DOSE_REGION_KEY[region])}
         </div>
         <div className="text-xs text-text-200 mt-0.5">
-          Representative scan length {meta.representativeScanLengthCm} cm ·
-          k-factor {meta.kFactor} mSv/mGy·cm
+          {t('region_scan_info', { len: meta.representativeScanLengthCm, k: meta.kFactor })}
         </div>
       </div>
 
@@ -92,7 +81,7 @@ export const RegionDetailPanel: React.FC<RegionDetailPanelProps> = ({
         <div className="flex justify-between items-baseline">
           <div>
             <div className="text-[10px] uppercase tracking-wide text-text-200">
-              Step 1
+              {t('region_step', { n: 1 })}
             </div>
             <div className="text-sm font-medium text-text-100">
               CTDI<sub>vol</sub>
@@ -106,10 +95,8 @@ export const RegionDetailPanel: React.FC<RegionDetailPanelProps> = ({
           </div>
         </div>
         <p className="text-xs text-text-200 mt-2 leading-relaxed">
-          <span className="text-orange-300 font-medium">Important:</span> CTDIvol
-          is what the scanner MEASURED in a standard PMMA phantom (16 cm head
-          / 32 cm body). It is NOT patient dose. It tells you what the machine
-          emitted, not what this body absorbed.
+          <span className="text-orange-300 font-medium">{t('region_important')}</span>{' '}
+          {t('region_step1_body')}
         </p>
       </div>
 
@@ -118,7 +105,7 @@ export const RegionDetailPanel: React.FC<RegionDetailPanelProps> = ({
         <div className="flex justify-between items-baseline">
           <div>
             <div className="text-[10px] uppercase tracking-wide text-text-200">
-              Step 2
+              {t('region_step', { n: 2 })}
             </div>
             <div className="text-sm font-medium text-text-100">DLP</div>
           </div>
@@ -130,9 +117,7 @@ export const RegionDetailPanel: React.FC<RegionDetailPanelProps> = ({
           </div>
         </div>
         <p className="text-xs text-text-200 mt-2 leading-relaxed">
-          DLP = CTDIvol × scan length ({scanLengthCm} cm). Represents the
-          total energy the scanner imparted to the phantom over the scan
-          range.
+          {t('region_step2_body', { len: scanLengthCm })}
         </p>
       </div>
 
@@ -141,7 +126,7 @@ export const RegionDetailPanel: React.FC<RegionDetailPanelProps> = ({
         <div className="flex justify-between items-baseline">
           <div>
             <div className="text-[10px] uppercase tracking-wide text-text-200">
-              Step 3
+              {t('region_step', { n: 3 })}
             </div>
             <div className="text-sm font-medium text-text-100">SSDE</div>
           </div>
@@ -155,11 +140,7 @@ export const RegionDetailPanel: React.FC<RegionDetailPanelProps> = ({
           </div>
         </div>
         <p className="text-xs text-text-200 mt-2 leading-relaxed">
-          SSDE = CTDIvol × f(Dw) — the patient-specific correction from
-          AAPM Report 204/220. At Dw = {waterEquivalentDiameterCm} cm the
-          conversion factor f is {breakdown.ssdeFactor.toFixed(2)}. Smaller
-          patients get larger f → SSDE diverges UPWARD from CTDIvol. Larger
-          patients: SSDE diverges DOWNWARD. That divergence is the lesson.
+          {t('region_step3_body', { dw: waterEquivalentDiameterCm, f: breakdown.ssdeFactor.toFixed(2) })}
         </p>
       </div>
 
@@ -168,10 +149,10 @@ export const RegionDetailPanel: React.FC<RegionDetailPanelProps> = ({
         <div className="flex justify-between items-baseline">
           <div>
             <div className="text-[10px] uppercase tracking-wide text-primary-100">
-              Step 4
+              {t('region_step', { n: 4 })}
             </div>
             <div className="text-sm font-medium text-primary-100">
-              Effective dose E
+              {t('region_step4_title')}
             </div>
           </div>
           <div className="text-right">
@@ -182,23 +163,17 @@ export const RegionDetailPanel: React.FC<RegionDetailPanelProps> = ({
           </div>
         </div>
         <p className="text-xs text-text-200 mt-2 leading-relaxed">
-          E = DLP × k<sub>region</sub>. The k-factor folds in ICRP 103 tissue-
-          weighting factors for the organs in the scan range. The dominant
-          contributors for this region sum to w<sub>T</sub> ≈{' '}
-          {dominantWeight.toFixed(2)} of the total {ICRP103_TOTAL_WT.toFixed(2)}.
+          {t('region_step4_body', { wt: dominantWeight.toFixed(2), total: ICRP103_TOTAL_WT.toFixed(2) })}
         </p>
         <p className="text-[10px] text-orange-200/90 mt-2 leading-relaxed italic">
-          Reminder: effective dose is a population-averaged protection quantity
-          for comparing protocols — NOT an individual patient&apos;s risk estimate.
-          ICRP 103 explicitly warns against using E to estimate an individual&apos;s
-          cancer risk.
+          {t('region_reminder')}
         </p>
       </div>
 
       {/* ICRP 103 organ dominance */}
       <div className="rounded bg-bg-100 p-3">
         <div className="text-sm font-medium text-text-100 mb-2">
-          ICRP 103 organs dominating this region
+          {t('region_organs_title')}
         </div>
         <ul className="space-y-1">
           {dominantOrgansList.map((organ) => {
@@ -206,7 +181,7 @@ export const RegionDetailPanel: React.FC<RegionDetailPanelProps> = ({
             const sharePct = (wT / dominantWeight) * 100;
             return (
               <li key={organ} className="text-xs flex justify-between">
-                <span className="text-text-200">{ICRP103_ORGAN_NAMES[organ]}</span>
+                <span className="text-text-200">{t(ORGAN_KEY[organ])}</span>
                 <span className="font-mono text-text-100">
                   w<sub>T</sub> = {wT.toFixed(2)} · {sharePct.toFixed(0)}%
                 </span>
@@ -215,10 +190,7 @@ export const RegionDetailPanel: React.FC<RegionDetailPanelProps> = ({
           })}
         </ul>
         <p className="text-[10px] text-text-200 mt-2 leading-relaxed">
-          ICRP 103 (2007) raised breast (0.05→0.12) and lowered gonads
-          (0.20→0.08) vs. ICRP 60. Thyroid stays at 0.04 — small individually,
-          but high effective dose per mGy because of concentrated deposition
-          on the gland during neck CT.
+          {t('region_organs_note')}
         </p>
       </div>
     </div>

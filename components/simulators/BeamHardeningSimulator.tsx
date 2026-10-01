@@ -5,8 +5,10 @@ import SimulatorContainer from '@/components/ui/SimulatorContainer';
 import { Slider } from '@/components/ui/Slider';
 import { Select } from '@/components/ui/Select';
 import { Card } from '@/components/ui/Card';
+import { useLanguage } from '@/context/LanguageContext';
 
 const BeamHardeningSimulator: React.FC = () => {
+    const { t, language } = useLanguage();
     const [params, setParams] = useState({
         material: 'bone',
         thickness: 20, // cm
@@ -100,8 +102,8 @@ const BeamHardeningSimulator: React.FC = () => {
         ctx.fillStyle = '#888';
         ctx.font = '10px Roboto';
         ctx.fillText('0', p - 10, h - p + 10);
-        ctx.fillText('能量 Energy (keV)', w / 2, h - 10);
-        ctx.fillText('强度 Intensity', 10, h / 2);
+        ctx.fillText(t('bh_axis_energy'), w / 2, h - 10);
+        ctx.fillText(t('bh_axis_intensity'), 10, h / 2);
         ctx.fillText(`${params.kv}`, w - p, h - p + 10);
 
         // Draw Graphs
@@ -148,51 +150,55 @@ const BeamHardeningSimulator: React.FC = () => {
         ctx.fill();
 
         ctx.fillStyle = '#fff';
-        ctx.fillText(`平均能量: ${meanIn.toFixed(1)} -> ${meanOut.toFixed(1)} keV`, (xIn + xOut) / 2 - 30, p / 2 - 10);
-        ctx.fillText('束硬化 (Beam Hardening)', (xIn + xOut) / 2 - 25, p / 2 + 15);
+        ctx.textAlign = 'center';
+        ctx.fillText(t('bh_mean_energy', { a: meanIn.toFixed(1), b: meanOut.toFixed(1) }), (xIn + xOut) / 2, p / 2 - 10);
+        ctx.fillText(t('bh_label_hardening'), (xIn + xOut) / 2, p / 2 + 15);
+        ctx.textAlign = 'start';
 
-    }, [params]);
+    // `language` is a dependency so canvas-baked text re-renders on toggle.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [params, language]);
 
 
     return (
         <SimulatorContainer
-            title="束硬化模拟器 (Beam Hardening)"
-            description="可视化多色X射线束在穿过物体时平均能量如何增加。"
+            title={t('bh_title')}
+            description={t('bh_desc')}
             enableLiquidEffect={false}
         >
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
                 {/* Controls */}
                 <div className="space-y-6">
-                    <Card title="射线参数 (Beam Params)" className="bg-bg-200 border-none">
+                    <Card title={t('bh_card_beam')} className="bg-bg-200 border-none">
                         <div className="space-y-4 p-2">
                             <Slider
-                                label="管电压 (Tube Voltage) [kVp]"
+                                label={t('bh_kvp')}
                                 value={params.kv} min={60} max={140} step={10}
                                 onChange={(e) => setParams({ ...params, kv: Number(e.target.value) })}
                             />
                             <Slider
-                                label="固有过滤 (Filter) [mm Al]"
+                                label={t('bh_filter')}
                                 value={params.filtration} min={0} max={5} step={0.5}
                                 onChange={(e) => setParams({ ...params, filtration: Number(e.target.value) })}
                             />
                         </div>
                     </Card>
 
-                    <Card title="衰减体 (Attenuator)" className="bg-bg-200 border-none">
+                    <Card title={t('bh_card_att')} className="bg-bg-200 border-none">
                         <div className="space-y-4 p-2">
                             <Select
-                                label="材料 (Material)"
+                                label={t('bh_material')}
                                 value={params.material}
                                 options={[
-                                    { value: 'water', label: '水 / 软组织 (Water)' },
-                                    { value: 'bone', label: '骨骼 (Bone/Ca)' },
-                                    { value: 'iodine', label: '碘对比剂 (Iodine)' }
+                                    { value: 'water', label: t('bh_mat_water') },
+                                    { value: 'bone', label: t('bh_mat_bone') },
+                                    { value: 'iodine', label: t('bh_mat_iodine') }
                                 ]}
                                 onChange={(e) => setParams({ ...params, material: e.target.value })}
                             />
                             <Slider
-                                label="厚度 (Thickness) [cm]"
+                                label={t('bh_thickness')}
                                 value={params.thickness} min={5} max={40} step={1}
                                 onChange={(e) => setParams({ ...params, thickness: Number(e.target.value) })}
                             />
@@ -203,8 +209,8 @@ const BeamHardeningSimulator: React.FC = () => {
                 {/* Visualization */}
                 <div className="md:col-span-2 bg-black rounded-lg border border-border-100 p-4 relative">
                     <div className="absolute top-2 right-2 flex flex-col text-xs space-y-1">
-                        <div className="flex items-center"><span className="w-3 h-3 bg-blue-500 mr-2 rounded-full"></span> 入射能谱 (Input)</div>
-                        <div className="flex items-center"><span className="w-3 h-3 bg-orange-500 mr-2 rounded-full"></span> 出射能谱 (Output)</div>
+                        <div className="flex items-center"><span className="w-3 h-3 bg-blue-500 mr-2 rounded-full"></span> {t('bh_in')}</div>
+                        <div className="flex items-center"><span className="w-3 h-3 bg-orange-500 mr-2 rounded-full"></span> {t('bh_out')}</div>
                     </div>
                     <canvas ref={canvasRef} width={600} height={350} className="w-full h-full" />
                 </div>
@@ -212,11 +218,9 @@ const BeamHardeningSimulator: React.FC = () => {
             </div>
 
             <div className="mt-4 bg-bg-200 p-4 rounded-lg text-sm text-text-200">
-                <h4 className="font-semibold text-text-100">物理原理 (Physics Note)</h4>
+                <h4 className="font-semibold text-text-100">{t('bh_note_title')}</h4>
                 <p>
-                    低能光子比高能光子更容易被衰减（光电效应与 1/E³ 成正比）。
-                    因此，当射线穿过物体时，“软”射线被滤除，留下“硬”（平均能量更高）的射线。
-                    这会导致杯状伪影 (Cupping) 或条状伪影 (Streaks)。
+                    {t('bh_note')}
                 </p>
             </div>
 

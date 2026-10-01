@@ -1,0 +1,79 @@
+{
+  "title": "Cardiac CT",
+  "description": "This page introduces the fundamentals of cardiac CT, including prospective and retrospective gating, temporal resolution and radiation-dose considerations.",
+  "sections": [
+    {
+      "id": "cardiac-gating",
+      "title": "Cardiac Gating Techniques",
+      "description": "Cardiac CT requires special gating techniques to reduce the artifacts caused by cardiac motion.",
+      "content": "The heart is a constantly moving organ, which makes CT imaging challenging. To obtain sharp images of the heart, special gating techniques are needed to reduce motion artifacts. There are two main gating techniques: prospective gating and retrospective gating.",
+      "simulator": {
+        "type": "cardiac-gating",
+        "options": {
+          "gatingTypes": [
+            {"id": "prospective", "name": "Prospective gating"},
+            {"id": "retrospective", "name": "Retrospective gating"}
+          ],
+          "heartRates": [60, 70, 80, 90, 100]
+        }
+      },
+      "keyPoints": [
+        "Prospective gating acquires data at a predicted phase of the cardiac cycle (usually mid-diastole)",
+        "Retrospective gating acquires data continuously throughout the cardiac cycle and then selects the best phase at reconstruction",
+        "Prospective gating delivers a lower radiation dose but works less well in patients with an irregular heart rate",
+        "Retrospective gating allows assessment of cardiac function but delivers a higher radiation dose"
+      ]
+    },
+    {
+      "id": "temporal-resolution",
+      "title": "Temporal Resolution",
+      "description": "Temporal resolution is the ability of a CT scanner to capture a sharp image of a moving object, and it is especially important for cardiac imaging.",
+      "content": "Temporal resolution is the ability of a CT scanner to capture a sharp image of a moving object. For cardiac imaging, high temporal resolution is essential because the heart is constantly moving. Temporal resolution depends mainly on the rotation time (the time the X-ray tube takes to make one full revolution around the patient). Modern cardiac CT scanners typically have rotation times of 0.28\u20130.35 s. With partial-scan (half-scan) reconstruction, however, the effective temporal resolution can be improved to about half the rotation time.",
+      "keyPoints": [
+        "Temporal resolution is essential for cardiac imaging",
+        "Rotation time is the main factor determining temporal resolution",
+        "Partial-scan reconstruction improves the effective temporal resolution",
+        "Dual-source CT scanners improve temporal resolution further by using two X-ray tubes"
+      ]
+    },
+    {
+      "id": "radiation-dose",
+      "title": "Radiation Dose",
+      "description": "The radiation dose of a cardiac CT scan depends on several factors, including the gating technique, scan range and patient characteristics.",
+      "content": "The radiation dose of a cardiac CT scan depends on several factors, including the gating technique, the scan range and patient characteristics. Retrospective gating typically delivers 3\u20134 times the radiation dose of prospective gating because it acquires data continuously throughout the cardiac cycle. Modern CT scanners, however, use several techniques to reduce the dose, including ECG modulation (reducing the tube current during specific phases of the cardiac cycle), iterative reconstruction and low-kV imaging.",
+      "simulator": {
+        "type": "radiation-dose",
+        "options": {
+          "gatingTypes": [
+            {"id": "prospective", "name": "Prospective gating"},
+            {"id": "retrospective", "name": "Retrospective gating"},
+            {"id": "retrospective-modulation", "name": "Retrospective gating with ECG modulation"}
+          ],
+          "patientSizes": [
+            {"id": "small", "name": "Small patient"},
+            {"id": "medium", "name": "Medium patient"},
+            {"id": "large", "name": "Large patient"}
+          ]
+        }
+      },
+      "keyPoints": [
+        "The radiation dose of retrospective gating is typically 3\u20134 times that of prospective gating",
+        "ECG modulation reduces the tube current during the non-critical phases of the cardiac cycle, lowering the radiation dose",
+        "Iterative reconstruction and low-kV imaging can reduce the radiation dose further",
+        "Patient characteristics (such as body habitus) also affect the radiation dose"
+      ]
+    },
+    {
+      "id": "clinical-applications",
+      "title": "Clinical Applications",
+      "description": "Cardiac CT has important applications in many clinical settings, including assessment of coronary artery disease, structural heart disease and pre-procedural planning.",
+      "content": "Cardiac CT has important applications in many clinical settings. The most common is the assessment of coronary artery disease, particularly in patients at intermediate pre-test risk. Cardiac CT can also be used to evaluate cardiac structures (such as the heart valves, atria and ventricles), congenital heart disease and cardiac tumors. It also plays an important role in pre-procedural planning (for example transcatheter aortic valve replacement and coronary artery bypass grafting).",
+      "keyPoints": [
+        "Assessment of coronary artery disease is the most common application of cardiac CT",
+        "Cardiac CT can be used to evaluate cardiac structures and congenital heart disease",
+        "Cardiac CT plays an important role in pre-procedural planning",
+        "Its high negative predictive value makes cardiac CT an effective tool for ruling out coronary artery disease"
+      ]
+    }
+  ]
+}

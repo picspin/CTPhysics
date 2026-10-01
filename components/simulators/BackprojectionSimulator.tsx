@@ -11,15 +11,23 @@ import {
   addFanBeamProjectionToImage
 } from '@/utils/physics-calculations';
 // import { AnimationController } from '@/utils/animation-utils';
+import { useLanguage, type MessageKey } from '@/context/LanguageContext';
 
-const defaultImages = [
-  { id: 'phantom', name: 'Shepp-Logan Phantom (体模)', src: '' },
-  { id: 'abdomen', name: 'Abdomen (腹部 - 软组织)', src: '/images/abdomen_generated.png' },
-  { id: 'fracture', name: 'Bone Fracture (骨折 - 高对比)', src: '/images/fracture_generated.png' },
-  { id: 'lung', name: 'Lung (肺部 - 空气/主要)', src: '/images/lung_generated.png' },
+const defaultImages: { id: string; nameKey: MessageKey; src: string }[] = [
+  { id: 'phantom', nameKey: 'bp_phantom_shepp', src: '' },
+  { id: 'abdomen', nameKey: 'bp_phantom_abdomen', src: '/images/abdomen_generated.png' },
+  { id: 'fracture', nameKey: 'bp_phantom_fracture', src: '/images/fracture_generated.png' },
+  { id: 'lung', nameKey: 'bp_phantom_lung', src: '/images/lung_generated.png' },
 ];
 
+const KERNEL_LABEL_KEY = {
+  smooth: 'bp_kernel_smooth',
+  standard: 'bp_kernel_standard',
+  sharp: 'bp_kernel_sharp',
+} as const satisfies Record<'smooth' | 'standard' | 'sharp', MessageKey>;
+
 const BackprojectionSimulator: React.FC = () => {
+  const { t } = useLanguage();
   // --- State ---
   // Configuration
   const [selectedImageId, setSelectedImageId] = useState('phantom');
@@ -325,10 +333,10 @@ const BackprojectionSimulator: React.FC = () => {
           {/* Top Row: Basic Selection */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Select
-              label="Phantom Case (体模选择)"
+              label={t('bp_phantom_case')}
               value={selectedImageId}
               onChange={(e) => setSelectedImageId(e.target.value)}
-              options={[...defaultImages.map(img => ({ value: img.id, label: img.name })), { value: 'custom', label: 'Custom Upload (上传)...' }]}
+              options={[...defaultImages.map(img => ({ value: img.id, label: t(img.nameKey) })), { value: 'custom', label: t('bp_phantom_custom') }]}
             />
             {selectedImageId === 'custom' && (
               <input type="file" onChange={() => { /* handle */ }} className="text-sm text-text-200" />
@@ -338,7 +346,7 @@ const BackprojectionSimulator: React.FC = () => {
           {/* Advanced Physics Controls */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 p-4 bg-bg-200 rounded-lg border border-border-100">
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-text-100 uppercase">Matrix Size (矩阵大小)</label>
+              <label className="text-xs font-semibold text-text-100 uppercase">{t('bp_matrix')}</label>
               <div className="flex space-x-2">
                 {[128, 256, 512].map(s => (
                   <button
@@ -353,7 +361,7 @@ const BackprojectionSimulator: React.FC = () => {
             </div>
 
             <Slider
-              label="Fan Angle (扇束角度)"
+              label={t('bp_fan')}
               value={fanAngle} min={30} max={180} step={10}
               onChange={(e) => setFanAngle(Number(e.target.value))}
               valueDisplay={`${fanAngle}°`}
@@ -361,7 +369,7 @@ const BackprojectionSimulator: React.FC = () => {
             />
 
             <Slider
-              label="Detectors (探测器数量)"
+              label={t('bp_detectors')}
               value={numDetectors} min={128} max={512} step={64}
               onChange={(e) => setNumDetectors(Number(e.target.value))}
               valueDisplay={`${numDetectors}`}
@@ -369,30 +377,30 @@ const BackprojectionSimulator: React.FC = () => {
             />
 
             <Select
-              label="Recon Kernel (滤波核)"
+              label={t('bp_kernel')}
               value={kernelType}
               onChange={(e) => setKernelType(e.target.value as 'smooth' | 'standard' | 'sharp')}
               options={[
-                { value: 'smooth', label: 'Smooth (Soft Tissue) - 柔和' },
-                { value: 'standard', label: 'Standard (General) - 标准' },
-                { value: 'sharp', label: 'Sharp (Bone/High Res) - 锐利' },
+                { value: 'smooth', label: t('bp_kernel_smooth') },
+                { value: 'standard', label: t('bp_kernel_standard') },
+                { value: 'sharp', label: t('bp_kernel_sharp') },
               ]}
               disabled={isAnimating}
             />
           </div>
 
           <Button variant="primary" onClick={() => setIsAnimating(!isAnimating)} className="w-full">
-            {isAnimating ? 'Stop Simulation (停止)' : 'Start Reconstruction (开始重建)'}
+            {isAnimating ? t('bp_btn_stop') : t('bp_btn_start')}
           </Button>
         </div>
       </div>
 
       {/* 4-Window Display */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        <DisplayWindow title="1. Phantom (体模)" label="Original" ref={phantomCanvasRef} size={matrixSize} />
-        <DisplayWindow title="2. Sinogram (正弦图)" label="Radon Space" ref={acquisitionCanvasRef} size={matrixSize} rect />
-        <DisplayWindow title="3. Raw BP (直接反投影)" label="Unfiltered (Blurry)" ref={rawBpCanvasRef} size={matrixSize} />
-        <DisplayWindow title="4. Filtered BP (滤波反投影)" label={`FBP (${kernelType})`} ref={filteredBpCanvasRef} size={matrixSize} />
+        <DisplayWindow title={t('bp_win1')} label={t('bp_win1_l')} ref={phantomCanvasRef} size={matrixSize} />
+        <DisplayWindow title={t('bp_win2')} label={t('bp_win2_l')} ref={acquisitionCanvasRef} size={matrixSize} rect />
+        <DisplayWindow title={t('bp_win3')} label={t('bp_win3_l')} ref={rawBpCanvasRef} size={matrixSize} />
+        <DisplayWindow title={t('bp_win4')} label={t('bp_win4_l', { kernel: t(KERNEL_LABEL_KEY[kernelType]) })} ref={filteredBpCanvasRef} size={matrixSize} />
       </div>
 
       {/* Progress */}

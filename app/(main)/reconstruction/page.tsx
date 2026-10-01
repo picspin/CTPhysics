@@ -58,8 +58,9 @@ export default function ReconstructionPage() {
               <SectionCard title={t('recon_problem_title')}>
                 <div className="prose prose-invert max-w-none text-text-200">
                   <p>
-                    CT扫描仪从多个不同角度测量穿过人体的X射线衰减量。
-                    这些原始数据被称为<strong>正弦图 (Sinogram)</strong>（或Radon变换），必须经过处理才能生成用于诊断的横断面图像。
+                    {t('recon_problem_desc_a')}
+                    <strong>{t('recon_problem_term')}</strong>
+                    {t('recon_problem_desc_b')}
                   </p>
                 </div>
               </SectionCard>
@@ -68,14 +69,16 @@ export default function ReconstructionPage() {
                 <div className="space-y-6">
                   <div className="prose prose-invert max-w-none text-text-200">
                     <p>
-                      此模拟器展示了现代重建算法的两个核心步骤。
-                      <strong>直接反投影 (Raw Backprojection)</strong> 简单地将数据沿射线路径涂抹回去，导致图像模糊（1/r 模糊）。
-                      <strong>滤波反投影 (Filtered Backprojection, FBP)</strong> 首先应用数学滤波器（如Ramp核或Shepp-Logan核）锐化数据，从而恢复正确的图像边缘和密度。
+                      {t('recon_fbp_intro_a')}
+                      <strong>{t('recon_fbp_raw_term')}</strong>
+                      {t('recon_fbp_raw_desc')}
+                      <strong>{t('recon_fbp_fbp_term')}</strong>
+                      {t('recon_fbp_fbp_desc')}
                     </p>
                     <ul className="list-disc list-inside mt-2 text-sm text-text-300">
-                      <li><strong>矩阵大小 (Matrix Size):</strong> 决定了重建图像的分辨率（如 512x512 为高保真模式）。</li>
-                      <li><strong>扇束角度 (Fan Angle):</strong> 模拟真实的X射线源发散几何。</li>
-                      <li><strong>探测器 (Detectors):</strong> 决定了采样精度。</li>
+                      <li><strong>{t('recon_fbp_matrix_term')}</strong> {t('recon_fbp_matrix')}</li>
+                      <li><strong>{t('recon_fbp_fan_term')}</strong> {t('recon_fbp_fan')}</li>
+                      <li><strong>{t('recon_fbp_det_term')}</strong> {t('recon_fbp_detectors')}</li>
                     </ul>
                   </div>
 
@@ -85,51 +88,51 @@ export default function ReconstructionPage() {
                 </div>
               </SectionCard>
             </>
-          )}          {activeTab === 'cbct' && (
+          )}
+
+          {activeTab === 'cbct' && (
             <>
-              <SectionCard title="锥束CT (Cone Beam CT) 物理原理">
+              <SectionCard title={t('cbct_phys_title')}>
                 <div className="space-y-6">
                   <div className="prose prose-invert max-w-none text-text-200">
                     <p>
-                      <strong>{t('recon_tab_cbct')}</strong> 使用锥形X射线束（而不是传统的扇形束）和平面探测器，在一次旋转中即可获取整个体积的数据。
-                      空间分辨率取决于探测器像元尺寸与几何放大率，牙科CBCT可达0.1mm级别。
+                      <strong>{t('recon_tab_cbct')}</strong> {t('cbct_phys_desc')} {t('cbct_phys_resolution')}
                     </p>
-                    <h4 className="text-lg font-semibold text-text-100 mt-4">FDK 算法 (Feldkamp-Davis-Kress)</h4>
-                    <p>
-                      FDK 是最为经典的 CBCT 重建算法，它是 FBP 算法在 3D 锥束几何下的近似推广。其主要步骤包括：
-                    </p>
+                    <h4 className="text-lg font-semibold text-text-100 mt-4">{t('cbct_fdk_title')}</h4>
+                    <p>{t('cbct_fdk_desc')}</p>
                     <ul className="list-decimal list-inside space-y-2 mt-2">
-                      <li><strong>加权 (Weighting):</strong> 对投影数据进行由几何带来的位置加权（Cosine 加权）。</li>
-                      <li><strong>滤波 (Filtering):</strong> 对每一行探测器数据应用一维 Ramp 滤波器（类似于 2D FBP）。</li>
-                      <li><strong>反投影 (Backprojection):</strong> 沿 3D 锥体几何光路将数据反投影到体素网格中。</li>
+                      <li><strong>{t('cbct_fdk_w_term')}</strong> {t('cbct_fdk_w')}</li>
+                      <li><strong>{t('cbct_fdk_f_term')}</strong> {t('cbct_fdk_f')}</li>
+                      <li><strong>{t('cbct_fdk_b_term')}</strong> {t('cbct_fdk_b')}</li>
                     </ul>
                     <div className="bg-bg-300 p-4 rounded-lg mt-4 text-sm border-l-4 border-primary-100">
-                      <strong>注：</strong> CBCT 在远离中心平面的位置（大锥角）会产生由近似算法导致的 Feldman 伪影（Feldkamp artifacts）。圆锥角增大时，由于拉东数据不完备性，会导致偏轴体素产生严重的锥束伪影。
+                      <strong>{t('common_note')}</strong>{t('cbct_note')}
                     </div>
                   </div>
                 </div>
               </SectionCard>
 
-              <SectionCard title="锥束CT物理模拟">
+              <SectionCard title={t('cbct_sim_title')}>
                 <CBCTSimulator />
               </SectionCard>
             </>
           )}
 
           {activeTab === 'helical' && (
-            <SectionCard title="{t('recon_tab_helical')} (Helical Scan & Pitch)">
+            <SectionCard title={t('helical_title')}>
               <div className="prose prose-invert max-w-none text-text-200 mb-6">
                 <p>
-                  在螺旋CT中，检查床连续移动的同时机架进行旋转，围绕患者扫描出螺旋路径。
-                  <strong>螺距 (Pitch)</strong> 参数控制这个螺旋的“紧密”程度。
+                  {t('helical_intro_a')}
+                  <strong>{t('helical_intro_term')}</strong>
+                  {t('helical_intro_b')}
                 </p>
                 <ul className="list-disc list-inside">
-                  <li><strong>Pitch &lt; 1:</strong> 采样重叠 (高剂量，高质量，减少运动伪影)。</li>
-                  <li><strong>Pitch &gt; 1:</strong> 采样间隙 (低剂量，快速扫描，可能降低Z轴分辨率)。</li>
-                  <li><strong>Pitch = 1:</strong> 连续取样。</li>
+                  <li><strong>{t('hel_pitch')} &lt; 1:</strong> {t('helical_lt1')}</li>
+                  <li><strong>{t('hel_pitch')} &gt; 1:</strong> {t('helical_gt1')}</li>
+                  <li><strong>{t('hel_pitch')} = 1:</strong> {t('helical_eq1')}</li>
                 </ul>
               </div>
-              <SimulatorContainer title="螺旋CT模拟器 (Helical Simulator)" description="调整螺距和速度以观察螺旋路径" enableLiquidEffect={false}>
+              <SimulatorContainer title={t('helical_sim_title')} description={t('helical_sim_desc')} enableLiquidEffect={false}>
                 <HelicalCTSimulator />
               </SimulatorContainer>
             </SectionCard>
