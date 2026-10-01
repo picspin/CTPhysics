@@ -38,7 +38,7 @@ export default function RootLayout({
   return (
     <html lang="zh-CN" suppressHydrationWarning className={`${inter.variable} font-sans`}>
       <body className="antialiased bg-black text-text-100 dark:bg-black dark:text-white">
-        {/* Set <html lang> from the saved preference before hydration (no flash of wrong lang). */}
+        {/* Set <html lang> from the saved preference before hydration (avoids a wrong-language flicker). */}
         <script dangerouslySetInnerHTML={{ __html: "try { var l = localStorage.getItem('pref-lang'); if (l === 'en' || l === 'zh') document.documentElement.lang = l === 'en' ? 'en' : 'zh-CN'; } catch(e) {}" }} />
         <script dangerouslySetInnerHTML={{ __html: "try { const style = localStorage.getItem('pref-theme-style') || 'glass'; document.documentElement.classList.add('theme-' + style); } catch(e) {}" }} />
 
