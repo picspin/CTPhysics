@@ -12,7 +12,7 @@ import { chromium } from 'playwright';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const arg = (n, d) => { const i = process.argv.indexOf(n); return i > 0 ? process.argv[i + 1] : d; };
+const arg = (n, d) => { const i = process.argv.indexOf(n); return i > 0 && i + 1 < process.argv.length ? process.argv[i + 1] : d; };
 const BASE = arg('--base', 'http://localhost:3000');
 const SHOTS = arg('--shots', '');
 const OUT = arg('--out', '');
@@ -26,7 +26,7 @@ const INIT = () => {
   for (const proto of [CanvasRenderingContext2D.prototype, (window.OffscreenCanvasRenderingContext2D || {}).prototype].filter(Boolean)) {
     for (const fn of ['fillText', 'strokeText']) {
       const orig = proto[fn];
-      proto[fn] = function (t, ...r) { try { window.__canvasText.add(JSON.stringify([/[\u4e00-\u9fff]/.test(document.title) ? 'zh-CN' : 'en', String(t)])); } catch {} return orig.call(this, t, ...r); };
+      proto[fn] = function (t, ...r) { try { window.__canvasText.add(JSON.stringify([window.__crawlLang === 'zh' ? 'zh-CN' : 'en', String(t)])); } catch {} return orig.call(this, t, ...r); };
     }
   }
 };
@@ -80,13 +80,14 @@ async function exercise(page, extra) {
   for (let i = 0; i < (await selects.count()); i++) {
     const s = selects.nth(i);
     const vals = await s.locator('option').evaluateAll((os) => os.map((o) => o.value)).catch(() => []);
-    for (const v of vals) { await s.selectOption(v, { timeout: 800 }).catch(() => {}); await page.waitForTimeout(100); }
+    for (const v of vals) { await s.selectOption(v, { timeout: 800 }).catch(() => {}); await page.waitForTimeout(100); extra.push(...(await collect(page))); }
   }
 }
 
 const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH || undefined, args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
 const report = {};
 let total = 0;
+try {
 for (const lang of ['en', 'zh']) {
   for (const vp of [{ width: 1440, height: 900 }]) {
     const ctx = await browser.newContext({ viewport: vp });
@@ -94,7 +95,8 @@ for (const lang of ['en', 'zh']) {
     await ctx.addInitScript(INIT);
     for (const route of ROUTES) {
       const page = await ctx.newPage();
-      await page.goto(BASE + route, { waitUntil: 'networkidle' }).catch(() => {});
+      const resp = await page.goto(BASE + route, { waitUntil: 'networkidle' }).catch((e) => { throw new Error(`navigation failed for ${route}: ${e.message}`); });
+      if (!resp || !resp.ok()) throw new Error(`navigation failed for ${route}: HTTP ${resp ? resp.status() : 'no response'}`);
       await page.waitForTimeout(800);
       const before = new Set(await collect(page));
       const extra = [];
@@ -113,7 +115,9 @@ for (const lang of ['en', 'zh']) {
     await ctx.close();
   }
 }
-await browser.close();
+} finally {
+  await browser.close();
+}
 if (OUT) fs.writeFileSync(OUT, JSON.stringify(report, null, 2));
 else console.log(JSON.stringify(report, null, 2));
 process.exit(total ? 1 : 0);
