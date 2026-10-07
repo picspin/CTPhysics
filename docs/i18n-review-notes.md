@@ -70,10 +70,8 @@ Default language is still **zh**. The `<html lang>` attribute is `zh-CN` in the 
 ## 6. Things not done / limits
 
 * **Glossary helper** (`term()` showing the other-language term on hover) — not implemented; only noted as an idea.
-* **Dead code not migrated** (not imported anywhere; verified with `rg`): `components/ui/Header.tsx`,
-  `components/ui/Sidebar.tsx`, `components/simulators/RadiationDoseSimulator.tsx`. They still contain Chinese-only
-  text and are allow-listed in `scripts/check-i18n.mjs`. Delete them or migrate them if they get revived.
-  (`ui/Layout.tsx`, `ui/LiquidGlass.tsx`, `simulators/FracturePhantom.tsx`, `utils/data-manager.ts` contain no CJK.)
+* **Dead code removed** (PR #12): `components/ui/Header.tsx` (old copy), `components/ui/Sidebar.tsx`, `components/ui/Layout.tsx`,
+  `components/simulators/RadiationDoseSimulator.tsx` were unreferenced Chinese-only files and have been deleted.
 * Code **comments** written in Chinese were translated to English where they appeared in migrated files; the check
   script ignores comments anyway.
 * Canvas/WebGL labels were verified in a headless Chrome (SwiftShader) by hooking `CanvasRenderingContext2D.fillText`

@@ -118,11 +118,6 @@ const ALLOW_FILES = new Set([
   'i18n/zh.ts',
   // Test fixtures that intentionally contain Chinese sample strings.
   'tests/i18n.test.ts',
-  // Not imported anywhere (verified by `rg`); legacy Chinese-only files left untouched on purpose.
-  // See docs/i18n-review-notes.md ("Dead code").
-  'components/ui/Header.tsx',
-  'components/ui/Sidebar.tsx',
-  'components/simulators/RadiationDoseSimulator.tsx',
 ]);
 const SKIP_DIRS = new Set(['node_modules', '.next', '.git', 'e2e', 'coverage', 'playwright-report', 'test-results', 'public', 'docs', 'scripts']);
 

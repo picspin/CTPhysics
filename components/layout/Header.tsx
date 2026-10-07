@@ -176,6 +176,10 @@ const Header: React.FC = () => {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
+              role="dialog"
+              aria-modal="true"
+              aria-label={t('settings')}
+              data-testid="settings-dialog"
               className="relative w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl p-6 overflow-hidden z-10"
             >
               <div className="flex justify-between items-center mb-6">
@@ -243,6 +247,7 @@ const Header: React.FC = () => {
               <div className="mt-8 flex justify-end">
                 <button
                   onClick={() => setIsSettingsOpen(false)}
+                  data-testid="settings-close"
                   className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white rounded-lg text-sm font-semibold transition-all shadow-md shadow-emerald-900/20"
                 >
                   {t('close')}
