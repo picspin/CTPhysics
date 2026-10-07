@@ -5,7 +5,6 @@ import {
   ICRP103_ORGANS,
   ICRP103_TOTAL_WT,
   BODY_REGIONS,
-  regionDominantWeight,
   computeDoseForRegion,
   doseColorScalar,
   DOSE_COLOR_MIN_MSV,
@@ -77,20 +76,17 @@ describe('dose-physics', () => {
       );
     });
 
-    it('every region has a k-factor and at least one dominant organ', () => {
+    it('every region has a z-range and only its key interactive organs (no k-factor table)', () => {
       for (const r of Object.values(BODY_REGIONS)) {
-        expect(r.kFactor).toBeGreaterThan(0);
-        expect(r.dominantOrgans.length).toBeGreaterThan(0);
+        expect(r.zRangeCm[1]).toBeGreaterThan(r.zRangeCm[0]);
+        expect(r.representativeScanLengthCm).toBeCloseTo(r.zRangeCm[1] - r.zRangeCm[0], 9);
+        expect(r.keyOrgans.length).toBeGreaterThan(0);
+        expect('kFactor' in r).toBe(false);
       }
-    });
-
-    it('head and cardiothoracic include distinct organ sets', () => {
-      const headOrgs = new Set(BODY_REGIONS.head.dominantOrgans);
-      const chestOrgs = new Set(BODY_REGIONS.cardiothoracic.dominantOrgans);
-      // Chest dominates lung/breast, head dominates brain.
-      expect(chestOrgs.has('lung')).toBe(true);
-      expect(chestOrgs.has('breast')).toBe(true);
-      expect(headOrgs.has('brain')).toBe(true);
+      expect(BODY_REGIONS.head.keyOrgans).toEqual(['brain']);
+      expect(BODY_REGIONS.neck.keyOrgans).toEqual(['thyroid']);
+      expect(BODY_REGIONS.cardiothoracic.keyOrgans).toEqual(['lungs', 'heart']);
+      expect(BODY_REGIONS.abdomen.keyOrgans).toEqual(['liver', 'kidneys']);
     });
   });
 
@@ -110,8 +106,10 @@ describe('dose-physics', () => {
       expect(out.ctdiVolMgy).toBeCloseTo(1.0, 5);
       // DLP = CTDIvol * scanLength = 30
       expect(out.dlpMgyCm).toBeCloseTo(30.0, 5);
-      // E = DLP * k_chest = 30 * 0.014 = 0.42 mSv
-      expect(out.effectiveDoseMSv).toBeCloseTo(0.42, 5);
+      // E comes from the organ-by-organ sum; k is derived and DLP × k returns E
+      expect(out.kDerived).toBeCloseTo(out.effectiveDoseMSv / out.dlpMgyCm, 12);
+      expect(out.dlpMgyCm * out.kDerived).toBeCloseTo(out.effectiveDoseMSv, 12);
+      expect(out.effectiveDoseMSv).toBeCloseTo(out.organDose.effectiveDoseMSv, 12);
       // SSDE = CTDIvol * f(30 cm)
       const f = ssdeFactorBody(30);
       expect(out.ssdeFactor).toBeCloseTo(f, 5);
@@ -142,7 +140,7 @@ describe('dose-physics', () => {
       expect(small.ssdeMgy).toBeGreaterThan(large.ssdeMgy);
     });
 
-    it('head CT uses a much smaller k-factor than chest CT (E drops by ~7×)', () => {
+    it('head CT has a much smaller derived k than chest CT', () => {
       const head = computeDoseForRegion({
         mAs: 200,
         kVp: 120,
@@ -157,23 +155,19 @@ describe('dose-physics', () => {
         waterEquivalentDiameterCm: 32,
         region: 'cardiothoracic',
       });
-      // DLP is similar order; effective dose is dominated by k-factor.
-      // k_head ≈ 0.0021, k_chest ≈ 0.014 → ratio ~7.
+      expect(chest.kDerived).toBeGreaterThan(3 * head.kDerived);
       const ratio = chest.effectiveDoseMSv / head.effectiveDoseMSv;
       expect(ratio).toBeGreaterThan(3);
       expect(ratio).toBeLessThan(15);
     });
 
-    it('returns the dominant w_T sum for the region (used in UI to explain E share)', () => {
-      const out = computeDoseForRegion({
-        mAs: 100,
-        kVp: 120,
-        scanLengthCm: 25,
-        waterEquivalentDiameterCm: 32,
-        region: 'cardiothoracic',
-      });
-      const expected = regionDominantWeight(BODY_REGIONS.cardiothoracic);
-      expect(out.dominantWT).toBeCloseTo(expected, 6);
+    it('combined scan via regions[] merges ranges and computes E once', () => {
+      const base = { mAs: 200, kVp: 120, pitch: 1, waterEquivalentDiameterCm: 32 };
+      const chest = computeDoseForRegion({ ...base, scanLengthCm: 29, region: 'cardiothoracic' });
+      const both = computeDoseForRegion({ ...base, scanLengthCm: 29, region: 'cardiothoracic', regions: ['cardiothoracic', 'abdomen'] });
+      expect(both.scanLengthCm).toBeCloseTo(73, 9);
+      expect(both.organDose.ranges).toEqual([[33, 106]]);
+      expect(both.effectiveDoseMSv).toBeGreaterThan(chest.effectiveDoseMSv);
     });
   });
 

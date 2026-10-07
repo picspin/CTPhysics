@@ -3,6 +3,7 @@ import type { BodyRegionId } from '@/utils/dose-physics';
 import { buildLoft, buildEllipsoid, type PartKind } from './surface';
 import { ORGANS, type OrganSpec } from './organs';
 import { REGION_IDS } from './regions';
+import { INTERACTIVE_ORGAN_IDS } from '@/utils/organ-dose';
 import { BodyFrame, cmToLocal, localToCm, regionIndex, regionOfSkinPoint, clampSkinOpacity, SKIN_OPACITY_DEFAULT } from './geometryMath';
 
 // Shared v3.1 body (semi-transparent Fresnel skin over procedural organs) used by the
@@ -19,6 +20,8 @@ export interface BodyV3Options {
   skinColor?: number;
   /** render organs (Helical CT can turn them off) */
   organs?: boolean;
+  /** organ ids that can be picked (ICRP-102-style key organs). Others render dimmed as context only. */
+  interactiveOrgans?: readonly string[];
 }
 
 export interface BodyPick {
@@ -36,6 +39,10 @@ export interface BodyV3 {
   setSelectedOrgan: (id: string | null) => void;
   setOrgansVisible: (v: boolean) => void;
   pick: (raycaster: THREE.Raycaster) => BodyPick | null;
+  /** Axial CT slice plane at body z (cm from vertex), textured with `source` (256x256 canvas). null hides it. */
+  setSlice: (zCm: number | null, source?: HTMLCanvasElement | null) => void;
+  /** call after redrawing the slice canvas */
+  refreshSliceTexture: () => void;
   /** triangles of the skin geometry (status / tests) */
   skinTriangles: number;
   dispose: () => void;
@@ -177,14 +184,20 @@ export function createBodyV3(options: BodyV3Options = {}): BodyV3 {
   const organMats = new Map<string, THREE.MeshStandardMaterial>();
   const organMeshList: THREE.Mesh[] = [];
   const organById = new Map<string, OrganSpec>();
+  const interactive = new Set(options.interactiveOrgans ?? INTERACTIVE_ORGAN_IDS);
+  const pickable: THREE.Mesh[] = [];
   if (options.organs !== false) {
     for (const o of ORGANS) {
       organById.set(o.id, o);
-      const mat = new THREE.MeshStandardMaterial({ color: o.color, roughness: 0.55, metalness: 0.05, transparent: o.opacity < 1, opacity: o.opacity, depthWrite: o.opacity >= 1 });
+      const isKey = interactive.has(o.id);
+      // non-interactive organs stay visible as dimmed context (they still count in the dose calculation)
+      const op = isKey ? o.opacity : Math.min(o.opacity, 0.28);
+      const mat = new THREE.MeshStandardMaterial({ color: o.color, roughness: 0.55, metalness: 0.05, transparent: op < 1, opacity: op, depthWrite: op >= 1 });
       organMats.set(o.id, mat);
       for (const m of organMeshes(o, frame, geo, mat)) {
-        if (o.opacity < 1) m.renderOrder = o.layer === 'lung' ? 5 : 10;
+        if (op < 1) m.renderOrder = o.layer === 'lung' ? 5 : 10;
         organGroup.add(m); organMeshList.push(m);
+        if (isKey) pickable.push(m);
       }
     }
   }
@@ -192,6 +205,24 @@ export function createBodyV3(options: BodyV3Options = {}): BodyV3 {
 
   let selectedOrgan: string | null = null;
   const tmp = new THREE.Vector3();
+
+  // ---- axial slice plane (texture = CT slice canvas from utils/three/body/slice) ----
+  const SLICE_FOV_CM = 50, SLICE_CY_CM = 23.5 - SLICE_FOV_CM / 2;
+  const sliceMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.92, side: THREE.DoubleSide, depthWrite: false, toneMapped: false });
+  const sliceGeo = new THREE.PlaneGeometry(SLICE_FOV_CM * frame.s, SLICE_FOV_CM * frame.s);
+  const sliceMesh = new THREE.Mesh(sliceGeo, sliceMat);
+  sliceMesh.name = 'BodyV3Slice';
+  // image top row = anterior; anterior maps to local +Z * frame.anterior
+  sliceMesh.rotation.x = (Math.PI / 2) * frame.anterior;
+  sliceMesh.renderOrder = 40;
+  sliceMesh.visible = false;
+  // bright frame so the plane stays visible when seen almost edge-on
+  const sliceFrame = new THREE.LineSegments(new THREE.EdgesGeometry(sliceGeo), new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.9, depthTest: false }));
+  sliceFrame.renderOrder = 41;
+  sliceMesh.add(sliceFrame);
+  group.add(sliceMesh);
+  let sliceTex: THREE.CanvasTexture | null = null;
+  let sliceSrc: HTMLCanvasElement | null = null;
 
   return {
     group,
@@ -208,9 +239,21 @@ export function createBodyV3(options: BodyV3Options = {}): BodyV3 {
       if (id) { const m = organMats.get(id); if (m) m.emissive.setHex(0x553311); }
     },
     setOrgansVisible(v) { organGroup.visible = v; },
+    setSlice(zCm, source) {
+      if (zCm === null) { sliceMesh.visible = false; return; }
+      if (source !== undefined && source !== sliceSrc) {
+        sliceTex?.dispose(); sliceTex = null; sliceSrc = source;
+        if (source) { sliceTex = new THREE.CanvasTexture(source); sliceTex.colorSpace = THREE.SRGBColorSpace; sliceTex.magFilter = THREE.NearestFilter; }
+        sliceMat.map = sliceTex; sliceMat.needsUpdate = true;
+      }
+      const [X, Y, Z] = cmToLocal(frame, 0, SLICE_CY_CM, zCm);
+      sliceMesh.position.set(X, Y, Z);
+      sliceMesh.visible = !!sliceTex;
+    },
+    refreshSliceTexture() { if (sliceTex) sliceTex.needsUpdate = true; },
     pick(raycaster) {
       const targets: THREE.Object3D[] = [skinFront];
-      if (organGroup.visible) targets.push(...organMeshList);
+      if (organGroup.visible) targets.push(...pickable);
       const hits = raycaster.intersectObjects(targets, false);
       if (!hits.length) return null;
       // Rays pass through the semi-transparent skin and translucent shells (e.g. skull around brain):
@@ -220,13 +263,7 @@ export function createBodyV3(options: BodyV3Options = {}): BodyV3 {
       const organHit = organHits.find(isOpaque) ?? organHits[0];
       if (organHit) {
         const o = organById.get(organHit.object.userData.organId as string)!;
-        let region = o.region;
-        if (o.id === 'spine' || o.id === 'aorta' || o.id === 'airway' || o.id === 'esophagus') {
-          tmp.copy(organHit.point); group.worldToLocal(tmp);
-          const [, , z] = localToCm(frame, tmp.x, tmp.y, tmp.z);
-          region = regionOfSkinPoint(0, z);
-        }
-        return { region, organId: o.id };
+        return { region: o.region, organId: o.id };
       }
       tmp.copy(hits[0].point); group.worldToLocal(tmp);
       const [x, , z] = localToCm(frame, tmp.x, tmp.y, tmp.z);
@@ -236,6 +273,7 @@ export function createBodyV3(options: BodyV3Options = {}): BodyV3 {
       skinGeo.dispose(); backMat.dispose(); preMat.dispose(); frontMat.dispose();
       geo.sphere.dispose(); geo.cyl.dispose(); geo.torus.dispose();
       organMats.forEach((m) => m.dispose());
+      sliceGeo.dispose(); sliceMat.dispose(); sliceTex?.dispose(); sliceFrame.geometry.dispose(); (sliceFrame.material as THREE.Material).dispose();
     },
   };
 }

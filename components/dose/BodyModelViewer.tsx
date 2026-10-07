@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useLanguage } from '@/context/LanguageContext';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -9,14 +10,14 @@ import { createProceduralEnvironment } from '@/utils/three/proceduralEnvironment
 import { createMedicalLightingRig } from '@/utils/three/sceneLighting';
 import { createPostFX } from '@/utils/three/postFX';
 import { createRegionSegmentedBodyModel, BodyModel } from '@/utils/three/bodyModel';
-import { ORGANS } from '@/utils/three/body/organs';
-import { ICRP103_WT } from '@/utils/three/body/regions';
+import { ORGANS, organCenter } from '@/utils/three/body/organs';
+import { INTERACTIVE_ORGANS, ICRP103_WT_TABLE, isRemainder, REMAINDER_TISSUES } from '@/utils/organ-dose';
 import { SKIN_OPACITY_DEFAULT } from '@/utils/three/body/geometryMath';
 import type { MessageKey } from '@/i18n';
+// lazy: the slice engines (WASM + JS twin) are only fetched when the user turns the slice on
+const CtSlicePanel = dynamic(() => import('@/components/body/CtSlicePanel'), { ssr: false });
 import {
   BodyRegionId,
-  ICRP103_ORGANS,
-  ICRP103_ORGAN_NAMES,
   computeDoseForRegion,
   doseColorScalar,
   DOSE_COLOR_MIN_MSV,
@@ -73,6 +74,19 @@ export const BodyModelViewer: React.FC<BodyModelViewerProps> = ({
   const [skinOpacity, setSkinOpacity] = useState(SKIN_OPACITY_DEFAULT);
   const [showOrgans, setShowOrgans] = useState(true);
   const invalidateRef = useRef<() => void>(() => {});
+  const [sliceOn, setSliceOn] = useState(false);
+  const [sliceZ, setSliceZ] = useState(52);
+  const sliceCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const onPlaneCanvas = useCallback((c: HTMLCanvasElement | null) => { sliceCanvasRef.current = c; }, []);
+  const onSliceRendered = useCallback(() => {
+    const body = sceneRef.current?.body;
+    if (!body) return;
+    body.setSlice(sliceZRef.current, sliceCanvasRef.current);
+    body.refreshSliceTexture();
+    invalidateRef.current();
+  }, []);
+  const sliceZRef = useRef(sliceZ);
+  sliceZRef.current = sliceZ;
 
   type SceneRef = {
     scene: THREE.Scene;
@@ -333,6 +347,20 @@ export const BodyModelViewer: React.FC<BodyModelViewerProps> = ({
   }, [bodyScale]);
 
   useEffect(() => {
+    const body = sceneRef.current?.body;
+    if (!body) return;
+    body.setSlice(sliceOn ? sliceZ : null, sliceOn ? sliceCanvasRef.current : undefined);
+    invalidateRef.current();
+  }, [sliceOn, sliceZ]);
+
+  // selecting a key organ moves the linked slice to it
+  useEffect(() => {
+    if (!sliceOn || !selectedOrgan) return;
+    const o = ORGANS.find((x) => x.id === selectedOrgan);
+    if (o) setSliceZ(Math.round(organCenter(o)[2] * 2) / 2);
+  }, [selectedOrgan, sliceOn]);
+
+  useEffect(() => {
     sceneRef.current?.body.setSkinOpacity(skinOpacity);
     invalidateRef.current();
   }, [skinOpacity]);
@@ -384,13 +412,19 @@ export const BodyModelViewer: React.FC<BodyModelViewerProps> = ({
   }, [selectedRegion, regionDoseMSv]);
 
   const organ = selectedOrgan ? ORGANS.find((o) => o.id === selectedOrgan) : undefined;
+  const organTissueText = (id: string) => {
+    const tissue = INTERACTIVE_ORGANS[id]?.tissue;
+    if (!tissue) return t('body3_limbs_tissues');
+    const name = t(`body3_t_${tissue}` as MessageKey);
+    if (isRemainder(tissue)) return t('body3_icrp_remainder', { tissue: name, n: REMAINDER_TISSUES.length });
+    return t('body3_icrp_wt', { tissue: name, wt: ICRP103_WT_TABLE[tissue].toFixed(2) });
+  };
 
   return (
+    <div className={className}>
     <div
       ref={containerRef}
-      className={`relative w-full bg-[#0a0d12] rounded-lg overflow-hidden ${
-        className ?? ''
-      }`}
+      className="relative w-full bg-[#0a0d12] rounded-lg overflow-hidden"
       style={{ height: 480 }}
       data-testid="body-v3-viewer"
     >
@@ -457,16 +491,12 @@ export const BodyModelViewer: React.FC<BodyModelViewerProps> = ({
       </div>
 
       {organ && (
-        <div className="absolute bottom-9 left-3 z-10 max-w-[16rem] rounded-md bg-black/70 p-2 text-[11px] text-text-100" data-testid="body3-organ-info" aria-live="polite">
+        <div className="absolute bottom-9 left-3 z-10 max-w-[17rem] rounded-md bg-black/75 p-2 text-[11px] text-text-100" data-testid="body3-organ-info" aria-live="polite">
           <div className="font-semibold">{t(`body3_o_${organ.id}` as MessageKey)}</div>
           <div className="text-text-200">
             {t('body3_region', { r: t(`dose_region_${organ.region}` as MessageKey) })}
           </div>
-          <div className="text-text-200">
-            {organ.icrp
-              ? t('body3_icrp_wt', { tissue: t(`body3_t_${organ.icrp}` as MessageKey), wt: ICRP103_WT[organ.icrp].toFixed(organ.icrp && ICRP103_WT[organ.icrp] < 0.01 ? 4 : 2) })
-              : t('body3_icrp_none')}
-          </div>
+          <div className="text-text-200">{organTissueText(organ.id)}</div>
           <div className="mt-0.5 text-[9px] text-amber-300/90">{t('body3_mock_geometry')}</div>
         </div>
       )}
@@ -477,6 +507,31 @@ export const BodyModelViewer: React.FC<BodyModelViewerProps> = ({
       >
         {t('body_footer')}
       </div>
+    </div>
+    <div className="flex flex-wrap items-center gap-3 border-t border-white/10 bg-black/40 px-3 py-2 text-[11px] text-text-200">
+      <label className="flex items-center gap-1.5">
+        <input type="checkbox" checked={sliceOn} onChange={(e) => setSliceOn(e.target.checked)} data-testid="body3-slice-toggle" />
+        <span>{t('slice_toggle')}</span>
+      </label>
+      {sliceOn && (
+        <label className="flex min-w-[12rem] flex-1 items-center gap-2">
+          <span>{t('slice_z_label')}</span>
+          <input
+            type="range" min={0} max={175} step={0.5} value={sliceZ}
+            onChange={(e) => setSliceZ(parseFloat(e.target.value))}
+            className="flex-1 accent-[var(--sim-accent)]"
+            aria-valuetext={`${sliceZ.toFixed(1)} cm`}
+            data-testid="body3-slice-z"
+          />
+          <span className="font-mono">{sliceZ.toFixed(1)} cm</span>
+        </label>
+      )}
+    </div>
+    {sliceOn && (
+      <div className="p-2">
+        <CtSlicePanel zCm={sliceZ} selectedOrganId={selectedOrgan} onPlaneCanvas={onPlaneCanvas} onRendered={onSliceRendered} />
+      </div>
+    )}
     </div>
   );
 };
@@ -529,28 +584,4 @@ export function computeAllRegionDoses(input: BodyModelViewerDoseInputs): {
     perRegionDose[region] = breakdown.effectiveDoseMSv;
   }
   return { perRegionDose, perRegionBreakdown };
-}
-
-// ---------------------------------------------------------------------------
-// ICRP 103 organ contribution share for the selected region.
-// Returns a sorted list of (organ, w_T) pairs so the UI can show
-// "this region's effective dose is dominated by...".
-// ---------------------------------------------------------------------------
-
-export function describeRegionOrgans(regionId: BodyRegionId): Array<{
-  organ: keyof typeof ICRP103_ORGANS;
-  wT: number;
-  name: string;
-  sharePercent: number;
-}> {
-  const region = BODY_REGIONS[regionId];
-  const total = region.dominantOrgans.reduce((acc, o) => acc + ICRP103_ORGANS[o], 0);
-  return region.dominantOrgans
-    .map((organ) => ({
-      organ,
-      wT: ICRP103_ORGANS[organ],
-      name: ICRP103_ORGAN_NAMES[organ],
-      sharePercent: total > 0 ? (ICRP103_ORGANS[organ] / total) * 100 : 0,
-    }))
-    .sort((a, b) => b.wT - a.wT);
 }
