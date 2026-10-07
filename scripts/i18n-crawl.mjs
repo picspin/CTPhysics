@@ -22,11 +22,17 @@ const CJK = /[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/;
 const ALLOW_EN = new Set(['CT', 'Physics', 'English', 'GitHub', 'ICRP', 'HU', 'kV', 'kVp', 'mA', 'mAs', 'keV', 'MeV', 'mSv', 'mGy', 'cm', 'mm', 'ms', 'bpm', 'DLP', 'CTDI', 'CTDIvol', 'SSDE', 'FBP', 'IR', 'DL', 'DECT', 'PCCT', 'PCD', 'CBCT', 'ECG', 'MTF', 'NPS', 'SNR', 'CNR', 'FOV', 'ROI', 'ART', 'SART', 'MBIR', 'ASIR', 'OSEM', 'MLEM', 'TV', 'FDK', 'Hz', 'Sv', 'Gy', 'LUT', 'RGB', 'WL', 'WW', 'VMI', 'Z', 'Rho', 'CdTe', 'CZT', 'GOS', 'Si', 'Ka', 'K', 'DE', 'AI', 'MPR', 'MIP', 'VR', 'RR', 'R', 'BMI', 'kg', 'lp', 'GB', 'MB', 'Nyquist', 'Ram', 'Lak', 'Shepp', 'Logan', 'Hann', 'Hamming', 'Cosine', 'Q', 'E', 'N', 'S', 'A', 'B', 'C', 'D', 'X', 'Y', 'TCM', 'AEC', 'LAO', 'RAO', 'SD', 'mL', 'OK', 'vol', 'max', 'Mcps', 'eff', 'sqrt']);
 
 const INIT = () => {
-  window.__canvasText = new Set();
+  // Track what is *currently painted*: latest text per (canvas, x, y). The app hydrates in zh and then restores
+  // the stored language, so a log of every draw would flag the transient first paint; latest-wins avoids that.
+  window.__canvasText = new Map();
+  const ids = new WeakMap(); let next = 0;
   for (const proto of [CanvasRenderingContext2D.prototype, (window.OffscreenCanvasRenderingContext2D || {}).prototype].filter(Boolean)) {
     for (const fn of ['fillText', 'strokeText']) {
       const orig = proto[fn];
-      proto[fn] = function (t, ...r) { try { window.__canvasText.add(JSON.stringify([window.__crawlLang === 'zh' ? 'zh-CN' : 'en', String(t)])); } catch {} return orig.call(this, t, ...r); };
+      proto[fn] = function (t, x, y, ...r) {
+        try { const c = this.canvas; if (!ids.has(c)) ids.set(c, ++next); window.__canvasText.set(`${ids.get(c)}:${Math.round(x)},${Math.round(y)}:${fn}`, String(t)); } catch {}
+        return orig.call(this, t, x, y, ...r);
+      };
     }
   }
 };
@@ -45,8 +51,7 @@ async function collect(page) {
       for (const a of ['title', 'aria-label', 'placeholder', 'alt']) { const v = el.getAttribute(a); if (v && v.trim()) out.add(v.trim()); }
     for (const o of document.querySelectorAll('option')) out.add(o.textContent.trim());
     out.add(document.title);
-    const want = window.__crawlLang === 'en' ? 'en' : 'zh-CN';
-    for (const j of window.__canvasText || []) { const [l, t] = JSON.parse(j); if (l === want) out.add(t.trim()); }
+    for (const t of (window.__canvasText || new Map()).values()) out.add(t.trim());
     return [...out].filter(Boolean);
   });
 }
