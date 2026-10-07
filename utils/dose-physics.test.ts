@@ -1,3 +1,4 @@
+import { computeRegionsDose } from '@/utils/organ-dose';
 import { describe, it, expect } from 'vitest';
 import {
   ssdeFactorBody,
@@ -10,6 +11,7 @@ import {
   DOSE_COLOR_MIN_MSV,
   DOSE_COLOR_MAX_MSV,
   runIllustrativeMC,
+  mcKEffective,
   buildPerRegionConvergence,
   MC_REGIONS,
 } from '@/utils/dose-physics';
@@ -296,6 +298,14 @@ describe('dose-physics', () => {
         totalEnergy += stat.mean;
       }
       expect(totalEnergy).toBeGreaterThan(0);
+    });
+
+    it('uses the derived cardiothoracic k (no hard-coded 0.014)', () => {
+      const k = mcKEffective();
+      expect(k).toBeCloseTo(computeRegionsDose(['cardiothoracic'], 10).kDerived, 12);
+      expect(k).not.toBeCloseTo(0.014, 4);
+      expect(k).toBeGreaterThan(0.005);
+      expect(k).toBeLessThan(0.03);
     });
   });
 

@@ -39,7 +39,7 @@
 // MC estimator are MOCK / illustrative and labelled as such in the UI. Do not use these numbers for protocol planning.
 
 import { calculateCTDI } from '@/utils/physics-calculations';
-import { computeOrganDoses, REGION_SCAN_RANGE_CM, type OrganDoseResult, type Range } from '@/utils/organ-dose';
+import { computeOrganDoses, computeRegionsDose, REGION_SCAN_RANGE_CM, type OrganDoseResult, type Range } from '@/utils/organ-dose';
 
 // ----------------------------------------------------------------------------
 // 1. SSDE — AAPM Report 204 (32 cm body) and Report 220 (16 cm head)
@@ -474,6 +474,9 @@ function mulberry32(seed: number): () => number {
  * @param seed PRNG seed for reproducibility
  * @returns running estimate per region and final per-region stats
  */
+/** Cardiothoracic k = E/DLP derived from the organ-dose model (CTDIvol-independent in this linear model). */
+export const mcKEffective = (): number => computeRegionsDose(['cardiothoracic'], 1).kDerived;
+
 export function runIllustrativeMC(totalPhotons: number, seed = 1): MCRunResult {
   if (!Number.isFinite(totalPhotons) || totalPhotons <= 0) {
     throw new Error('totalPhotons must be a positive finite number');
@@ -499,13 +502,9 @@ export function runIllustrativeMC(totalPhotons: number, seed = 1): MCRunResult {
   // Always log the final sample.
   logPoints.add(totalPhotons);
 
-  // Each region has k ≈ 0.014 mSv/mGy·cm (chest default) for the
-  // mSv-from-deposited-energy mapping. We normalize so that the MC
-  // value lands in a sensible range.
-  // Beer-Lambert local deposition at 70 keV in soft tissue: mean free
-  // path ≈ 1/mu ≈ 5 cm. Total imparted dose per photon is small; we
-  // scale by the ICRP 103 chest k-factor for visual intuition.
-  const kEffective = 0.014;
+  // Arbitrary display scaling for the MC illustration: the cardiothoracic k DERIVED from the
+  // organ-by-organ model (utils/organ-dose.ts), not a hard-coded literature value.
+  const kEffective = mcKEffective();
 
   const cumulative: MCRunResult['cumulative'] = [];
 

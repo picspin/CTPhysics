@@ -230,13 +230,7 @@ export const loadSimulatorPresets = (simulatorType: string): any => {
     },
     'radiation-dose': {
       defaultCTDI: 10,
-      ctdiRange: { min: 1, max: 50, step: 0.5 },
-      kFactors: {
-        head: 0.0021,
-        chest: 0.014,
-        abdomen: 0.015,
-        pelvis: 0.015
-      }
+      ctdiRange: { min: 1, max: 50, step: 0.5 }
     },
     'xray-attenuation': {
       energyRange: { min: 20, max: 140, step: 5 },

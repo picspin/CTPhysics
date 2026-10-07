@@ -203,6 +203,13 @@ export interface OrganDoseInput {
   ranges: Range[];
   /** MOCK out-of-field scatter fraction */
   scatter?: number;
+  /**
+   * Optional legacy remainder "splitting" rule (ICRP 60 style, scaled to w_remainder = 0.12):
+   * if one remainder tissue's H_T exceeds the highest H_T of every specified tissue, it gets
+   * w_remainder/2 and the mean of the other 12 gets w_remainder/2. ICRP 103 (para. B-132 ff.)
+   * dropped this rule to keep E additive, so it is OFF by default. Σw stays 1 either way.
+   */
+  remainderSplitRule?: boolean;
 }
 
 export interface TissueDose {
@@ -226,6 +233,8 @@ export interface OrganDoseResult {
   tissues: TissueDose[];
   remainderMeanH: number;
   remainderContribution: number;
+  /** remainder tissue that received the split weight (only when remainderSplitRule is on and triggered) */
+  remainderSplitTissue: RemainderTissue | null;
   /** E = Σ w_T H_T + 0.12 × mean(H_remainder), mSv */
   effectiveDoseMSv: number;
   /** derived k = E / DLP, mSv/(mGy·cm); NaN when DLP = 0 */
@@ -252,25 +261,33 @@ export function computeOrganDoses(input: OrganDoseInput): OrganDoseResult {
     tissues.push({ tissue: t, remainder: false, f, H: h, wEff: w, contribution: w * h });
     E += w * h;
   }
-  let sumRem = 0;
-  for (const t of REMAINDER_TISSUES) {
-    const { f, H: h } = H(t);
-    sumRem += h;
-    tissues.push({ tissue: t, remainder: true, f, H: h, wEff: W_REMAINDER / REMAINDER_TISSUES.length, contribution: (W_REMAINDER * h) / REMAINDER_TISSUES.length });
+  let maxSpecH = 0;
+  for (const td of tissues) maxSpecH = Math.max(maxSpecH, td.H);
+  const remH = REMAINDER_TISSUES.map((t) => ({ t, ...H(t) }));
+  const nRem = REMAINDER_TISSUES.length;
+  let split: RemainderTissue | null = null;
+  if (input.remainderSplitRule) {
+    const top = remH.reduce((a, b) => (b.H > a.H ? b : a));
+    if (top.H > maxSpecH) split = top.t;
   }
-  const remMean = sumRem / REMAINDER_TISSUES.length;
-  const remContribution = W_REMAINDER * remMean;
+  let remContribution = 0;
+  for (const { t, f, H: h } of remH) {
+    const w = split === null ? W_REMAINDER / nRem : t === split ? W_REMAINDER / 2 : W_REMAINDER / 2 / (nRem - 1);
+    tissues.push({ tissue: t, remainder: true, f, H: h, wEff: w, contribution: w * h });
+    remContribution += w * h;
+  }
+  const remMean = remH.reduce((a, b) => a + b.H, 0) / nRem;
   E += remContribution;
   return {
     ranges, scanLengthCm: L, ctdiVolMgy: input.ctdiVolMgy, dlpMgyCm: dlp, tissues,
-    remainderMeanH: remMean, remainderContribution: remContribution,
+    remainderMeanH: remMean, remainderContribution: remContribution, remainderSplitTissue: split,
     effectiveDoseMSv: E, kDerived: dlp > 0 ? E / dlp : NaN,
   };
 }
 
 /** Convenience: scan the given regions (merged) at CTDIvol. */
-export const computeRegionsDose = (regions: BodyRegionId[], ctdiVolMgy: number, scatter?: number) =>
-  computeOrganDoses({ ctdiVolMgy, ranges: rangesForRegions(regions), scatter });
+export const computeRegionsDose = (regions: BodyRegionId[], ctdiVolMgy: number, scatter?: number, remainderSplitRule = false) =>
+  computeOrganDoses({ ctdiVolMgy, ranges: rangesForRegions(regions), scatter, remainderSplitRule });
 
 /** Region-level E from the derived k: E_region = DLP × k (equals E by construction). */
 export const effectiveDoseFromK = (dlpMgyCm: number, k: number) => dlpMgyCm * k;

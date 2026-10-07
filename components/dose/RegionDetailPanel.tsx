@@ -201,6 +201,7 @@ export const RegionDetailPanel: React.FC<RegionDetailPanelProps> = ({
         </p>
         {combined && <p className="text-xs text-sky-200/90 mt-2 leading-relaxed">{t('region_combined_note')}</p>}
         <p className="text-[11px] text-amber-200/90 mt-2 leading-relaxed">{t('organ_dose_icrp_note')}</p>
+        <p className="text-[11px] text-text-200 mt-1 leading-relaxed">{t('organ_dose_remainder_note')}</p>
         <p className="text-[10px] text-orange-200/90 mt-2 leading-relaxed italic">
           {t('region_reminder')}
         </p>

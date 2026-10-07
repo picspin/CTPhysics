@@ -20,20 +20,17 @@ let prims = new StaticArray<f64>(MAXP * PSTRIDE);
 let kps = new StaticArray<f64>(2048 * COLS);        // body-surface section rows: z, rx, ry, cy, kx, sq (see src/body-surface.js)
 let lutHU = new StaticArray<f64>(256);              // label -> mock HU
 let lutReg = new StaticArray<u8>(256);              // label -> dose region (0 = unassigned)
-let lutTis = new StaticArray<u8>(256);              // label -> ICRP 103 tissue index for the dose example (0 = none)
+let lutTis = new StaticArray<u8>(256);              // label -> ICRP 103 tissue index (kept for buffer layout; dose is computed in utils/organ-dose.ts)
 let palette = new StaticArray<u8>(8 * 3);           // dose-region colours
 let hu = new StaticArray<i16>(NN);                  // current slice HU
 let rgba = new StaticArray<u8>(NN * 4);             // current slice, windowed RGBA
 let counts = new StaticArray<u32>(256);             // voxels per label in current slice
-let cnt = new StaticArray<u32>(256 * NZ);           // voxels per label per slice (for dose example)
+let cnt = new StaticArray<u32>(256 * NZ);           // voxels per label per slice
 let roiOut = new StaticArray<f64>(8);
 let profVal = new StaticArray<f64>(1024);
 let profLab = new StaticArray<u8>(1024);
 let wTarr = new StaticArray<f64>(64);
 let tisReg = new StaticArray<u8>(64);
-let doseTot = new StaticArray<f64>(64);
-let doseIn = new StaticArray<f64>(64);
-let doseOut = new StaticArray<f64>(256);            // [0..63] fraction, [64..127] H, [128..191] E, [192..196] E by region, [200] total, [201] wT covered
 
 export function ptrLabels(): usize { return changetype<usize>(labels); }
 export function ptrPrims(): usize { return changetype<usize>(prims); }
@@ -50,7 +47,6 @@ export function ptrProfVal(): usize { return changetype<usize>(profVal); }
 export function ptrProfLab(): usize { return changetype<usize>(profLab); }
 export function ptrWT(): usize { return changetype<usize>(wTarr); }
 export function ptrTisReg(): usize { return changetype<usize>(tisReg); }
-export function ptrDose(): usize { return changetype<usize>(doseOut); }
 export function dims(which: i32): i32 { return which == 0 ? N : which == 1 ? NZ : which == 2 ? MAXP : PSTRIDE; }
 
 @inline function hash32(n0: i32): f64 {
@@ -303,30 +299,3 @@ export function lineProfileLabels(x0: f64, y0: f64, x1: f64, y1: f64, n: i32, z:
   }
 }
 
-// (c) TEACHING example: partial effective-dose accumulation  E = sum_T wT * H_T  over the tissues that have mock geometry.
-// H_T = D * (f + s * (1 - f)),  f = fraction of that tissue's voxels inside the scan range [z0,z1], s = arbitrary mock scatter factor.
-// Not a dosimetry calculation. Results: doseOut (see layout above).
-export function doseCompute(z0: f64, z1: f64, D: f64, s: f64, nT: i32): void {
-  let ka = <i32>Math.ceil(z0 * 2.0); let kb = <i32>Math.floor(z1 * 2.0);
-  if (ka < 0) ka = 0; if (kb > NZ - 1) kb = NZ - 1;
-  for (let i = 0; i < 256; i++) unchecked(doseOut[i] = 0.0);
-  for (let i = 0; i < 64; i++) { doseTot[i] = 0.0; doseIn[i] = 0.0; }
-  let tot = doseTot; let inn = doseIn;
-  for (let l = 1; l < 256; l++) {
-    let t = <i32>unchecked(lutTis[l]); if (t <= 0 || t >= 64) continue;
-    for (let k = 0; k < NZ; k++) {
-      let c = <f64>unchecked(cnt[l * NZ + k]);
-      tot[t] += c; if (k >= ka && k <= kb) inn[t] += c;
-    }
-  }
-  let total: f64 = 0.0; let covered: f64 = 0.0;
-  for (let t = 1; t <= nT; t++) {
-    let f = tot[t] > 0.0 ? inn[t] / tot[t] : 0.0;
-    let h = D * (f + s * (1.0 - f));
-    let e = unchecked(wTarr[t]) * h;
-    unchecked(doseOut[t] = f); unchecked(doseOut[64 + t] = h); unchecked(doseOut[128 + t] = e);
-    let rg = <i32>unchecked(tisReg[t]); if (rg >= 0 && rg < 5) doseOut[192 + rg] += e;
-    total += e; covered += unchecked(wTarr[t]);
-  }
-  unchecked(doseOut[200] = total); unchecked(doseOut[201] = covered);
-}

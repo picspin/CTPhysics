@@ -880,6 +880,7 @@ export const zh = {
   hel_view_slice_linked: "机架平面处的轴位切片（随检查床移动）",
   list_sep: "、",
   organ_dose_icrp_note: "ICRP 方法学：CT 有效剂量必须逐器官按组织权重计算（E = Σ wT·HT）；DLP × k 只是由此推导的近似。",
+  organ_dose_remainder_note: "其余组织：按 ICRP 103 取全部 13 个其余组织 H_T 的平均值乘 0.12（不采用 ICRP 60 中针对单个高剂量其余组织的“拆分规则”，以保证 E 可加）。",
   organ_dose_mock_note: "器官剂量为 MOCK 教学模型：HT = CTDIvol ×（覆盖比例 + 1% 散射 × 未覆盖比例），器官范围取自程序化人体，不可用于剂量学计算。",
   organ_dose_remainder_badge: "其余组织",
   region_combined_note: "联合扫描：每个器官的 HT 按合并后的扫描范围计算，再只求一次 E，相邻或重叠区域的器官不会重复计算。",

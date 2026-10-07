@@ -878,6 +878,7 @@ export const en: Record<MessageKey, string> = {
   hel_view_slice_linked: "Axial slice at the gantry plane (moves with the couch)",
   list_sep: ", ",
   organ_dose_icrp_note: "ICRP methodology: effective dose for CT must be computed organ by organ with tissue weighting (E = Σ wT·HT); DLP × k is a derived approximation.",
+  organ_dose_remainder_note: "Remainder: 0.12 × the mean H_T of all 13 remainder tissues, as in ICRP 103 (the older ICRP 60 \"splitting rule\" for a single highly exposed remainder tissue is not applied, so E stays additive).",
   organ_dose_mock_note: "Organ doses are a MOCK teaching model: HT = CTDIvol × (coverage fraction + 1% scatter × uncovered fraction); organ extents come from the procedural body. Not for dosimetry.",
   organ_dose_remainder_badge: "remainder",
   region_combined_note: "Combined scan: HT of every organ comes from the merged scan range, then E is computed once — overlapping or adjacent organs are not double-counted.",
