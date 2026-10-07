@@ -24,6 +24,7 @@ CTPhysics 是一个用于学习与演示计算机断层扫描（CT）成像物�
 - 代码质量：ESLint（`next lint`）、`tsc --noEmit`、`npm run check:i18n`（双语一致性检查）
 
 ## 快速开始
+需要 Node.js ≥ 18.17（CI 使用 20.x / 22.x）。
 ```bash
 npm ci
 npm run dev          # http://localhost:3000
@@ -52,7 +53,7 @@ npm run build && npm start
 ## 支持与赞助
 - CTPhysics 是一个教育项目。欢迎将其用于学术教学、引用和非商业部署（例如高校、医院教学、学术/专业学会）。
 - 如需部署或合作，请联系作者 Ahloe Brown（GitHub [@picspin](https://github.com/picspin)），通过 [GitHub Issues](https://github.com/picspin/CTPhysics/issues) 留言。
-- 欢迎并接受学术层面的赞助与支持。
+- 欢迎学术层面的赞助与支持。
 - 商业用途需另行获得许可。
 
 ## 引用
@@ -100,6 +101,7 @@ CTPhysics is an interactive teaching platform for CT (Computed Tomography) imagi
 - Code quality: ESLint (`next lint`), `tsc --noEmit`, `npm run check:i18n` (bilingual parity guard)
 
 ### Quick start
+Requires Node.js ≥ 18.17 (CI uses 20.x / 22.x).
 ```bash
 npm ci
 npm run dev          # http://localhost:3000
@@ -128,7 +130,7 @@ Contributions are welcome! Please read CONTRIBUTING.md.
 ### Support & Sponsorship
 - CTPhysics is an educational project. Academic teaching, citation and non-commercial deployment (e.g. universities, hospital teaching, academic/professional societies) are welcome.
 - For deployment or collaboration, please contact the author, Ahloe Brown (GitHub [@picspin](https://github.com/picspin)), via [GitHub Issues](https://github.com/picspin/CTPhysics/issues).
-- Academic-level sponsorship and support are welcome and accepted.
+- Academic sponsorship and support are welcome.
 - Commercial use requires separate permission.
 
 ### How to cite
@@ -136,7 +138,15 @@ If you use this project in teaching, papers or reports, please cite:
 
 > Ahloe Brown. *CTPhysics: An Interactive Learning Platform for CT Imaging Physics* [Web application]. 2026. https://ct-physics.xyz. Source: https://github.com/picspin/CTPhysics
 
-(BibTeX: see the Chinese section above.)
+```bibtex
+@misc{brown2026ctphysics,
+  author       = {Brown, Ahloe},
+  title        = {{CTPhysics}: An Interactive Learning Platform for CT Imaging Physics},
+  year         = {2026},
+  howpublished = {\url{https://ct-physics.xyz}},
+  note         = {Source code: \url{https://github.com/picspin/CTPhysics}}
+}
+```
 
 ### Documentation
 - Environment variables: docs/ENV.md
