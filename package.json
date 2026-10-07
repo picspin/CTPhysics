@@ -12,7 +12,8 @@
     "test": "vitest run",
     "check:i18n": "node scripts/check-i18n.mjs",
     "test:watch": "vitest",
-    "crawl:i18n": "node scripts/i18n-crawl.mjs"
+    "crawl:i18n": "node scripts/i18n-crawl.mjs",
+    "build:wasm": "bash scripts/build-wasm.sh"
   },
   "dependencies": {
     "@react-three/drei": "^9.88.0",

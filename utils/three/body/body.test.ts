@@ -111,3 +111,35 @@ describe('review fixes (#14)', () => {
     }
   });
 });
+
+describe('key-organ picking and slice plane', () => {
+  it('only ICRP-102-style key organs are pickable; brain is reachable through the skull', async () => {
+    const THREE = await import('three');
+    const { createBodyV3, DEFAULT_FRAME } = await import('./bodyV3');
+    const b = createBodyV3();
+    b.group.updateMatrixWorld(true);
+    const ray = new THREE.Raycaster();
+    const Y = (zcm: number) => DEFAULT_FRAME.topY - zcm * DEFAULT_FRAME.s;
+    ray.set(new THREE.Vector3(0, Y(11), 5), new THREE.Vector3(0, 0, -1));
+    expect(b.pick(ray)?.organId).toBe('brain');
+    ray.set(new THREE.Vector3(0, Y(28), 5), new THREE.Vector3(0, 0, -1));
+    expect(b.pick(ray)?.organId).toBe('thyroid');
+    // abdomen at the stomach level: stomach is not interactive, so the ray reaches a key organ or only skin
+    ray.set(new THREE.Vector3(5.5 * DEFAULT_FRAME.s, Y(66), 5), new THREE.Vector3(0, 0, -1));
+    const hit = b.pick(ray);
+    expect(hit?.organId === null || ['liver', 'kidneys'].includes(hit!.organId!)).toBe(true);
+    b.dispose();
+  });
+  it('setSlice places the plane at the requested body z', async () => {
+    const { createBodyV3, DEFAULT_FRAME } = await import('./bodyV3');
+    const b = createBodyV3({ organs: false });
+    const fake = { width: 256, height: 256 } as unknown as HTMLCanvasElement;
+    b.setSlice(52, fake);
+    const plane = b.group.children.find((c) => c.name === 'BodyV3Slice')!;
+    expect(plane.visible).toBe(true);
+    expect(plane.position.y).toBeCloseTo(DEFAULT_FRAME.topY - 52 * DEFAULT_FRAME.s, 9);
+    b.setSlice(null);
+    expect(plane.visible).toBe(false);
+    b.dispose();
+  });
+});

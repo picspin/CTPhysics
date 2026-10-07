@@ -10,21 +10,19 @@
 //      Report 204 Table 1 (32 cm body phantom) and Report 220 (16 cm
 //      head phantom).
 //
-//   2. ICRP 103 tissue-weighting factors w_T (2007).
-//      The set of 13 named organs plus the "remainder" tissues (14 in
-//      total). We expose per-organ factors AND a body-region rollup
-//      that says which organs dominate a given CT scan range.
+//   2. ICRP 103 tissue-weighting factors w_T (2007): 14 weighted tissues
+//      plus the remainder (w_T = 0.12 applied to the MEAN H_T of the 13
+//      remainder tissues). Σ w_T = 1.
 //
-//   3. Region-specific k-factors (DLP -> effective dose). These are
-//      the ICRP/IRCP-style k-values widely published (Christner 2010,
-//      Huda 2010) for head, neck (thyroid-dominant), chest, abdomen,
-//      and pelvis. We label them as illustrative.
+//   3. Effective dose, ICRP methodology: organ by organ,
+//        E = Σ_T w_T H_T   over ALL tissues (whole body),
+//      with per-organ H_T from a MOCK teaching model (utils/organ-dose.ts).
+//      The region k-factor is DERIVED: k = E / DLP, and E_region = DLP × k.
+//      No published k-factor table is used. Combined multi-region scans
+//      merge the scan ranges first and compute E once.
 //
-//   4. Effective-dose calculation:
-//        E = DLP * k_region
-//      PLUS a per-region effective-dose estimate that breaks E down
-//      into contributions from the ICRP-103 organs in that region.
-//      This is what the 3D body model shows on click.
+//   4. Five coarse key regions (head / neck / cardiothoracic / abdomen /
+//      limbs), each with only its key interactive organs.
 //
 //   5. A genuinely-simulated (but heavily simplified) Monte-Carlo
 //      photon-transport estimator that the user can run interactively
@@ -37,11 +35,11 @@
 //      water. What it DOES teach is the central MC idea: the standard
 //      deviation (standard error) shrinks as 1/√N (variance ∝ 1/N).
 //
-// All numbers here are derived from published literature. Where I have
-// extrapolated or simplified (especially the MC estimator), the UI
-// says so. Do not use these numbers for protocol planning.
+// SSDE tables and w_T are from the cited publications; organ doses and the
+// MC estimator are MOCK / illustrative and labelled as such in the UI. Do not use these numbers for protocol planning.
 
 import { calculateCTDI } from '@/utils/physics-calculations';
+import { computeOrganDoses, REGION_SCAN_RANGE_CM, type OrganDoseResult, type Range } from '@/utils/organ-dose';
 
 // ----------------------------------------------------------------------------
 // 1. SSDE — AAPM Report 204 (32 cm body) and Report 220 (16 cm head)
@@ -156,8 +154,8 @@ export function ssdeFactorHead(waterEquivalentDiameterCm: number): number {
 //   • breast raised  0.05 → 0.12
 //   • gonads lowered 0.20 → 0.08
 //
-// The remainder (Σ w_T for "rest") totals 0.12 distributed over 14
-// tissues. The "sum of all w_T = 1" invariant is preserved by ICRP.
+// The remainder (w_T = 0.12) applies to the arithmetic MEAN equivalent dose
+// of the 13 ICRP 103 remainder tissues (see utils/organ-dose.ts). The "sum of all w_T = 1" invariant is preserved by ICRP.
 //
 // Reference: ICRP, 2007. The 2007 Recommendations of the International
 // Commission on Radiological Protection. ICRP Publication 103.
@@ -178,10 +176,9 @@ export const ICRP103_ORGANS = {
   brain: 0.01,
   salivaryGlands: 0.01,
   skin: 0.01,
-  // Remainder tissues (adrenals, ET, gallbladder, heart, kidney, muscle,
-  // pancreas, prostate, small intestine, spleen, thymus, uterus/cervix)
-  // collectively = 0.12, distributed by averaging. We don't break them
-  // out individually — they collectively contribute 0.12 to Σw_T.
+  // Remainder: 0.12 × mean H_T of the 13 remainder tissues (adrenals, ET region,
+  // gallbladder, heart, kidneys, lymph nodes, muscle, oral mucosa, pancreas,
+  // prostate/uterus-cervix, small intestine, spleen, thymus).
   remainder: 0.12,
 } as const;
 
@@ -201,7 +198,7 @@ export const ICRP103_ORGAN_NAMES: Record<ICRP103Organ, string> = {
   brain: 'Brain',
   salivaryGlands: 'Salivary glands',
   skin: 'Skin',
-  remainder: 'Remainder (14 tissues)',
+  remainder: 'Remainder (13 tissues, mean H_T)',
 };
 
 // Sanity: Σ w_T should equal 1.0 by ICRP definition.
@@ -213,113 +210,50 @@ export const ICRP103_TOTAL_WT: number = Object.values(ICRP103_ORGANS).reduce(
 // = 0.08 + 0.60 + 0.16 + 0.04 + 0.12 = 1.00
 
 // ----------------------------------------------------------------------------
-// 3. Body regions & organ dominance
+// 3. Body regions (ICRP-102-style key regions) and the organ-based E chain
 // ----------------------------------------------------------------------------
 //
-// We segment the body into the five regions the user asked for. Each
-// region has a list of the ICRP-103 organs inside it (used by the UI to
-// explain "this region's effective dose is dominated by thyroid + breast
-// + oesophagus"). k-factors are the ICRP-103/Christner 2010 values for
-// adult DLP -> mSv.
+// Five coarse scan regions. Each lists only its KEY interactive organs; every
+// ICRP 103 tissue still enters the effective-dose sum (see utils/organ-dose.ts).
+// There is no hard-coded k-factor table any more: k = E / DLP is DERIVED from
+// the organ-by-organ calculation, and E_region = DLP × k.
 
 export type BodyRegionId = 'head' | 'neck' | 'cardiothoracic' | 'abdomen' | 'peripheral';
 
 export interface BodyRegion {
   id: BodyRegionId;
-  /** Local-Y axis range (decimeters) where this region lives on the body */
-  yMin: number;
-  yMax: number;
-  /** Representative CT scan length (cm) */
+  /** z-range scanned for this region, cm from the vertex (MOCK ~175 cm adult) */
+  zRangeCm: [number, number];
+  /** Representative CT scan length (cm) = length of zRangeCm */
   representativeScanLengthCm: number;
-  /** DLP -> effective-dose k-factor (mSv / mGy·cm) */
-  kFactor: number;
-  /** Which ICRP-103 organs sit in this region. Sum of their w_T is
-   *  roughly the per-region share of effective dose. */
-  dominantOrgans: ICRP103Organ[];
+  /** interactive key organs (mesh ids in utils/three/body/organs.ts) */
+  keyOrgans: string[];
   /** Phantom reference diameter for SSDE (16 cm head / 32 cm body) */
   ssdePhantomDiameterCm: number;
 }
 
-export const BODY_REGIONS: Record<BodyRegionId, BodyRegion> = {
-  head: {
-    id: 'head',
-    yMin: 1.8,
-    yMax: 2.5,
-    representativeScanLengthCm: 15,
-    // Head k-factor (Christner 2010, ICRP 103): ~0.0021 mSv/mGy·cm
-    kFactor: 0.0021,
-    dominantOrgans: ['brain', 'salivaryGlands', 'remainder', 'boneSurface', 'skin'],
-    // AAPM TG-220 head phantom reference is 16 cm
-    ssdePhantomDiameterCm: 16,
-  },
-  neck: {
-    id: 'neck',
-    yMin: 1.4,
-    yMax: 1.8,
-    representativeScanLengthCm: 10,
-    // Neck (thyroid-dominant): ~0.0059 mSv/mGy·cm (Huda 2010)
-    kFactor: 0.0059,
-    dominantOrgans: ['thyroid', 'oesophagus', 'salivaryGlands', 'remainder', 'boneSurface'],
-    ssdePhantomDiameterCm: 16,
-  },
-  cardiothoracic: {
-    id: 'cardiothoracic',
-    yMin: 0.3,
-    yMax: 1.4,
-    representativeScanLengthCm: 30,
-    // Chest (breast + lung dominant): ~0.014 mSv/mGy·cm
-    kFactor: 0.014,
-    dominantOrgans: [
-      'breast',
-      'lung',
-      'oesophagus',
-      'thyroid',
-      'redBoneMarrow',
-      'remainder',
-      'boneSurface',
-    ],
-    ssdePhantomDiameterCm: 32,
-  },
-  abdomen: {
-    id: 'abdomen',
-    yMin: -0.8,
-    yMax: 0.3,
-    representativeScanLengthCm: 25,
-    // Abdomen-pelvis: ~0.015 mSv/mGy·cm
-    kFactor: 0.015,
-    dominantOrgans: [
-      'colon',
-      'stomach',
-      'liver',
-      'bladder',
-      'gonads',
-      'redBoneMarrow',
-      'remainder',
-      'boneSurface',
-    ],
-    ssdePhantomDiameterCm: 32,
-  },
-  peripheral: {
-    // Limbs / extremities — well outside the trunk, dominated by remainder
-    // tissues (skin, muscle, bone surface) and very small w_T sum.
-    id: 'peripheral',
-    yMin: -1.8,
-    yMax: -0.8,
-    representativeScanLengthCm: 20,
-    // Extremities k-factor: ~0.0007 mSv/mGy·cm (Huda 2010, leg/arm)
-    kFactor: 0.0007,
-    dominantOrgans: ['skin', 'boneSurface', 'remainder', 'redBoneMarrow'],
-    ssdePhantomDiameterCm: 16,
-  },
+const region = (id: BodyRegionId, keyOrgans: string[], ssde: number): BodyRegion => {
+  const r = REGION_SCAN_RANGE_CM[id];
+  return { id, zRangeCm: [r[0], r[1]], representativeScanLengthCm: r[1] - r[0], keyOrgans, ssdePhantomDiameterCm: ssde };
 };
 
-// Sum of w_T for the organs in a region — useful for the UI to display
-// "this region carries X% of effective dose by tissue weighting".
-export function regionDominantWeight(region: BodyRegion): number {
-  return region.dominantOrgans.reduce(
-    (acc, organ) => acc + ICRP103_ORGANS[organ],
-    0,
-  );
+export const BODY_REGIONS: Record<BodyRegionId, BodyRegion> = {
+  head: region('head', ['brain'], 16),
+  neck: region('neck', ['thyroid'], 16),
+  cardiothoracic: region('cardiothoracic', ['lungs', 'heart'], 32),
+  abdomen: region('abdomen', ['liver', 'kidneys'], 32),
+  peripheral: region('peripheral', ['limbbones'], 16),
+};
+
+/** z-range of length `lengthCm` centred on a region (clamped to the body). */
+export function regionRangeWithLength(id: BodyRegionId, lengthCm: number): Range {
+  const [a, b] = REGION_SCAN_RANGE_CM[id];
+  if (Math.abs(lengthCm - (b - a)) < 1e-9) return [a, b];
+  const c = (a + b) / 2, L = Math.max(0, Math.min(175, lengthCm));
+  let z0 = c - L / 2, z1 = c + L / 2;
+  if (z0 < 0) { z1 -= z0; z0 = 0; }
+  if (z1 > 175) { z0 -= z1 - 175; z1 = 175; }
+  return [Math.max(0, z0), z1];
 }
 
 // ----------------------------------------------------------------------------
@@ -333,67 +267,63 @@ export interface DoseInputs {
   kVp: number;
   /** Pitch (default 1.0) */
   pitch?: number;
-  /** Scan length in cm for the region (or use representativeScanLengthCm) */
+  /** Scan length in cm (single-region scans; centred on the region) */
   scanLengthCm: number;
   /** Water-equivalent diameter Dw in cm (used for SSDE) */
   waterEquivalentDiameterCm: number;
-  /** Region (selects k-factor and SSDE phantom reference) */
+  /** Primary region (SSDE phantom reference, default range) */
   region: BodyRegionId;
+  /** Combined scan: all regions scanned together. Ranges are merged and E is computed once. */
+  regions?: BodyRegionId[];
 }
 
 export interface DoseBreakdown {
   /** CTDIvol in mGy — scanner-output index (NOT patient dose) */
   ctdiVolMgy: number;
-  /** DLP in mGy·cm — total energy imparted */
+  /** DLP in mGy·cm — CTDIvol × scanned length (union of ranges) */
   dlpMgyCm: number;
   /** SSDE in mGy — patient-specific dose estimate, AAPM TG-204/220 */
   ssdeMgy: number;
   /** f(size) used for SSDE */
   ssdeFactor: number;
-  /** Effective dose in mSv — DLP * k_region, ICRP 103 tissue weighting */
+  /** Effective dose in mSv — organ-by-organ E = Σ w_T H_T (whole body); equals DLP × k */
   effectiveDoseMSv: number;
+  /** derived k = E / DLP, mSv/(mGy·cm) */
+  kDerived: number;
+  /** scanned length (cm) */
+  scanLengthCm: number;
   /** Region used */
   region: BodyRegion;
-  /** Sum of dominant w_T (for the per-region share explanation) */
-  dominantWT: number;
+  /** full organ-by-organ result */
+  organDose: OrganDoseResult;
 }
 
 /**
- * Compute the full CTDIvol → DLP → SSDE → E chain for a body region.
- *
- * This is the function the 3D body model calls when the user clicks a
- * region. It is the function that teaches the concept chain — see the
- * JSDoc on each output field for what it represents in the pedagogy.
+ * CTDIvol → DLP → SSDE → (organ H_T → E) → derived k for one region or a combined scan.
  */
 export function computeDoseForRegion(input: DoseInputs): DoseBreakdown {
-  const region = BODY_REGIONS[input.region];
-  const ctdiVolMgy = calculateCTDI({
-    mAs: input.mAs,
-    kVp: input.kVp,
-    pitch: input.pitch,
-  });
-  const dlpMgyCm = ctdiVolMgy * input.scanLengthCm;
+  const meta = BODY_REGIONS[input.region];
+  const ctdiVolMgy = calculateCTDI({ mAs: input.mAs, kVp: input.kVp, pitch: input.pitch });
+  const ranges: Range[] = input.regions && input.regions.length > 0
+    ? input.regions.map((r) => (r === input.region ? regionRangeWithLength(r, input.scanLengthCm) : [...REGION_SCAN_RANGE_CM[r]] as Range))
+    : [regionRangeWithLength(input.region, input.scanLengthCm)];
+  const organDose = computeOrganDoses({ ctdiVolMgy, ranges });
 
-  // SSDE: pick body- or head-phantom table based on the region. Head and
-  // neck use the 16 cm head phantom (AAPM TG-220). Trunk uses the 32 cm
-  // body phantom (AAPM TG-204). Peripheral is closer to head in size.
-  const useHeadTable = region.ssdePhantomDiameterCm === 16;
-  const ssdeFactor = useHeadTable
-    ? ssdeFactorHead(input.waterEquivalentDiameterCm)
-    : ssdeFactorBody(input.waterEquivalentDiameterCm);
+  // SSDE: head (16 cm) or body (32 cm) phantom table per region (AAPM TG-220 / TG-204).
+  const useHeadTable = meta.ssdePhantomDiameterCm === 16;
+  const ssdeFactor = useHeadTable ? ssdeFactorHead(input.waterEquivalentDiameterCm) : ssdeFactorBody(input.waterEquivalentDiameterCm);
   const ssdeMgy = ctdiVolMgy * ssdeFactor;
-
-  const effectiveDoseMSv = dlpMgyCm * region.kFactor;
-  const dominantWT = regionDominantWeight(region);
 
   return {
     ctdiVolMgy,
-    dlpMgyCm,
+    dlpMgyCm: organDose.dlpMgyCm,
     ssdeMgy,
     ssdeFactor,
-    effectiveDoseMSv,
-    region,
-    dominantWT,
+    effectiveDoseMSv: organDose.effectiveDoseMSv,
+    kDerived: organDose.kDerived,
+    scanLengthCm: organDose.scanLengthCm,
+    region: meta,
+    organDose,
   };
 }
 

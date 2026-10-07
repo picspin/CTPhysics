@@ -10,12 +10,17 @@ import { Card } from '@/components/ui/Card';
 import { createProceduralEnvironment } from '@/utils/three/proceduralEnvironment';
 import { createMedicalLightingRig } from '@/utils/three/sceneLighting';
 import { createScannerMaterials } from '@/utils/three/scannerMaterials';
-import { createParametricPhantomMesh, disposeParametricPhantom } from '@/utils/three/parametricPhantom';
+import dynamic from 'next/dynamic';
+import { createParametricPhantomMesh, disposeParametricPhantom, getPhantomBody } from '@/utils/three/parametricPhantom';
+import { localToCm } from '@/utils/three/body/geometryMath';
 import { createAttenuationOverlay } from './_fx/AttenuationOverlay';
 import { createPostFX } from '@/utils/three/postFX';
 import { createXRayBeam } from '@/utils/three/xrayBeam';
 import { createLabelSprite, type LabelSprite } from '@/utils/three/labelTexture';
 import { useLanguage, type MessageKey } from '@/context/LanguageContext';
+
+// lazy: WASM/JS slice engines load only when the linked slice is switched on
+const CtSlicePanel = dynamic(() => import('@/components/body/CtSlicePanel'), { ssr: false });
 
 // Log entries store a message key (+ kernel key) rather than rendered text,
 // so the log re-renders in the current language after a toggle.
@@ -43,6 +48,14 @@ const HelicalCTSimulator: React.FC = () => {
   });
 
   const [dose, setDose] = useState(0);
+  // Axial slice linked to the couch: body z (cm from vertex) currently in the gantry plane (world z = 0).
+  const [sliceLinked, setSliceLinked] = useState(false);
+  const [sliceZ, setSliceZ] = useState(50);
+  const sliceLinkedRef = useRef(false);
+  sliceLinkedRef.current = sliceLinked;
+  const sliceZRef = useRef(50);
+  const sliceCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const onPlaneCanvas = useCallback((c: HTMLCanvasElement | null) => { sliceCanvasRef.current = c; }, []);
   const [logs, setLogs] = useState<LogEntry[]>([{ key: 'hel_log_boot' }]);
 
   // --- Refs ---
@@ -64,6 +77,7 @@ const HelicalCTSimulator: React.FC = () => {
     phantom: THREE.Group;
     attenuation: ReturnType<typeof createAttenuationOverlay>;
     attenuationLabel: LabelSprite;
+    overlayParts: THREE.Object3D[];
     postFX: ReturnType<typeof createPostFX>;
     xrayBeam: ReturnType<typeof createXRayBeam>;
   }>();
@@ -300,6 +314,8 @@ const HelicalCTSimulator: React.FC = () => {
     scene.add(attenuation.mesh);
     scene.add(leaderLine);
     scene.add(label);
+    // the illustrative kV overlay is replaced by the real linked slice when that is switched on
+    const overlayParts: THREE.Object3D[] = [attenuation.mesh, leaderLine, label];
 
     // 4. Helix Visualization
     // Create a spiral line
@@ -360,6 +376,7 @@ const HelicalCTSimulator: React.FC = () => {
       phantom,
       attenuation,
       attenuationLabel: labelHandle,
+      overlayParts,
       postFX,
       xrayBeam,
     };
@@ -561,6 +578,7 @@ const HelicalCTSimulator: React.FC = () => {
     const tmpDet = new THREE.Vector3();
     const localTube = new THREE.Vector3(0, 2, 0);
     const localDet = new THREE.Vector3(0, -2, 0);
+    const tmpGantry = new THREE.Vector3();
 
     const animate = () => {
       requestRef.current = requestAnimationFrame(animate);
@@ -600,6 +618,17 @@ const HelicalCTSimulator: React.FC = () => {
         xrayBeam.lookAt(tmpTube, tmpDet);
         xrayBeam.update(elapsed);
 
+        // Couch / gantry link: which body z sits in the gantry plane (world z = 0)?
+        const body = getPhantomBody(sceneRef.current.phantom);
+        if (body) {
+          tmpGantry.set(0, 0, 0); body.group.updateMatrixWorld(); body.group.worldToLocal(tmpGantry);
+          const zcm = Math.round(localToCm(body.frame, tmpGantry.x, tmpGantry.y, tmpGantry.z)[2] * 2) / 2;
+          if (zcm !== sliceZRef.current) {
+            sliceZRef.current = zcm;
+            if (sliceLinkedRef.current) setSliceZ(zcm);
+          }
+        }
+
         // Phase 2: render through the postFX composer.
         postFX.composer.render();
       }
@@ -635,6 +664,25 @@ const HelicalCTSimulator: React.FC = () => {
     // `t` changes with the language, re-baking the label text on toggle.
   }, [params, drawPhantom, t]);
 
+  // show / hide the linked slice plane on the patient and the illustrative overlay
+  useEffect(() => {
+    const sr = sceneRef.current;
+    if (!sr) return;
+    const body = getPhantomBody(sr.phantom);
+    const inBody = sliceZ >= 0 && sliceZ <= 175;
+    body?.setSlice(sliceLinked && inBody ? sliceZ : null, sliceLinked ? sliceCanvasRef.current : undefined);
+    sr.overlayParts.forEach((o) => { o.visible = !sliceLinked; });
+    if (sliceLinked) setSliceZ(sliceZRef.current);
+  }, [sliceLinked, sliceZ]);
+  const onSliceRendered = useCallback(() => {
+    const sr = sceneRef.current; if (!sr) return;
+    const body = getPhantomBody(sr.phantom);
+    if (!body) return;
+    const z = sliceZRef.current;
+    body.setSlice(z >= 0 && z <= 175 ? z : null, sliceCanvasRef.current);
+    body.refreshSliceTexture();
+  }, []);
+
   const toggleScan = () => {
     setParams(p => ({ ...p, scanning: !p.scanning }));
     addLog({ key: params.scanning ? 'hel_log_scan_stop' : 'hel_log_scan_start' });
@@ -659,14 +707,27 @@ const HelicalCTSimulator: React.FC = () => {
         {/* Image View */}
         <div className="flex-1 bg-black flex flex-col items-center justify-center relative">
           <div className="absolute top-4 left-4 font-mono text-sm text-[var(--sim-accent)] pointer-events-none">
-            {t('hel_view_recon')}
+            {t(sliceLinked ? 'hel_view_slice_linked' : 'hel_view_recon')}
           </div>
+          <label className="absolute bottom-3 right-3 z-10 flex items-center gap-1.5 rounded bg-black/60 px-2 py-1 font-mono text-[11px] text-text-100">
+            <input type="checkbox" checked={sliceLinked} onChange={(e) => setSliceLinked(e.target.checked)} data-testid="hel-slice-link" />
+            {t('hel_slice_link')}
+          </label>
           <canvas
             ref={canvasRef}
             width={512}
             height={512}
-            className="bg-black shadow-[0_0_20px_rgba(255,255,255,0.1)] max-w-[90%] max-h-[80%] aspect-square"
+            className={`bg-black shadow-[0_0_20px_rgba(255,255,255,0.1)] max-w-[90%] max-h-[80%] aspect-square ${sliceLinked ? 'hidden' : ''}`}
           />
+          {sliceLinked && (
+            <div className="mt-8 w-[92%] max-w-[300px] overflow-y-auto">
+              {sliceZ < 0 || sliceZ > 175 ? (
+                <p className="font-mono text-xs text-gray-400" data-testid="hel-slice-outside">{t('hel_slice_outside', { z: sliceZ.toFixed(1) })}</p>
+              ) : (
+                <CtSlicePanel zCm={sliceZ} onPlaneCanvas={onPlaneCanvas} onRendered={onSliceRendered} compact />
+              )}
+            </div>
+          )}
           <div className="mt-2 font-mono text-xs text-gray-500">
             {t('hel_dose', { dose })}
           </div>

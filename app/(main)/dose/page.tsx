@@ -22,7 +22,8 @@ import SimulatorContainer from '@/components/ui/SimulatorContainer';
 import { Slider } from '@/components/ui/Slider';
 import { Select } from '@/components/ui/Select';
 import { useLanguage, type MessageKey } from '@/context/LanguageContext';
-import { ORGAN_KEY, DOSE_REGION_KEY } from '@/i18n/labels';
+import { DOSE_REGION_KEY } from '@/i18n/labels';
+import { topContributors } from '@/utils/organ-dose';
 
 import {
   calculateCTDI,
@@ -39,7 +40,6 @@ import {
 import {
   BodyModelViewer,
   computeAllRegionDoses,
-  describeRegionOrgans,
 } from '@/components/dose/BodyModelViewer';
 import { RegionDetailPanel } from '@/components/dose/RegionDetailPanel';
 import { MonteCarloPanel } from '@/components/dose/MonteCarloPanel';
@@ -68,12 +68,14 @@ const DoseCalculatorSimulator: React.FC = () => {
   const [region, setRegion] = useState('chest');
   const { t } = useLanguage();
 
-  const regions: { id: string; nameKey: MessageKey; kFactor: number }[] = [
-    { id: 'head', nameKey: 'dose_region_head', kFactor: 0.0021 },
-    { id: 'neck', nameKey: 'dose_region_neck', kFactor: 0.0059 },
-    { id: 'chest', nameKey: 'dose_region_chest', kFactor: 0.014 },
-    { id: 'abdomen', nameKey: 'dose_region_abdomen', kFactor: 0.015 },
-    { id: 'peripheral', nameKey: 'dose_region_peripheral', kFactor: 0.0007 },
+  // k is no longer a hard-coded table: it is derived as E / DLP from the organ-by-organ
+  // ICRP 103 calculation (utils/organ-dose.ts) for a scan of this length centred on the region.
+  const regions: { id: string; nameKey: MessageKey; bodyRegion: BodyRegionId }[] = [
+    { id: 'head', nameKey: 'dose_region_head', bodyRegion: 'head' },
+    { id: 'neck', nameKey: 'dose_region_neck', bodyRegion: 'neck' },
+    { id: 'chest', nameKey: 'dose_region_chest', bodyRegion: 'cardiothoracic' },
+    { id: 'abdomen', nameKey: 'dose_region_abdomen', bodyRegion: 'abdomen' },
+    { id: 'peripheral', nameKey: 'dose_region_peripheral', bodyRegion: 'peripheral' },
   ];
 
   // FIX: calculateCTDI now takes a NAMED-OPTIONS object so the previous
@@ -81,7 +83,10 @@ const DoseCalculatorSimulator: React.FC = () => {
   const ctdi = calculateCTDI({ mAs, kVp, pitch });
   const dlp = calculateDLP(ctdi, scanLength);
   const selectedRegion = regions.find((r) => r.id === region) || regions[2];
-  const effectiveDose = calculateEffectiveDose(dlp, selectedRegion.kFactor);
+  const organBased = computeDoseForRegion({ mAs, kVp, pitch, scanLengthCm: scanLength, waterEquivalentDiameterCm: 32, region: selectedRegion.bodyRegion });
+  const kDerived = organBased.kDerived;
+  // E_region = DLP × k (k derived from the organ-by-organ E)
+  const effectiveDose = calculateEffectiveDose(dlp, kDerived);
 
   return (
     <SimulatorContainer
@@ -174,7 +179,11 @@ const DoseCalculatorSimulator: React.FC = () => {
               </div>
               <div className="text-sm text-primary-100">mSv</div>
             </div>
+            <div className="mt-1 text-[11px] text-text-200" data-testid="dose-calc-kderived">
+              {t('dose_calc_k_derived', { k: kDerived.toFixed(4) })}
+            </div>
           </motion.div>
+          <p className="text-[11px] leading-relaxed text-amber-200/90">{t('organ_dose_icrp_note')}</p>
 
           <div className="bg-yellow-50/10 border border-yellow-200/50 rounded-lg p-4">
             <h4 className="font-medium text-yellow-200 mb-2">{t('dose_risk_title')}</h4>
@@ -436,6 +445,10 @@ const BODY_3D_EXPLORER: React.FC = () => {
 
   // Selection
   const [selectedRegion, setSelectedRegion] = useState<BodyRegionId | null>('cardiothoracic');
+  // extra regions scanned together with the selected one (combined scan, E computed once over the union)
+  const [addedRegions, setAddedRegions] = useState<BodyRegionId[]>([]);
+  const toggleAdded = (r: BodyRegionId) =>
+    setAddedRegions((xs) => (xs.includes(r) ? xs.filter((x) => x !== r) : [...xs, r]));
 
   // Effective diameter is the visible-body cross-section, related to bodyScale.
   const effectiveDiameter = bodyScale * 32; // 32 cm at scale 1.0
@@ -510,8 +523,31 @@ const BODY_3D_EXPLORER: React.FC = () => {
 
         {/* Region detail — 2 cols on lg */}
         <div className="lg:col-span-2">
+          <div className="mb-3 rounded-lg border border-white/10 bg-bg-200 p-3 text-xs" data-testid="combined-scan">
+            <div className="mb-1 font-medium text-text-100">{t('combined_scan_title')}</div>
+            <div className="flex flex-wrap gap-1.5">
+              {(['head', 'neck', 'cardiothoracic', 'abdomen', 'peripheral'] as BodyRegionId[]).map((r) => {
+                const primary = r === selectedRegion;
+                const on = primary || addedRegions.includes(r);
+                return (
+                  <button
+                    key={r}
+                    type="button"
+                    disabled={primary}
+                    onClick={() => toggleAdded(r)}
+                    aria-pressed={on}
+                    className={`rounded-full border px-2 py-0.5 ${on ? 'border-primary-100 bg-primary-100/20 text-primary-100' : 'border-white/20 text-text-200 hover:bg-white/5'} ${primary ? 'cursor-default' : ''}`}
+                  >
+                    {t(DOSE_REGION_KEY[r])}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-1 text-[10px] text-text-200">{t('combined_scan_hint')}</p>
+          </div>
           <RegionDetailPanel
             region={selectedRegion}
+            scanRegions={selectedRegion ? [selectedRegion, ...addedRegions] : []}
             mAs={mAs}
             kVp={kVp}
             pitch={pitch}
@@ -718,12 +754,11 @@ const BODY_3D_EXPLORER: React.FC = () => {
                     {b.effectiveDoseMSv.toFixed(3)}
                   </td>
                   <td className="py-1.5 px-2 text-right font-mono text-text-200">
-                    {b.region.kFactor}
+                    {b.kDerived.toFixed(4)}
                   </td>
                   <td className="py-1.5 px-2 text-text-200">
-                    {describeRegionOrgans(rid)
-                      .slice(0, 3)
-                      .map((o) => t(ORGAN_KEY[o.organ]))
+                    {topContributors(b.organDose, 3)
+                      .map((x) => t(`body3_t_${x.tissue}` as MessageKey))
                       .join(', ')}
                   </td>
                 </tr>
