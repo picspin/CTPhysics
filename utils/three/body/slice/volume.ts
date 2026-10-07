@@ -74,7 +74,7 @@ export function buildSliceInit(): SliceInit {
     const hu = ORGAN_HU[o.id]; if (hu === undefined) throw new Error('no mock HU for ' + o.id);
     lutHU[id] = hu; lutReg[id] = REGION_IDS.indexOf(o.region) + 1;
   }
-  // The kernel's doseCompute() is not used by the app (dose is computed in utils/organ-dose.ts); wT/tisReg stay zero.
+  // Dose is computed in utils/organ-dose.ts (the kernel no longer contains a dose routine); wT/tisReg stay zero.
   return { prims, kps, np, lutHU, lutReg, lutTis, palette, wT: new Float64Array(64), tisReg: new Uint8Array(64) };
 }
 
