@@ -1,70 +1,49 @@
 import * as THREE from 'three';
+import { createBodyV3, type BodyV3 } from './body/bodyV3';
 
 /**
- * Parametric patient phantom — anatomically-segmented Alderson-style body
- * built from BufferGeometry primitives (Sphere / Capsule / Cylinder / Box).
+ * Helical CT patient: the shared v3.1 body (semi-transparent Fresnel skin over
+ * procedural MOCK organs, see ./body/bodyV3.ts), laid supine along the scanner bore.
  *
- * Reads the shared `ANATOMY` spec from `./anatomy` so the HelicalCT scanner
- * view and the Dose page stay in lockstep — if a part shape changes, both
- * update from the same source of truth.
- *
- * Body in local space: +Y = head, units ~decimeters, upright stance. The
- * caller (HelicalCT simulator) rotates the returned group 90° on X so the
- * patient lies along the scanner bore.
- *
- * Tier:
- *   - 'low'      16×12 segments (fast)
- *   - 'standard' 32×24 (default)
- *   - 'hero'     48×36 (smooth)
+ * Local frame of the inner body: +Y = head, anterior = -Z, so the +90 deg X rotation
+ * of the returned group maps head -> world +Z and anterior -> world +Y (supine).
+ * The inner body is lifted so its posterior surface rests on y = 0 of the group.
  */
-
-import { AnatomyTier, ANATOMY, AnatomyPart, getAnatomyPrimitiveGeometry } from './anatomy';
-
 export type PhantomTier = 'low' | 'standard' | 'hero';
 
 export interface PhantomOptions {
   tier?: PhantomTier;
-  material: THREE.Material;
+  /** Only the colour of this material is used, for the skin. */
+  material?: THREE.Material;
+  skinOpacity?: number;
 }
 
-function applyPart(mesh: THREE.Mesh, part: AnatomyPart): void {
-  mesh.position.set(...part.position);
-  mesh.rotation.set(...part.rotationEuler);
-  mesh.scale.set(...part.scale);
-}
+const RING_POINTS: Record<PhantomTier, number> = { low: 24, standard: 36, hero: 48 };
 
-export function createParametricPhantomMesh(
-  options: PhantomOptions,
-): THREE.Group {
-  const tier = (options.tier ?? 'standard') satisfies AnatomyTier;
+export function createParametricPhantomMesh(options: PhantomOptions = {}): THREE.Group {
+  const tier = options.tier ?? 'standard';
+  const color = (options.material as THREE.MeshStandardMaterial | undefined)?.color;
+  const body = createBodyV3({
+    frame: { anterior: -1 },
+    ringPoints: RING_POINTS[tier],
+    ringStep: tier === 'low' ? 4 : 2.5,
+    skinOpacity: options.skinOpacity ?? 0.45,
+    skinColor: color ? color.getHex() : undefined,
+  });
+  // posterior-most skin is ~12.5 cm behind the trunk centre line (MOCK geometry)
+  body.group.position.z = -12.5 * body.frame.s;
   const group = new THREE.Group();
   group.name = 'ParametricPhantom';
-
-  // Build a mesh per anatomy part, all sharing the caller's skin material.
-  for (const part of ANATOMY) {
-    const geo = getAnatomyPrimitiveGeometry(part.kind, tier, part.extra);
-    const mesh = new THREE.Mesh(geo, options.material);
-    mesh.name = `phantom-${part.id}`;
-    applyPart(mesh, part);
-    group.add(mesh);
-  }
-
-  // Lay the body horizontally along the scanner Z axis. Phantom local +Y
-  // (head→toes) maps to world +Z.
+  group.add(body.group);
+  group.userData.body = body;
   group.rotation.x = Math.PI / 2;
   return group;
 }
 
+export function getPhantomBody(group: THREE.Group): BodyV3 | undefined {
+  return group.userData.body as BodyV3 | undefined;
+}
+
 export function disposeParametricPhantom(group: THREE.Group): void {
-  // The geometries come from the shared anatomy cache; we do NOT dispose
-  // them here. If the consumer has fully torn down the page they can call
-  // `disposeAnatomyGeometryCache()`. Each mesh we created is removed by
-  // the parent group's disposal path.
-  group.traverse((obj) => {
-    if ((obj as THREE.Mesh).isMesh) {
-      const mesh = obj as THREE.Mesh;
-      // Drop references so the GC can collect after group removal.
-      mesh.geometry = undefined as unknown as THREE.BufferGeometry;
-    }
-  });
+  getPhantomBody(group)?.dispose();
 }

@@ -10,7 +10,7 @@ import { Card } from '@/components/ui/Card';
 import { createProceduralEnvironment } from '@/utils/three/proceduralEnvironment';
 import { createMedicalLightingRig } from '@/utils/three/sceneLighting';
 import { createScannerMaterials } from '@/utils/three/scannerMaterials';
-import { createParametricPhantomMesh } from '@/utils/three/parametricPhantom';
+import { createParametricPhantomMesh, disposeParametricPhantom } from '@/utils/three/parametricPhantom';
 import { createAttenuationOverlay } from './_fx/AttenuationOverlay';
 import { createPostFX } from '@/utils/three/postFX';
 import { createXRayBeam } from '@/utils/three/xrayBeam';
@@ -421,6 +421,7 @@ const HelicalCTSimulator: React.FC = () => {
       env.dispose();
       lighting.dispose();
       attenuation.dispose();
+      disposeParametricPhantom(phantom);
       // Dispose exploded-view leader line + label (CanvasTexture/Sprite).
       leaderGeo.dispose();
       leaderMat.dispose();
