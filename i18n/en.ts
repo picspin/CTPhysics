@@ -255,7 +255,7 @@ export const en: Record<MessageKey, string> = {
   dose_sec_red_title: "Dose reduction strategies",
   dose_sec_red_desc: "Lower mAs, lower kV, iterative reconstruction",
   dose_region_head: "Head",
-  dose_region_neck: "Head & neck (incl. thyroid)",
+  dose_region_neck: "Neck / thyroid",
   dose_region_chest: "Chest",
   dose_region_cardiothoracic: "Cardiothoracic",
   dose_region_abdomen: "Abdomen",

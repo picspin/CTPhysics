@@ -90,15 +90,17 @@ function buildSkinGeometry(frame: BodyFrame, M: number, step: number): THREE.Buf
   for (const p of pieces) { nv += p.pos.length / 3; ni += p.idx.length; }
   const pos = new Float32Array(nv * 3), reg = new Float32Array(nv), idx = new Uint32Array(ni);
   let vo = 0, io = 0;
-  // Mapping cm -> local negates Y (and Z when anterior = -1); an odd number of negations flips the winding.
-  const flip = frame.anterior === 1;
+  // cmToLocal maps (x,y,z) -> (x, -z, anterior*y): det = anterior. Loft triangles are CCW-outward in cm space,
+  // so only the mirrored frame (anterior = -1, negative determinant) needs its winding reversed.
+  const flip = frame.anterior === -1;
   for (const p of pieces) {
     const n = p.pos.length / 3;
     for (let i = 0; i < n; i++) {
       const x = p.pos[i * 3], y = p.pos[i * 3 + 1], z = p.pos[i * 3 + 2];
       const l = cmToLocal(frame, x, y, z);
       pos.set(l, (vo + i) * 3);
-      const r = p.part === 'arm' ? 'peripheral' : p.part === 'leg' && z >= 106 ? 'peripheral' : regionOfSkinPoint(p.part === 'leg' ? 0 : x, z);
+      // Limbs (arms and whole legs incl. thighs) are always 'peripheral', matching regions.ts and organs.ts.
+      const r = p.part === 'arm' || p.part === 'leg' ? 'peripheral' : regionOfSkinPoint(x, z);
       reg[vo + i] = regionIndex(r);
     }
     for (let k = 0; k < p.idx.length; k += 3) {
@@ -211,8 +213,11 @@ export function createBodyV3(options: BodyV3Options = {}): BodyV3 {
       if (organGroup.visible) targets.push(...organMeshList);
       const hits = raycaster.intersectObjects(targets, false);
       if (!hits.length) return null;
-      // Rays pass through the semi-transparent skin: prefer the first organ hit.
-      const organHit = hits.find((h) => h.object.userData.organId !== 'skin');
+      // Rays pass through the semi-transparent skin and translucent shells (e.g. skull around brain):
+      // prefer the first opaque organ hit, else the first translucent one.
+      const organHits = hits.filter((h) => h.object.userData.organId !== 'skin');
+      const isOpaque = (h: THREE.Intersection) => (organById.get(h.object.userData.organId as string)?.opacity ?? 1) >= 1;
+      const organHit = organHits.find(isOpaque) ?? organHits[0];
       if (organHit) {
         const o = organById.get(organHit.object.userData.organId as string)!;
         let region = o.region;

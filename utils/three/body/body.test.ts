@@ -76,3 +76,38 @@ describe('frame mapping and surface', () => {
     expect(clampSkinOpacity(NaN)).toBe(SKIN_OPACITY_DEFAULT);
   });
 });
+
+describe('review fixes (#14)', () => {
+  it('every organ and ICRP tissue has zh/en label keys', async () => {
+    const { zh } = await import('@/i18n/zh');
+    const { en } = await import('@/i18n/en');
+    for (const o of ORGANS) {
+      expect(zh).toHaveProperty(`body3_o_${o.id}`);
+      expect(en).toHaveProperty(`body3_o_${o.id}`);
+      if (o.icrp) { expect(zh).toHaveProperty(`body3_t_${o.icrp}`); expect(en).toHaveProperty(`body3_t_${o.icrp}`); }
+    }
+  });
+  it('legs (incl. thighs) are always peripheral', () => {
+    for (const z of [88, 95, 105, 120, 160]) expect(regionAt(z, 'leg')).toBe('peripheral');
+  });
+  it('skin triangles face outward in both upright and mirrored frames', async () => {
+    const THREE = await import('three');
+    const { createBodyV3 } = await import('./bodyV3');
+    for (const anterior of [1, -1] as const) {
+      const b = createBodyV3({ frame: { anterior }, organs: false });
+      const m = b.group.children.find((c) => c.userData.organId === 'skin') as InstanceType<typeof THREE.Mesh>;
+      const p = m.geometry.attributes.position; const ix = m.geometry.index!;
+      const a = new THREE.Vector3(), q = new THREE.Vector3(), c = new THREE.Vector3();
+      let out = 0, tot = 0;
+      for (let k = 0; k < ix.count; k += 3) {
+        a.fromBufferAttribute(p, ix.getX(k)); q.fromBufferAttribute(p, ix.getX(k + 1)); c.fromBufferAttribute(p, ix.getX(k + 2));
+        const cen = a.clone().add(q).add(c).divideScalar(3);
+        if (Math.abs(cen.x) > 0.2) continue;
+        const n = q.clone().sub(a).cross(c.clone().sub(a));
+        tot++; if (n.x * cen.x + n.z * cen.z > 0) out++;
+      }
+      expect(out / tot).toBeGreaterThan(0.6);
+      b.dispose();
+    }
+  });
+});

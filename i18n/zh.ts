@@ -257,7 +257,7 @@ export const zh = {
   dose_sec_red_title: "剂量降低策略",
   dose_sec_red_desc: "降低 mAs、降低 kV、迭代重建",
   dose_region_head: "头部",
-  dose_region_neck: "头颈部（含甲状腺）",
+  dose_region_neck: "颈部 / 甲状腺",
   dose_region_chest: "胸部",
   dose_region_cardiothoracic: "心胸",
   dose_region_abdomen: "腹部",

@@ -22,7 +22,7 @@ export const STATURE_CM = 175.5;
 /** Region of a point on the body, given the body part it belongs to. */
 export function regionAt(zCm: number, part: PartKind | 'organ' = 'body'): BodyRegionId {
   if (part === 'arm') return 'peripheral';
-  if (part === 'leg' && zCm >= REGION_Z_CM.abdomen[1]) return 'peripheral';
+  if (part === 'leg') return 'peripheral';
   if (zCm < REGION_Z_CM.head[1]) return 'head';
   if (zCm < REGION_Z_CM.neck[1]) return 'neck';
   if (zCm < REGION_Z_CM.cardiothoracic[1]) return 'cardiothoracic';
