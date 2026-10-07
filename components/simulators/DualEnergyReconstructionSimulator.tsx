@@ -215,7 +215,10 @@ const DualEnergyReconstructionSimulator = () => {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis type="number" domain={[0, 100]} label={{ value: t('de_axis_percent'), position: 'insideBottom', offset: -5 }} />
                 <YAxis dataKey="name" type="category" width={90} tickFormatter={(id: MaterialId) => t(MATERIAL_KEY[id])} />
-                <Tooltip formatter={(value) => [`${value}%`, t('de_tooltip_ratio')]} />
+                <Tooltip
+                  formatter={(value) => [`${value}%`, t('de_tooltip_ratio')]}
+                  labelFormatter={(id) => (MATERIAL_KEY[id as MaterialId] ? t(MATERIAL_KEY[id as MaterialId]) : String(id))}
+                />
                 <Legend />
                 <Bar
                   dataKey="conventional"
