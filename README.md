@@ -1,196 +1,154 @@
 # CTPhysics
 
-简体中文说明 | English version below
+简体中文说明 | [English version below](#english)
 
 ——
 
 ## 概述
-CTPhysics 是一个用于学习与演示计算机断层扫描（CT）成像物理的交互式平台。项目聚焦成像链路的关键环节（采样、重建、噪声和剂量等），通过轻量的前端可视化与实验模块，帮助学习者和从业者理解核心物理概念及工程权衡。
+CTPhysics 是一个用于学习与演示计算机断层扫描（CT）成像物理的交互式教学平台。项目聚焦成像链路的关键环节（采样、重建、噪声和剂量等），通过前端可视化与实验模块，帮助学习者和从业者理解核心物理概念及工程权衡。所有内容保持厂商中立。
 
 ## 在线站点
-- 生产/演示站点：https://www.ct-physics.xyz
-  - 若链接更新，请在此处同步维护。
+- https://ct-physics.xyz
 
 ## 功能特性
-- 交互式模块：采样与滤波、重建滤波核对图像的影响、剂量与噪声权衡、三维锥形束重建 (CBCT FDK 算法偏轴伪影模拟)、以及光子计数CT (PCCT 直接转换半导体探测器、零电子噪声、脉冲堆积谱畸变、多通道物质分解与 K-edge 临界指标跃变)
-- 可视化解释：图表/曲线/示意图，直观展示物理量与图像质量指标的关系
-- 多语言支持：中/英文内容（可拓展 i18n）
-- 教学实验：本地保存实验参数（可选），便于复现实验
-- 可访问性：尽量遵循可访问性规范（ARIA、键盘可操作）
+- 交互式模块：滤波反投影与卷积核、螺旋 CT、迭代重建、锥束 CT（FDK 重建与偏轴伪影）、心脏 CT（心电门控、采集模式与重建窗）、剂量（CTDIvol / DLP / 有效剂量，ICRP 103 组织权重因子）、双能 CT、光子计数 CT（直接转换探测器、脉冲堆积、物质分解与 K 边）、习题练习
+- 可视化解释：图表、曲线、Canvas 与 WebGL（Three.js）三维场景
+- 完整中英双语：`i18n/zh.ts` + `i18n/en.ts`，题库与内容数据位于 `data/zh` 与 `data/en`
+- 可访问性：尽量遵循 ARIA 与键盘可操作规范
 
 ## 技术栈
-- 前端框架：React / Next.js（TypeScript 严格模式）
-- 样式与组件：Tailwind CSS + Radix UI（或等价组件库）
-- 可视化：Canvas/WebGL（必要时），可使用 D3/Plotly 等
-- 测试：Vitest（单元/集成）、Playwright（端到端）
-- 代码质量：ESLint + Prettier（CI 中强制）
+- 框架：Next.js 14（App Router）+ React 18，TypeScript 严格模式
+- 样式：Tailwind CSS（含 @tailwindcss/typography）、framer-motion 动画
+- 可视化：Recharts（图表）、Canvas 2D、Three.js / @react-three/fiber / drei / postprocessing（三维）
+- 测试：Vitest（单元）、Playwright（端到端）
+- 代码质量：ESLint（`next lint`）、`tsc --noEmit`、`npm run check:i18n`（双语一致性检查）
 
 ## 快速开始
-1) 环境准备
-   - Node.js >= 18
-   - 推荐使用 pnpm（或 npm / yarn）
-2) 安装依赖
-   - pnpm install
-3) 配置环境变量
-   - 请参考 docs/ENV.md（包含本地开发与部署所需的环境变量说明）
-4) 本地开发
-   - pnpm dev（或 npm run dev）
-   - 访问 http://localhost:3000
-5) 生产构建
-   - pnpm build && pnpm start
+需要 Node.js ≥ 18.17（CI 使用 20.x / 22.x）。
+```bash
+npm ci
+npm run dev          # http://localhost:3000
+npm run build && npm start
+```
+环境变量说明见 docs/ENV.md。
 
-## 测试（Vitest / Playwright）
-- 单元与集成测试（Vitest）
-  - 运行：pnpm test
-  - 覆盖率报告：pnpm test --coverage
-  - 建议覆盖率目标：语句/分支/函数/行 ≥ 80%（详见 docs/PCD_ROADMAP.md）
-- 端到端（E2E，Playwright）
-  - 本地运行（无头/可视）：pnpm e2e 或 pnpm e2e:headed
-  - 录制视频与截图（CI 产物）：在 Playwright 配置中开启
-  - 数据与网络：尽量使用可复现数据与网络模拟，避免外部依赖造成不稳定
+## 测试
+- `npm test` — Vitest 单元测试
+- `npm run check:i18n` — 中英词条/数据一致性与源码中文字符检查
+- `npm run test:e2e` — Playwright 端到端测试
+- `npm run crawl:i18n` — 对生产构建逐路由、逐控件的双语爬取检查（需先 `npm run build && npm start`）
 
-## CI 概述
-- GitHub Actions（示例）
-  - 触发：PR / push 到 master
-  - 阶段：lint → type-check → unit tests（Vitest）→ e2e（Playwright，可选）→ 构建
-  - 覆盖率阈值：在 CI 中强制（失败则拒绝合并）
-  - 预览部署：Vercel PR preview（自动）
-  - 可选：Sentry release（仅 master）
-  - 安全：GitHub Secret Scanning & Push Protection
-
-## 部署（Vercel）
-- 步骤
-  - 连接 Git 仓库（picspin/CTPhysics）
-  - 配置环境变量（参考 docs/ENV.md）
-  - 设置生产与预览环境（Production / Preview）
-  - 保护主分支（只允许通过 PR 合并）
-- 产物
-  - Preview URL（每个 PR 自动生成）
-  - Production URL（合并到 master 后自动更新）
-
-## 可观测性（可选：Sentry）
-- 启用方式
-  - 创建 Sentry 项目与 DSN
-  - 在环境变量中配置 SENTRY_DSN（参考 docs/ENV.md）
-  - CI 中对 master 分支执行 release 标记（版本号可取 commit SHA 或语义化版本）
-- 范围
-  - 前端错误采集、性能指标（Web Vitals）
-  - 注意隐私和合规要求，避免上传敏感数据
-
-## PCD 路线图摘要
-- 详见 docs/PCD_ROADMAP.md
-  - 里程碑 M1～M4
-  - QA 指标：MTF（调制传递函数）、NPS（噪声功率谱）、NEQ（等效量子数）
-  - 测试目标：单元/端到端覆盖率
+## CI 与部署
+- GitHub Actions（`.github/workflows/node.js.yml`）：在推送/PR 到 master 时运行 `npm ci` → `check:i18n` → `tsc --noEmit` → `build` → `test`
+- 部署：Vercel Git 集成。PR 自动生成 Preview；生产站点跟随 Vercel 项目中设置的生产分支（应为 `master`）。
 
 ## 贡献
-- 欢迎贡献！请先阅读 CONTRIBUTING.md
-  - 分支与提交流程（PR）
-  - 代码风格与提交信息规范
-  - 测试与环境管理要求
+欢迎贡献！请先阅读 CONTRIBUTING.md。
 
-## 许可证 / License
-- 本项目采用 [PolyForm Noncommercial License 1.0.0](LICENSE)（非商业、源码可见许可），版权所有 © 2026 picspin / Ahloe Brown。
-- 学术、教学、科研，以及第三方学术/专业学会的使用与支持：免费。
-- 未经另行书面许可，不得用于商业用途。如需商业授权或有其他疑问，请通过 GitHub Issues 联系。
+## 许可证
+- 本项目采用 [PolyForm Noncommercial License 1.0.0](LICENSE)（非商业、源码可见许可），版权所有 © 2026 picspin / Ahloe Brown。许可证全文以 LICENSE 文件为准。
+- 允许非商业用途，包括个人学习、学术教学、科研、引用，以及高校、医院教学、学术/专业学会等非商业机构的部署与使用。
+- 任何商业用途均需事先获得作者另行书面许可。
+
+## 支持与赞助
+- CTPhysics 是一个教育项目。欢迎将其用于学术教学、引用和非商业部署（例如高校、医院教学、学术/专业学会）。
+- 如需部署或合作，请联系作者 Ahloe Brown（GitHub [@picspin](https://github.com/picspin)），通过 [GitHub Issues](https://github.com/picspin/CTPhysics/issues) 留言。
+- 欢迎学术层面的赞助与支持。
+- 商业用途需另行获得许可。
+
+## 引用
+如在教学、论文或报告中使用本项目，建议引用为：
+
+> Ahloe Brown. *CTPhysics: An Interactive Learning Platform for CT Imaging Physics* [Web application]. 2026. https://ct-physics.xyz. Source: https://github.com/picspin/CTPhysics
+
+```bibtex
+@misc{brown2026ctphysics,
+  author       = {Brown, Ahloe},
+  title        = {{CTPhysics}: An Interactive Learning Platform for CT Imaging Physics},
+  year         = {2026},
+  howpublished = {\url{https://ct-physics.xyz}},
+  note         = {Source code: \url{https://github.com/picspin/CTPhysics}}
+}
+```
 
 ## 相关文档
 - 环境变量：docs/ENV.md
 - 架构与设计：docs/ARCHITECTURE.md
+- PCD 路线图：docs/PCD_ROADMAP.md
 
 ——
 
-English
+<a id="english"></a>
+## English
 
-## Overview
-CTPhysics is an interactive learning and demonstration platform for CT (Computed Tomography) imaging physics. It focuses on key parts of the imaging pipeline (sampling, reconstruction, noise and dose trade-offs) and uses lightweight visualizations and hands-on labs to clarify core physical concepts and engineering decisions.
+### Overview
+CTPhysics is an interactive teaching platform for CT (Computed Tomography) imaging physics. It focuses on key parts of the imaging chain (sampling, reconstruction, noise and dose) and uses front-end visualizations and hands-on labs to clarify core physical concepts and engineering trade-offs. All content is vendor-neutral.
 
-## Live site
-- Production / demo: https://www.ct-physics.xyz
+### Live site
+- https://ct-physics.xyz
 
-## Features
-- Interactive modules: sampling and filtering, reconstruction kernels, dose vs. noise trade-offs, Cone-Beam CT (CBCT 3D FDK reconstruction off-axis artifact simulation), and Photon-Counting CT (PCCT direct conversion, zero electronic noise, pulse pile-up spectrum distortion, material decomposition, and K-edge jump effect)
-- Visual explanations: charts/curves/diagrams for relationships between physical quantities and image quality metrics
-- Multilingual: CN/EN content (i18n-ready)
-- Teaching labs: locally persisted parameters (optional) for reproducible experiments
-- Accessibility: strive for ARIA compliance and keyboard operability
+### Features
+- Interactive modules: filtered back-projection and kernels, helical CT, iterative reconstruction, cone-beam CT (FDK reconstruction and off-axis artifacts), cardiac CT (ECG gating, acquisition modes, reconstruction windows), dose (CTDIvol / DLP / effective dose with ICRP 103 tissue weighting factors), dual-energy CT, photon-counting CT (direct-conversion detectors, pile-up, material decomposition, K-edge), practice questions
+- Visual explanations: charts, curves, Canvas and WebGL (Three.js) 3D scenes
+- Full Chinese/English parity: `i18n/zh.ts` + `i18n/en.ts`; question bank and content data in `data/zh` and `data/en`
+- Accessibility: aims for ARIA compliance and keyboard operability
 
-## Tech stack
-- Frontend: React / Next.js with strict TypeScript
-- UI/Styling: Tailwind CSS + Radix UI (or similar)
-- Visualization: Canvas/WebGL as needed; D3/Plotly optional
-- Testing: Vitest (unit/integration), Playwright (end-to-end)
-- Code quality: ESLint + Prettier (enforced in CI)
+### Tech stack
+- Framework: Next.js 14 (App Router) + React 18, strict TypeScript
+- Styling: Tailwind CSS (with @tailwindcss/typography), framer-motion
+- Visualization: Recharts (charts), Canvas 2D, Three.js / @react-three/fiber / drei / postprocessing (3D)
+- Testing: Vitest (unit), Playwright (e2e)
+- Code quality: ESLint (`next lint`), `tsc --noEmit`, `npm run check:i18n` (bilingual parity guard)
 
-## Quick start
-1) Prerequisites
-   - Node.js >= 18
-   - Prefer pnpm (or npm / yarn)
-2) Install
-   - pnpm install
-3) Environment variables
-   - See docs/ENV.md for local and deployment configuration
-4) Development
-   - pnpm dev (or npm run dev)
-   - Open http://localhost:3000
-5) Production build
-   - pnpm build && pnpm start
+### Quick start
+Requires Node.js ≥ 18.17 (CI uses 20.x / 22.x).
+```bash
+npm ci
+npm run dev          # http://localhost:3000
+npm run build && npm start
+```
+See docs/ENV.md for environment variables.
 
-## Testing (Vitest / Playwright)
-- Unit & integration with Vitest
-  - Run: pnpm test
-  - Coverage: pnpm test --coverage
-  - Suggested thresholds: statements/branches/functions/lines ≥ 80% (see docs/PCD_ROADMAP.md)
-- End-to-end with Playwright
-  - Local run (headless/headed): pnpm e2e or pnpm e2e:headed
-  - Video & screenshots (CI artifacts): enable in Playwright config
-  - Data & network: prefer reproducible fixtures and network mocks to avoid flakiness
+### Testing
+- `npm test` — Vitest unit tests
+- `npm run check:i18n` — zh/en key/data parity and stray-CJK source check
+- `npm run test:e2e` — Playwright end-to-end tests
+- `npm run crawl:i18n` — per-route, per-control bilingual crawl of a production build (run `npm run build && npm start` first)
 
-## CI overview
-- GitHub Actions (example)
-  - Triggers: PR / push to master
-  - Stages: lint → type-check → unit tests (Vitest) → e2e (Playwright, optional) → build
-  - Coverage enforcement: thresholds required in CI (fail PR if not met)
-  - Preview deploy: Vercel PR previews (automatic)
-  - Optional: Sentry release on master
-  - Security: GitHub Secret Scanning & Push Protection
+### CI & deployment
+- GitHub Actions (`.github/workflows/node.js.yml`) on push/PR to master: `npm ci` → `check:i18n` → `tsc --noEmit` → `build` → `test`
+- Deployment: Vercel Git integration. PRs get Preview deployments; production follows the production branch configured in the Vercel project (should be `master`).
 
-## Deployment (Vercel)
-- Steps
-  - Connect repo (picspin/CTPhysics)
-  - Configure environment variables (see docs/ENV.md)
-  - Set production and preview environments
-  - Protect the master branch (merge via PR only)
-- Outputs
-  - Preview URL (auto for each PR)
-  - Production URL (auto after merge to master)
+### Contributing
+Contributions are welcome! Please read CONTRIBUTING.md.
 
-## Observability (optional Sentry)
-- Enable
-  - Create Sentry project and DSN
-  - Configure SENTRY_DSN in env (see docs/ENV.md)
-  - CI release tagging on master (use commit SHA or semantic version)
-- Scope
-  - Frontend error reporting, performance (Web Vitals)
-  - Respect privacy/compliance; avoid sensitive data
+### License
+- Released under the [PolyForm Noncommercial License 1.0.0](LICENSE) (non-commercial, source-available). Copyright (c) 2026 picspin / Ahloe Brown. The LICENSE file is the authoritative text.
+- Non-commercial use is permitted, including personal study, academic teaching, research, citation, and deployment/use by non-commercial institutions such as universities, hospital teaching programmes, and academic or professional societies.
+- Any commercial use requires separate written permission from the author.
 
-## PCD roadmap summary
-- See docs/PCD_ROADMAP.md
-  - Milestones M1–M4
-  - QA metrics: MTF (Modulation Transfer Function), NPS (Noise Power Spectrum), NEQ (Noise Equivalent Quanta)
-  - Test coverage targets (unit/e2e)
+### Support & Sponsorship
+- CTPhysics is an educational project. Academic teaching, citation and non-commercial deployment (e.g. universities, hospital teaching, academic/professional societies) are welcome.
+- For deployment or collaboration, please contact the author, Ahloe Brown (GitHub [@picspin](https://github.com/picspin)), via [GitHub Issues](https://github.com/picspin/CTPhysics/issues).
+- Academic sponsorship and support are welcome.
+- Commercial use requires separate permission.
 
-## Contributing
-- Contributions are welcome! Please read CONTRIBUTING.md
-  - Branch & PR workflow
-  - Code style & commit message conventions
-  - Testing & environment management requirements
+### How to cite
+If you use this project in teaching, papers or reports, please cite:
 
-## License
-- This project is released under the [PolyForm Noncommercial License 1.0.0](LICENSE) (non-commercial, source-available). Copyright (c) 2026 picspin / Ahloe Brown.
-- Free for academic, educational and research use, and for use and support by third-party academic or professional societies.
-- Commercial use is not permitted without separate permission. To ask about commercial licensing or anything else, please open a GitHub issue.
+> Ahloe Brown. *CTPhysics: An Interactive Learning Platform for CT Imaging Physics* [Web application]. 2026. https://ct-physics.xyz. Source: https://github.com/picspin/CTPhysics
 
-## Documentation links
+```bibtex
+@misc{brown2026ctphysics,
+  author       = {Brown, Ahloe},
+  title        = {{CTPhysics}: An Interactive Learning Platform for CT Imaging Physics},
+  year         = {2026},
+  howpublished = {\url{https://ct-physics.xyz}},
+  note         = {Source code: \url{https://github.com/picspin/CTPhysics}}
+}
+```
+
+### Documentation
 - Environment variables: docs/ENV.md
 - Architecture & design: docs/ARCHITECTURE.md
+- PCD roadmap: docs/PCD_ROADMAP.md
