@@ -8,11 +8,11 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { createProceduralEnvironment } from '@/utils/three/proceduralEnvironment';
 import { createMedicalLightingRig } from '@/utils/three/sceneLighting';
 import { createPostFX } from '@/utils/three/postFX';
-import {
-  createRegionSegmentedBodyModel,
-  BodyModel,
-  BodyRegionMesh,
-} from '@/utils/three/bodyModel';
+import { createRegionSegmentedBodyModel, BodyModel } from '@/utils/three/bodyModel';
+import { ORGANS } from '@/utils/three/body/organs';
+import { ICRP103_WT } from '@/utils/three/body/regions';
+import { SKIN_OPACITY_DEFAULT } from '@/utils/three/body/geometryMath';
+import type { MessageKey } from '@/i18n';
 import {
   BodyRegionId,
   ICRP103_ORGANS,
@@ -69,6 +69,10 @@ export const BodyModelViewer: React.FC<BodyModelViewerProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const pointerDownRef = useRef<{ x: number; y: number } | null>(null);
   const [, setHoveredRegion] = useState<BodyRegionId | null>(null);
+  const [selectedOrgan, setSelectedOrgan] = useState<string | null>(null);
+  const [skinOpacity, setSkinOpacity] = useState(SKIN_OPACITY_DEFAULT);
+  const [showOrgans, setShowOrgans] = useState(true);
+  const invalidateRef = useRef<() => void>(() => {});
 
   type SceneRef = {
     scene: THREE.Scene;
@@ -103,10 +107,11 @@ export const BodyModelViewer: React.FC<BodyModelViewerProps> = ({
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
     camera.position.set(3.6, 1.6, 5.0);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const isSmall = window.innerWidth < 640;
+    const renderer = new THREE.WebGLRenderer({ antialias: !isSmall });
     // Clamp DPR to 2. setSize() is always given CSS pixels — three.js
     // multiplies by the pixel ratio internally to size the drawing buffer.
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, isSmall ? 1.5 : 2));
     renderer.setSize(width, height);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
@@ -149,7 +154,7 @@ export const BodyModelViewer: React.FC<BodyModelViewerProps> = ({
     scene.add(floor);
 
     // Body model
-    const body = createRegionSegmentedBodyModel({ tier: 'standard' });
+    const body = createRegionSegmentedBodyModel({ ringPoints: isSmall ? 28 : 40, ringStep: isSmall ? 3.5 : 2.5 });
     body.group.position.y = 0;
     scene.add(body.group);
 
@@ -193,7 +198,13 @@ export const BodyModelViewer: React.FC<BodyModelViewerProps> = ({
     // Invariant this maintains, asserted in the browser:
     //   canvas CSS box   == container content box
     //   canvas buffer    == CSS box × clamped DPR   (NOT × dpr²)
-    const getPixelRatio = () => Math.min(window.devicePixelRatio, 2);
+    // Render on demand: only draw when the camera moved or something changed.
+    let dirty = true;
+    const invalidate = () => { dirty = true; };
+    invalidateRef.current = invalidate;
+    controls.addEventListener('change', invalidate);
+
+    const getPixelRatio = () => Math.min(window.devicePixelRatio, isSmall ? 1.5 : 2);
 
     const applySize = () => {
       // Always measure the container; never the canvas (the canvas is
@@ -210,6 +221,7 @@ export const BodyModelViewer: React.FC<BodyModelViewerProps> = ({
       postFX.resize(w, h, dpr);
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
+      invalidate();
     };
 
     // Correct the composer's mis-initialised size before the first frame.
@@ -240,15 +252,12 @@ export const BodyModelViewer: React.FC<BodyModelViewerProps> = ({
       const px = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       const py = -((e.clientY - rect.top) / rect.height) * 2 + 1;
       pointer.set(px, py);
-      const meshes = Object.values(body.regions);
       raycaster.setFromCamera(pointer, camera);
-      const hits = raycaster.intersectObjects(meshes, false);
-      if (hits.length === 0) {
-        onRegionSelect(null);
-        return;
-      }
-      const regionId = (hits[0].object as BodyRegionMesh).userData.regionId;
-      onRegionSelect(regionId);
+      const hit = body.pick(raycaster);
+      setSelectedOrgan(hit?.organId ?? null);
+      body.setSelectedOrgan(hit?.organId ?? null);
+      invalidate();
+      onRegionSelectRef.current(hit ? hit.region : null);
     };
     const onPointerMove = (e: PointerEvent) => {
       // Hover detection — only when not dragging.
@@ -259,14 +268,13 @@ export const BodyModelViewer: React.FC<BodyModelViewerProps> = ({
       const py = -((e.clientY - rect.top) / rect.height) * 2 + 1;
       pointer.set(px, py);
       raycaster.setFromCamera(pointer, camera);
-      const hits = raycaster.intersectObjects(Object.values(body.regions), false);
-      if (hits.length === 0) {
+      const hit = body.pick(raycaster);
+      if (!hit) {
         setHoveredRegion(null);
         renderer.domElement.style.cursor = 'default';
         return;
       }
-      const regionId = (hits[0].object as BodyRegionMesh).userData.regionId;
-      setHoveredRegion(regionId);
+      setHoveredRegion(hit.region);
       renderer.domElement.style.cursor = 'pointer';
     };
     renderer.domElement.addEventListener('pointerdown', onPointerDown);
@@ -278,7 +286,10 @@ export const BodyModelViewer: React.FC<BodyModelViewerProps> = ({
       requestRef.current = requestAnimationFrame(animate);
       if (sceneRef.current) {
         sceneRef.current.controls.update();
-        sceneRef.current.postFX.composer.render();
+        if (dirty) {
+          dirty = false;
+          sceneRef.current.postFX.composer.render();
+        }
       }
     };
     requestRef.current = requestAnimationFrame(animate);
@@ -313,15 +324,31 @@ export const BodyModelViewer: React.FC<BodyModelViewerProps> = ({
   // -----------------------------------------------------------------
 
   // Body habitus
+  const onRegionSelectRef = useRef(onRegionSelect);
+  onRegionSelectRef.current = onRegionSelect;
+
   useEffect(() => {
-    sceneRef.current?.body.setBodyScale(bodyScale);
+    sceneRef.current?.body.group.scale.setScalar(bodyScale);
+    invalidateRef.current();
   }, [bodyScale]);
+
+  useEffect(() => {
+    sceneRef.current?.body.setSkinOpacity(skinOpacity);
+    invalidateRef.current();
+  }, [skinOpacity]);
+
+  useEffect(() => {
+    sceneRef.current?.body.setOrgansVisible(showOrgans);
+    if (!showOrgans) setSelectedOrgan(null);
+    invalidateRef.current();
+  }, [showOrgans]);
 
   // Highlight + color tint
   useEffect(() => {
     const body = sceneRef.current?.body;
     if (!body) return;
-    body.highlightRegion(selectedRegion);
+    body.setHighlightRegion(selectedRegion);
+    const colors: Partial<Record<BodyRegionId, THREE.Color>> = {};
 
     // Colour-map each region by its ABSOLUTE effective dose.
     //
@@ -335,8 +362,8 @@ export const BodyModelViewer: React.FC<BodyModelViewerProps> = ({
     // (0.01 → 10 mSv) so a given colour always means the same dose.
     // See utils/dose-physics.ts and its regression test.
     const baseSkin = new THREE.Color(0xd49a6c);
-    for (const [rid, mesh] of Object.entries(body.regions)) {
-      const doseT = doseColorScalar(regionDoseMSv[rid as BodyRegionId] ?? 0);
+    for (const rid of ['head', 'neck', 'cardiothoracic', 'abdomen', 'peripheral'] as BodyRegionId[]) {
+      const doseT = doseColorScalar(regionDoseMSv[rid] ?? 0);
       // Cool→warm ramp: blue (low) → cyan → green → yellow → red (high),
       // via hue 0.6 → 0.0. Blended with base skin so the model still
       // reads as a body rather than a pure heatmap. Blend strength also
@@ -350,9 +377,13 @@ export const BodyModelViewer: React.FC<BodyModelViewerProps> = ({
       if (selectedRegion === rid) {
         blended.multiplyScalar(1.35);
       }
-      (mesh.material as THREE.MeshPhysicalMaterial).color.copy(blended);
+      colors[rid] = blended;
     }
+    body.setRegionColors(colors);
+    invalidateRef.current();
   }, [selectedRegion, regionDoseMSv]);
+
+  const organ = selectedOrgan ? ORGANS.find((o) => o.id === selectedOrgan) : undefined;
 
   return (
     <div
@@ -361,6 +392,7 @@ export const BodyModelViewer: React.FC<BodyModelViewerProps> = ({
         className ?? ''
       }`}
       style={{ height: 480 }}
+      data-testid="body-v3-viewer"
     >
       <div
         className="absolute top-0 left-0 right-0 z-10 px-4 py-2 text-xs font-mono text-[var(--sim-accent)] pointer-events-none bg-gradient-to-b from-black/70 to-transparent"
@@ -398,6 +430,46 @@ export const BodyModelViewer: React.FC<BodyModelViewerProps> = ({
           {t('body_legend_scale')}
         </div>
       </div>
+
+      <div className="absolute left-3 top-16 z-10 w-44 space-y-2 rounded-md bg-black/55 p-2 text-[10px] text-text-200">
+        <label className="block">
+          <span className="flex justify-between">
+            <span>{t('body3_skin_opacity')}</span>
+            <span className="font-mono">{Math.round(skinOpacity * 100)}%</span>
+          </span>
+          <input
+            type="range"
+            min={0.05}
+            max={0.9}
+            step={0.05}
+            value={skinOpacity}
+            onChange={(e) => setSkinOpacity(parseFloat(e.target.value))}
+            aria-valuetext={t('body3_skin_opacity_aria', { v: Math.round(skinOpacity * 100) })}
+            className="w-full accent-[var(--sim-accent)]"
+            data-testid="body3-skin-opacity"
+          />
+        </label>
+        <label className="flex items-center gap-1.5">
+          <input type="checkbox" checked={showOrgans} onChange={(e) => setShowOrgans(e.target.checked)} data-testid="body3-show-organs" />
+          <span>{t('body3_show_organs')}</span>
+        </label>
+        <p className="text-[9px] leading-snug text-amber-300/90">{t('body3_mock_notice')}</p>
+      </div>
+
+      {organ && (
+        <div className="absolute bottom-9 left-3 z-10 max-w-[16rem] rounded-md bg-black/70 p-2 text-[11px] text-text-100" data-testid="body3-organ-info" aria-live="polite">
+          <div className="font-semibold">{t(`body3_o_${organ.id}` as MessageKey)}</div>
+          <div className="text-text-200">
+            {t('body3_region', { r: t(`dose_region_${organ.region}` as MessageKey) })}
+          </div>
+          <div className="text-text-200">
+            {organ.icrp
+              ? t('body3_icrp_wt', { tissue: t(`body3_t_${organ.icrp}` as MessageKey), wt: ICRP103_WT[organ.icrp].toFixed(organ.icrp && ICRP103_WT[organ.icrp] < 0.01 ? 4 : 2) })
+              : t('body3_icrp_none')}
+          </div>
+          <div className="mt-0.5 text-[9px] text-amber-300/90">{t('body3_mock_geometry')}</div>
+        </div>
+      )}
 
       <div
         className="absolute bottom-0 left-0 right-0 z-10 px-3 py-1 text-[10px] font-mono text-gray-400 pointer-events-none bg-gradient-to-t from-black/60 to-transparent"

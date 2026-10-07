@@ -10,7 +10,7 @@ import { Card } from '@/components/ui/Card';
 import { createProceduralEnvironment } from '@/utils/three/proceduralEnvironment';
 import { createMedicalLightingRig } from '@/utils/three/sceneLighting';
 import { createScannerMaterials } from '@/utils/three/scannerMaterials';
-import { createParametricPhantomMesh } from '@/utils/three/parametricPhantom';
+import { createParametricPhantomMesh, disposeParametricPhantom } from '@/utils/three/parametricPhantom';
 import { createAttenuationOverlay } from './_fx/AttenuationOverlay';
 import { createPostFX } from '@/utils/three/postFX';
 import { createXRayBeam } from '@/utils/three/xrayBeam';
@@ -219,20 +219,19 @@ const HelicalCTSimulator: React.FC = () => {
     chassis.receiveShadow = true;
     tableGroup.add(chassis);
 
-    // Phantom (parametric body — head/chest/abdomen/pelvis/legs as
-    // stretched spheres). Reads as a continuous human silhouette at
-    // simulator viewing distance without paying the marching-cubes cost.
+    // Phantom: shared v3.1 body (lofted skin surface + MOCK procedural organs),
+    // see utils/three/body/.
     const phantom = createParametricPhantomMesh({
       tier: 'standard',
       material: materials.skinPhantom,
     });
     // Position so the torso center sits on the bed top (y = 0).
     phantom.position.y = 0.05;
-    phantom.castShadow = true;
     phantom.traverse((obj) => {
       const m = obj as THREE.Mesh;
       if (m.isMesh) {
-        m.castShadow = true;
+        // Semi-transparent skin must not cast a solid shadow; organs and other meshes still do.
+        m.castShadow = m.userData.organId !== 'skin';
         m.receiveShadow = true;
       }
     });
@@ -421,6 +420,7 @@ const HelicalCTSimulator: React.FC = () => {
       env.dispose();
       lighting.dispose();
       attenuation.dispose();
+      disposeParametricPhantom(phantom);
       // Dispose exploded-view leader line + label (CanvasTexture/Sprite).
       leaderGeo.dispose();
       leaderMat.dispose();
