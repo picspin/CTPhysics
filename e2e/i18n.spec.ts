@@ -26,7 +26,8 @@ test.describe('bilingual i18n', () => {
     await page.getByRole('button', { name: /设置|Settings/ }).first().click();
     await page.getByRole('button', { name: /^English$/ }).click();
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
-    await page.getByRole('button', { name: 'Close' }).click();
+    await page.getByTestId('settings-close').click();
+    await expect(page.getByTestId('settings-dialog')).toBeHidden();
     await expect(page.locator('main h1').first()).toContainText(/Photon-Counting/i);
     const main = (await page.locator('main').innerText()).trim();
     expect(CJK.test(main)).toBe(false);
@@ -34,7 +35,8 @@ test.describe('bilingual i18n', () => {
     await page.getByRole('button', { name: /设置|Settings/ }).first().click();
     await page.getByRole('button', { name: /简体中文/ }).click();
     await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN');
-    await page.getByRole('button', { name: '关闭' }).click();
+    await page.getByTestId('settings-close').click();
+    await expect(page.getByTestId('settings-dialog')).toBeHidden();
     await expect(page.locator('main h1').first()).toContainText('光子计数');
   });
 
