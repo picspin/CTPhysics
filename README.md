@@ -52,18 +52,18 @@ npm run build && npm start
 
 ## 支持与赞助
 - CTPhysics 是一个教育项目。欢迎将其用于学术教学、引用和非商业部署（例如高校、医院教学、学术/专业学会）。
-- 如需部署或合作，请联系作者 Ahloe Brown（GitHub [@picspin](https://github.com/picspin)），通过 [GitHub Issues](https://github.com/picspin/CTPhysics/issues) 留言。
+- 如需部署或合作，请联系作者 Xiaolei Zhu（GitHub [@picspin](https://github.com/picspin)），通过 [GitHub Issues](https://github.com/picspin/CTPhysics/issues) 留言。
 - 欢迎学术层面的赞助与支持。
 - 商业用途需另行获得许可。
 
 ## 引用
 如在教学、论文或报告中使用本项目，建议引用为：
 
-> Ahloe Brown. *CTPhysics: An Interactive Learning Platform for CT Imaging Physics* [Web application]. 2026. https://ct-physics.xyz. Source: https://github.com/picspin/CTPhysics
+> Xiaolei Zhu. *CTPhysics: An Interactive Learning Platform for CT Imaging Physics* [Web application]. 2026. https://ct-physics.xyz. Source: https://github.com/picspin/CTPhysics
 
 ```bibtex
 @misc{brown2026ctphysics,
-  author       = {Brown, Ahloe},
+  author       = {Xiaolei Zhu},
   title        = {{CTPhysics}: An Interactive Learning Platform for CT Imaging Physics},
   year         = {2026},
   howpublished = {\url{https://ct-physics.xyz}},
