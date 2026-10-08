@@ -139,8 +139,8 @@ If you use this project in teaching, papers or reports, please cite:
 > Ahloe Brown. *CTPhysics: An Interactive Learning Platform for CT Imaging Physics* [Web application]. 2026. https://ct-physics.xyz. Source: https://github.com/picspin/CTPhysics
 
 ```bibtex
-@misc{brown2026ctphysics,
-  author       = {Brown, Ahloe},
+@misc{xiaolei2026ctphysics,
+  author       = {Xiaolei, Zhu},
   title        = {{CTPhysics}: An Interactive Learning Platform for CT Imaging Physics},
   year         = {2026},
   howpublished = {\url{https://ct-physics.xyz}},
