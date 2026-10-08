@@ -123,13 +123,13 @@ See docs/ENV.md for environment variables.
 Contributions are welcome! Please read CONTRIBUTING.md.
 
 ### License
-- Released under the [PolyForm Noncommercial License 1.0.0](LICENSE) (non-commercial, source-available). Copyright (c) 2026 picspin / Ahloe Brown. The LICENSE file is the authoritative text.
+- Released under the [PolyForm Noncommercial License 1.0.0](LICENSE) (non-commercial, source-available). Copyright (c) 2026 picspin / Xiaolei Zhu. The LICENSE file is the authoritative text.
 - Non-commercial use is permitted, including personal study, academic teaching, research, citation, and deployment/use by non-commercial institutions such as universities, hospital teaching programmes, and academic or professional societies.
 - Any commercial use requires separate written permission from the author.
 
 ### Support & Sponsorship
 - CTPhysics is an educational project. Academic teaching, citation and non-commercial deployment (e.g. universities, hospital teaching, academic/professional societies) are welcome.
-- For deployment or collaboration, please contact the author, Ahloe Brown (GitHub [@picspin](https://github.com/picspin)), via [GitHub Issues](https://github.com/picspin/CTPhysics/issues).
+- For deployment or collaboration, please contact the author, Xiaolei Zhu (GitHub [@picspin](https://github.com/picspin)), via [GitHub Issues](https://github.com/picspin/CTPhysics/issues).
 - Academic sponsorship and support are welcome.
 - Commercial use requires separate permission.
 
