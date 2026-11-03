@@ -36,6 +36,8 @@ export const en: Record<MessageKey, string> = {
   common_stop: "Stop",
   land_subtitle: "Next-generation imaging simulation",
   land_hover_hint: "Hover to accelerate the orbit",
+  land_bmc_label: "Buy me a coffee",
+  land_bmc_hint: "Opens the support link in a new tab",
   land_nav_recon: "CT reconstruction",
   land_nav_pcct: "Photon-counting CT",
   land_nav_dose: "Dose & safety",
