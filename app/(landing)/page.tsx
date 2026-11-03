@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 const CTHeroScene = dynamic(() => import('@/components/hero/CTHeroScene'), { ssr: false });
 import LandingNav from '@/components/hero/LandingNav';
 import SatelliteButtons from '@/components/hero/SatelliteButtons';
+import BuyMeACoffeeBadge from '@/components/hero/BuyMeACoffeeBadge';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -44,6 +45,7 @@ export default function LandingPage() {
 
             {/* Floating Buttons */}
             <SatelliteButtons />
+            <BuyMeACoffeeBadge />
         </main>
     );
 }

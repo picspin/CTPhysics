@@ -38,6 +38,8 @@ export const zh = {
   common_stop: "停止",
   land_subtitle: "新一代成像仿真",
   land_hover_hint: "悬停以加速轨道旋转",
+  land_bmc_label: "请我喝杯咖啡",
+  land_bmc_hint: "在新标签页打开支持链接",
   land_nav_recon: "CT重建",
   land_nav_pcct: "光子计数CT",
   land_nav_dose: "剂量与安全",
